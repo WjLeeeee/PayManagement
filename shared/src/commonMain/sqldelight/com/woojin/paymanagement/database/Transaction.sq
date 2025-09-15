@@ -1,0 +1,127 @@
+-- Schema version 2
+CREATE TABLE TransactionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    amount REAL NOT NULL,
+    type TEXT NOT NULL,
+    category TEXT NOT NULL,
+    memo TEXT NOT NULL,
+    date TEXT NOT NULL,
+    incomeType TEXT,
+    paymentMethod TEXT,
+    balanceCardId TEXT,
+    giftCardId TEXT,
+    cardName TEXT
+);
+
+CREATE TABLE BalanceCardEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    initialAmount REAL NOT NULL,
+    currentBalance REAL NOT NULL,
+    createdDate TEXT NOT NULL,
+    isActive INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE GiftCardEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    totalAmount REAL NOT NULL,
+    usedAmount REAL NOT NULL,
+    createdDate TEXT NOT NULL,
+    isActive INTEGER NOT NULL DEFAULT 1,
+    minimumUsageRate REAL NOT NULL DEFAULT 0.8
+);
+
+insertTransaction:
+INSERT INTO TransactionEntity(id, amount, type, category, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAllTransactions:
+SELECT * FROM TransactionEntity
+ORDER BY date DESC;
+
+selectTransactionsByDate:
+SELECT * FROM TransactionEntity
+WHERE date = ?
+ORDER BY date DESC;
+
+selectTransactionsByMonth:
+SELECT * FROM TransactionEntity
+WHERE substr(date, 1, 7) = ?
+ORDER BY date DESC;
+
+updateTransaction:
+UPDATE TransactionEntity
+SET amount = ?, type = ?, category = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?
+WHERE id = ?;
+
+deleteTransaction:
+DELETE FROM TransactionEntity
+WHERE id = ?;
+
+deleteAllTransactions:
+DELETE FROM TransactionEntity;
+
+-- BalanceCard 관련 쿼리들
+insertBalanceCard:
+INSERT INTO BalanceCardEntity(id, name, initialAmount, currentBalance, createdDate, isActive)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectAllBalanceCards:
+SELECT * FROM BalanceCardEntity
+ORDER BY createdDate DESC;
+
+selectActiveBalanceCards:
+SELECT * FROM BalanceCardEntity
+WHERE isActive = 1
+ORDER BY createdDate DESC;
+
+selectBalanceCardById:
+SELECT * FROM BalanceCardEntity
+WHERE id = ?;
+
+updateBalanceCard:
+UPDATE BalanceCardEntity
+SET name = ?, initialAmount = ?, currentBalance = ?, createdDate = ?, isActive = ?
+WHERE id = ?;
+
+updateBalanceCardBalance:
+UPDATE BalanceCardEntity
+SET currentBalance = ?, isActive = ?
+WHERE id = ?;
+
+deleteBalanceCard:
+DELETE FROM BalanceCardEntity
+WHERE id = ?;
+
+-- GiftCard 관련 쿼리들
+insertGiftCard:
+INSERT INTO GiftCardEntity(id, name, totalAmount, usedAmount, createdDate, isActive, minimumUsageRate)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+selectAllGiftCards:
+SELECT * FROM GiftCardEntity
+ORDER BY createdDate DESC;
+
+selectActiveGiftCards:
+SELECT * FROM GiftCardEntity
+WHERE isActive = 1
+ORDER BY createdDate DESC;
+
+selectGiftCardById:
+SELECT * FROM GiftCardEntity
+WHERE id = ?;
+
+updateGiftCard:
+UPDATE GiftCardEntity
+SET name = ?, totalAmount = ?, usedAmount = ?, createdDate = ?, isActive = ?, minimumUsageRate = ?
+WHERE id = ?;
+
+updateGiftCardUsage:
+UPDATE GiftCardEntity
+SET usedAmount = ?, isActive = ?
+WHERE id = ?;
+
+deleteGiftCard:
+DELETE FROM GiftCardEntity
+WHERE id = ?;

@@ -3,3 +3,14 @@ target 'iosApp' do
   platform :ios, '16.0'
   pod 'shared', :path => '../shared'
 end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+      # SQLite3 라이브러리 링크 추가
+      config.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)']
+      config.build_settings['OTHER_LDFLAGS'] << '-lsqlite3'
+    end
+  end
+end
