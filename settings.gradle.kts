@@ -14,6 +14,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PayManagement"
+rootProject.name = "EasyPaybook-SalaryBased"
 include(":androidApp")
 include(":shared")
