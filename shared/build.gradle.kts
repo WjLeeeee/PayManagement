@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.kotlinCocoapods)
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlinx.serialization)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -34,10 +37,33 @@ kotlin {
     
     sourceSets {
         commonMain.dependencies {
-            //put your multiplatform dependencies here
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation.multiplatform)
+            implementation(libs.compose.material3.multiplatform)
+            implementation(libs.compose.ui.multiplatform)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutines.extensions)
+        }
+        
+        androidMain.dependencies {
+            implementation(libs.sqldelight.android.driver)
+        }
+        
+        iosMain.dependencies {
+            implementation(libs.sqldelight.native.driver)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+    }
+}
+
+sqldelight {
+    databases {
+        create("PayManagementDatabase") {
+            packageName.set("com.woojin.paymanagement.database")
         }
     }
 }
