@@ -47,9 +47,42 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
     var selectedPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     var currentCalendarPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     
-    val transactions by databaseHelper.getAllTransactions().collectAsState(emptyList())
-    val availableBalanceCards by databaseHelper.getActiveBalanceCards().collectAsState(emptyList())
-    val availableGiftCards by databaseHelper.getActiveGiftCards().collectAsState(emptyList())
+    // 데이터베이스 초기화를 지연시켜 크래시 방지
+    var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
+    var availableBalanceCards by remember { mutableStateOf<List<com.woojin.paymanagement.data.BalanceCard>>(emptyList()) }
+    var availableGiftCards by remember { mutableStateOf<List<com.woojin.paymanagement.data.GiftCard>>(emptyList()) }
+
+    // 데이터베이스 데이터를 안전하게 로드
+    LaunchedEffect(Unit) {
+        try {
+            databaseHelper.getAllTransactions().collect {
+                transactions = it
+            }
+        } catch (e: Exception) {
+            // 데이터베이스 오류 시 빈 리스트 유지
+            println("Database error: ${e.message}")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            databaseHelper.getActiveBalanceCards().collect {
+                availableBalanceCards = it
+            }
+        } catch (e: Exception) {
+            println("Balance cards error: ${e.message}")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            databaseHelper.getActiveGiftCards().collect {
+                availableGiftCards = it
+            }
+        } catch (e: Exception) {
+            println("Gift cards error: ${e.message}")
+        }
+    }
     
     when (currentScreen) {
         Screen.PaydaySetup -> {
