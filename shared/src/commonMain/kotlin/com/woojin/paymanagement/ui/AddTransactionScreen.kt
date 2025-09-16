@@ -79,8 +79,8 @@ fun AddTransactionScreen(
     val isEditMode = editTransaction != null
     
     val categories = when (selectedType) {
-        TransactionType.INCOME -> listOf("급여", "식비", "중고거래", "K-패스 환급", "부수입", "투자수익", "기타수입")
-        TransactionType.EXPENSE -> listOf("식비", "교통비", "생활용품", "쇼핑", "의료비", "교육비", "적금", "투자", "기타지출")
+        TransactionType.INCOME -> listOf("급여", "식비", "중고거래", "K-패스 환급", "투자수익", "기타수입")
+        TransactionType.EXPENSE -> listOf("식비", "교통비", "생활용품", "쇼핑", "적금", "투자", "기타지출")
     }
     
     Column(
