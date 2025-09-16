@@ -199,19 +199,19 @@ private fun PayPeriodHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         TextButton(onClick = onPreviousPeriod) {
-            Text("◀", fontSize = 20.sp, color = Color.Black)
+            Text("◀", fontSize = 16.sp, color = Color.Black)
         }
         
         Text(
             text = currentPayPeriod.displayText,
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1f)
         )
         
         TextButton(onClick = onNextPeriod) {
-            Text("▶", fontSize = 20.sp, color = Color.Black)
+            Text("▶", fontSize = 16.sp, color = Color.Black)
         }
     }
 }
