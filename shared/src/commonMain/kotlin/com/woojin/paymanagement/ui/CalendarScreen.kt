@@ -510,7 +510,7 @@ private fun TransactionItem(transaction: Transaction) {
                 Text(
                     text = transaction.memo,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = Color.DarkGray
                 )
             }
         }
