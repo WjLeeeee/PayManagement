@@ -50,9 +50,12 @@ import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.Utils
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
+import kotlinx.datetime.todayIn
 
 @Composable
 fun CalendarScreen(
@@ -296,9 +299,12 @@ private fun CalendarGrid(
     selectedDate: LocalDate?,
     onDateSelected: (LocalDate) -> Unit
 ) {
+    // 오늘 날짜 계산
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+
     // 월급 기간에 포함되는 모든 날짜 계산
     val allDates = generateDateSequence(payPeriod.startDate, payPeriod.endDate)
-    
+
     // 첫 번째 달의 첫 주 계산
     val firstDayOfFirstMonth = LocalDate(payPeriod.startDate.year, payPeriod.startDate.month, 1)
     val firstDayOfWeek = (firstDayOfFirstMonth.dayOfWeek.ordinal + 1) % 7
@@ -348,6 +354,7 @@ private fun CalendarGrid(
                     hasExpense = hasExpense,
                     isSelected = selectedDate == date,
                     isInCurrentPeriod = isInCurrentPeriod,
+                    isToday = date == today,
                     onClick = { onDateSelected(date) }
                 )
             }
@@ -373,6 +380,7 @@ private fun CalendarDay(
     hasExpense: Boolean,
     isSelected: Boolean,
     isInCurrentPeriod: Boolean = true,
+    isToday: Boolean = false,
     onClick: () -> Unit
 ) {
     Box(
@@ -389,10 +397,10 @@ private fun CalendarDay(
                 }
             )
             .then(
-                if (isSelected) {
-                    Modifier.border(2.dp, Color.Gray, CircleShape)
-                } else {
-                    Modifier
+                when {
+                    isToday -> Modifier.border(2.dp, Color.Black, CircleShape)
+                    isSelected -> Modifier.border(2.dp, Color.Gray, CircleShape)
+                    else -> Modifier
                 }
             ),
         contentAlignment = Alignment.Center
