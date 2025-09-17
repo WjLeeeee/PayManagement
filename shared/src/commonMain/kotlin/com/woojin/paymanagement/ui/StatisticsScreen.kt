@@ -126,7 +126,7 @@ fun StatisticsScreen(
         }
 
         // Payment Method Summary
-        if (paymentSummary.cashIncome > 0 || paymentSummary.cashExpense > 0 ||
+        if (paymentSummary.cashIncome > 0 || paymentSummary.cashExpense > 0 || paymentSummary.cardExpense > 0 ||
             paymentSummary.balanceCards.isNotEmpty() || paymentSummary.giftCards.isNotEmpty()) {
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -335,6 +335,15 @@ private fun PaymentMethodSection(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
+        // Card Summary
+        if (paymentSummary.cardExpense > 0) {
+            CardSummaryCard(
+                expense = paymentSummary.cardExpense
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         // Balance Cards Summary
         paymentSummary.balanceCards.forEach { balanceCard ->
             BalanceCardSummaryCard(balanceCard = balanceCard)
@@ -420,6 +429,43 @@ private fun CashSummaryCard(
                         }
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardSummaryCard(
+    expense: Double
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.LightGray)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "💳 카드",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column {
+                Text(
+                    text = "지출",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "-${Utils.formatAmount(expense)}원",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Red
+                )
             }
         }
     }

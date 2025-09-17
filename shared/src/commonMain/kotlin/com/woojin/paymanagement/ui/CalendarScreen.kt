@@ -523,6 +523,7 @@ private fun TransactionItem(transaction: Transaction) {
                 TransactionType.EXPENSE -> {
                     when (transaction.paymentMethod) {
                         com.woojin.paymanagement.data.PaymentMethod.CASH -> "현금"
+                        com.woojin.paymanagement.data.PaymentMethod.CARD -> "카드"
                         com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "잔액권 ${transaction.cardName ?: ""}"
                         com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "상품권 ${transaction.cardName ?: ""}"
                         null -> "현금"

@@ -234,6 +234,7 @@ fun AddTransactionScreen(
                     // 해당 유형의 카드가 있거나 현금인 경우에만 표시
                     val isAvailable = when (paymentMethod) {
                         PaymentMethod.CASH -> true
+                        PaymentMethod.CARD -> true
                         PaymentMethod.BALANCE_CARD -> availableBalanceCards.isNotEmpty()
                         PaymentMethod.GIFT_CARD -> availableGiftCards.isNotEmpty()
                     }
@@ -260,6 +261,7 @@ fun AddTransactionScreen(
                             Text(
                                 text = when (paymentMethod) {
                                     PaymentMethod.CASH -> "현금"
+                                    PaymentMethod.CARD -> "카드"
                                     PaymentMethod.BALANCE_CARD -> "잔액권"
                                     PaymentMethod.GIFT_CARD -> "상품권"
                                 },
@@ -437,6 +439,7 @@ fun AddTransactionScreen(
                             // 지출일 때: 현금이거나 카드가 선택됨
                             (selectedType == TransactionType.INCOME ||
                              selectedPaymentMethod == PaymentMethod.CASH ||
+                             selectedPaymentMethod == PaymentMethod.CARD ||
                              (selectedPaymentMethod == PaymentMethod.BALANCE_CARD && selectedBalanceCard != null) ||
                              (selectedPaymentMethod == PaymentMethod.GIFT_CARD && selectedGiftCard != null))
 
@@ -525,6 +528,7 @@ fun AddTransactionScreen(
                           // 지출 유효성 검사
                           (selectedType == TransactionType.INCOME ||
                            selectedPaymentMethod == PaymentMethod.CASH ||
+                           selectedPaymentMethod == PaymentMethod.CARD ||
                            (selectedPaymentMethod == PaymentMethod.BALANCE_CARD && selectedBalanceCard != null) ||
                            (selectedPaymentMethod == PaymentMethod.GIFT_CARD && selectedGiftCard != null)),
                 colors = ButtonDefaults.buttonColors(
