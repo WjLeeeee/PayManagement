@@ -33,7 +33,8 @@ enum class IncomeType {
 
 @Serializable
 enum class PaymentMethod {
-    CASH,        // 현금 지출
+    CASH,        // 현금 지출 (체크카드 포함)
+    CARD,        // 신용카드 지출
     BALANCE_CARD, // 잔액권 사용
     GIFT_CARD    // 상품권 사용
 }
@@ -83,6 +84,7 @@ data class BalanceCardTransactionResult(
 data class PaymentMethodSummary(
     val cashIncome: Double = 0.0,
     val cashExpense: Double = 0.0,
+    val cardExpense: Double = 0.0,
     val balanceCards: List<BalanceCardSummary> = emptyList(),
     val giftCards: List<GiftCardSummary> = emptyList()
 )
@@ -320,6 +322,10 @@ object PaymentMethodAnalyzer {
             .filter { it.type == TransactionType.EXPENSE && (it.paymentMethod == PaymentMethod.CASH || it.paymentMethod == null) }
             .sumOf { it.amount }
 
+        val cardExpense = transactions
+            .filter { it.type == TransactionType.EXPENSE && it.paymentMethod == PaymentMethod.CARD }
+            .sumOf { it.amount }
+
         // 잔액권 분석
         val balanceCardIds = transactions
             .mapNotNull { it.balanceCardId }
@@ -381,6 +387,7 @@ object PaymentMethodAnalyzer {
         return PaymentMethodSummary(
             cashIncome = cashIncome,
             cashExpense = cashExpense,
+            cardExpense = cardExpense,
             balanceCards = balanceCardSummaries,
             giftCards = giftCardSummaries
         )
