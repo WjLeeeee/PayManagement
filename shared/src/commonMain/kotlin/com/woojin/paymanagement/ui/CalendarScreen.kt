@@ -277,6 +277,7 @@ private fun PayPeriodSummaryCard(
                     Text(
                         text = "${when {
                             balance > 0 -> "+"
+                            balance < 0 -> "-"
                             else -> ""
                         }}${Utils.formatAmount(balance)}원",
                         fontWeight = FontWeight.Bold,
