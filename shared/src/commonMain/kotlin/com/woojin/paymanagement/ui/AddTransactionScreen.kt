@@ -1,5 +1,10 @@
 package com.woojin.paymanagement.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -780,55 +785,22 @@ private fun SettlementSection(
             )
         }
 
-        if (isSettlement) {
-            Spacer(modifier = Modifier.height(16.dp))
+        AnimatedVisibility(
+            visible = isSettlement,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // 실제 결제 금액
-            OutlinedTextField(
-                value = actualAmount,
-                onValueChange = onActualAmountChange,
-                label = { Text("실제 결제 금액", color = Color.Black) },
-                suffix = { Text("원", color = Color.Black) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Gray,
-                    focusedLabelColor = Color.Gray,
-                    unfocusedTextColor = Color.Black,
-                    focusedTextColor = Color.Black
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // 분할 인원
+                // 실제 결제 금액
                 OutlinedTextField(
-                    value = splitCount,
-                    onValueChange = onSplitCountChange,
-                    label = { Text("분할 인원", color = Color.Black) },
-                    suffix = { Text("명", color = Color.Black) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Gray,
-                        focusedLabelColor = Color.Gray,
-                        unfocusedTextColor = Color.Black,
-                        focusedTextColor = Color.Black
-                    )
-                )
-
-                // 정산받을 금액
-                OutlinedTextField(
-                    value = settlementAmount,
-                    onValueChange = onSettlementAmountChange,
-                    label = { Text("정산받을 금액", color = Color.Black) },
+                    value = actualAmount,
+                    onValueChange = onActualAmountChange,
+                    label = { Text("실제 결제 금액", color = Color.Black) },
                     suffix = { Text("원", color = Color.Black) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color.Gray,
                         focusedLabelColor = Color.Gray,
@@ -836,18 +808,57 @@ private fun SettlementSection(
                         focusedTextColor = Color.Black
                     )
                 )
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // 내 부담액 표시
-            if (myAmount.isNotBlank()) {
-                Text(
-                    text = "💡 내 부담액: ${myAmount}원",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 분할 인원
+                    OutlinedTextField(
+                        value = splitCount,
+                        onValueChange = onSplitCountChange,
+                        label = { Text("분할 인원", color = Color.Black) },
+                        suffix = { Text("명", color = Color.Black) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Gray,
+                            focusedLabelColor = Color.Gray,
+                            unfocusedTextColor = Color.Black,
+                            focusedTextColor = Color.Black
+                        )
+                    )
+
+                    // 정산받을 금액
+                    OutlinedTextField(
+                        value = settlementAmount,
+                        onValueChange = onSettlementAmountChange,
+                        label = { Text("정산받을 금액", color = Color.Black) },
+                        suffix = { Text("원", color = Color.Black) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Gray,
+                            focusedLabelColor = Color.Gray,
+                            unfocusedTextColor = Color.Black,
+                            focusedTextColor = Color.Black
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 내 부담액 표시
+                if (myAmount.isNotBlank()) {
+                    Text(
+                        text = "💡 내 부담액: ${myAmount}원",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
             }
         }
     }
