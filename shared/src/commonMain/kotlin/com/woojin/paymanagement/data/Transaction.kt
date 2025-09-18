@@ -15,7 +15,10 @@ data class Transaction(
     val paymentMethod: PaymentMethod? = null, // 지출일 때만 사용
     val balanceCardId: String? = null,   // 잔액권 ID (수입 시 생성, 지출 시 사용)
     val giftCardId: String? = null,      // 상품권 ID (수입 시 생성, 지출 시 사용)
-    val cardName: String? = null         // 잔액권/상품권 이름
+    val cardName: String? = null,        // 잔액권/상품권 이름
+    val actualAmount: Double? = null,    // 실제 결제액 (더치페이 시)
+    val settlementAmount: Double? = null, // 정산받은 금액 (더치페이 시)
+    val isSettlement: Boolean = false    // 더치페이 여부
 )
 
 @Serializable
@@ -85,6 +88,8 @@ data class PaymentMethodSummary(
     val cashIncome: Double = 0.0,
     val cashExpense: Double = 0.0,
     val cardExpense: Double = 0.0,
+    val cardActualExpense: Double = 0.0, // 더치페이 포함 실제 카드 사용액
+    val settlementIncome: Double = 0.0, // 더치페이로 받은 금액
     val balanceCards: List<BalanceCardSummary> = emptyList(),
     val giftCards: List<GiftCardSummary> = emptyList()
 )
@@ -326,6 +331,22 @@ object PaymentMethodAnalyzer {
             .filter { it.type == TransactionType.EXPENSE && it.paymentMethod == PaymentMethod.CARD }
             .sumOf { it.amount }
 
+        // 더치페이 관련 분석
+        val cardTransactions = transactions.filter { it.type == TransactionType.EXPENSE && it.paymentMethod == PaymentMethod.CARD }
+
+        val cardActualExpense = cardTransactions
+            .sumOf { transaction ->
+                if (transaction.isSettlement && transaction.actualAmount != null) {
+                    transaction.actualAmount
+                } else {
+                    transaction.amount
+                }
+            }
+
+        val settlementIncome = transactions
+            .filter { it.type == TransactionType.EXPENSE && it.isSettlement && it.settlementAmount != null }
+            .sumOf { it.settlementAmount!! }
+
         // 잔액권 분석
         val balanceCardIds = transactions
             .mapNotNull { it.balanceCardId }
@@ -388,6 +409,8 @@ object PaymentMethodAnalyzer {
             cashIncome = cashIncome,
             cashExpense = cashExpense,
             cardExpense = cardExpense,
+            cardActualExpense = cardActualExpense,
+            settlementIncome = settlementIncome,
             balanceCards = balanceCardSummaries,
             giftCards = giftCardSummaries
         )

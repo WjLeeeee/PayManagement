@@ -1,4 +1,4 @@
--- Schema version 2
+-- Schema version 4
 CREATE TABLE TransactionEntity (
     id TEXT NOT NULL PRIMARY KEY,
     amount REAL NOT NULL,
@@ -10,7 +10,10 @@ CREATE TABLE TransactionEntity (
     paymentMethod TEXT,
     balanceCardId TEXT,
     giftCardId TEXT,
-    cardName TEXT
+    cardName TEXT,
+    actualAmount REAL,
+    settlementAmount REAL,
+    isSettlement INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE BalanceCardEntity (
@@ -33,8 +36,8 @@ CREATE TABLE GiftCardEntity (
 );
 
 insertTransaction:
-INSERT INTO TransactionEntity(id, amount, type, category, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO TransactionEntity(id, amount, type, category, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName, actualAmount, settlementAmount, isSettlement)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllTransactions:
 SELECT * FROM TransactionEntity
@@ -52,7 +55,7 @@ ORDER BY date DESC;
 
 updateTransaction:
 UPDATE TransactionEntity
-SET amount = ?, type = ?, category = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?
+SET amount = ?, type = ?, category = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, actualAmount = ?, settlementAmount = ?, isSettlement = ?
 WHERE id = ?;
 
 deleteTransaction:

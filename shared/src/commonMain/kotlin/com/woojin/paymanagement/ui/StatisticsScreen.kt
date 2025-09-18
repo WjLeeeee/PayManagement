@@ -338,7 +338,9 @@ private fun PaymentMethodSection(
         // Card Summary
         if (paymentSummary.cardExpense > 0) {
             CardSummaryCard(
-                expense = paymentSummary.cardExpense
+                expense = paymentSummary.cardExpense,
+                actualExpense = paymentSummary.cardActualExpense,
+                settlementIncome = paymentSummary.settlementIncome
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -436,7 +438,9 @@ private fun CashSummaryCard(
 
 @Composable
 private fun CardSummaryCard(
-    expense: Double
+    expense: Double,
+    actualExpense: Double,
+    settlementIncome: Double
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -454,18 +458,78 @@ private fun CardSummaryCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Column {
-                Text(
-                    text = "지출",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-                Text(
-                    text = "-${Utils.formatAmount(expense)}원",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Red
-                )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // 지출 (본인 부담) - 항상 표시
+                Column {
+                    Text(
+                        text = "지출 (본인 부담)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "-${Utils.formatAmount(expense)}원",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Red
+                    )
+                }
+
+                // 실제 사용 (더치페이 시만 표시, 아니면 빈 공간)
+                Column {
+                    if (actualExpense != expense) {
+                        Text(
+                            text = "실제 사용",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "-${Utils.formatAmount(actualExpense)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF757575)
+                        )
+                    } else {
+                        // 빈 공간으로 레이아웃 유지
+                        Text(
+                            text = "",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                    }
+                }
+
+                // 정산수입 (더치페이 시만 표시, 아니면 빈 공간)
+                Column {
+                    if (settlementIncome > 0) {
+                        Text(
+                            text = "정산수입",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(settlementIncome)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Blue
+                        )
+                    } else {
+                        // 빈 공간으로 레이아웃 유지
+                        Text(
+                            text = "",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                    }
+                }
             }
         }
     }

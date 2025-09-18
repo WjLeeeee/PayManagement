@@ -58,7 +58,10 @@ class DatabaseHelper(
             paymentMethod = transaction.paymentMethod?.name,
             balanceCardId = transaction.balanceCardId,
             giftCardId = transaction.giftCardId,
-            cardName = transaction.cardName
+            cardName = transaction.cardName,
+            actualAmount = transaction.actualAmount,
+            settlementAmount = transaction.settlementAmount,
+            isSettlement = if (transaction.isSettlement) 1L else 0L
         )
     }
     
@@ -74,6 +77,9 @@ class DatabaseHelper(
             balanceCardId = transaction.balanceCardId,
             giftCardId = transaction.giftCardId,
             cardName = transaction.cardName,
+            actualAmount = transaction.actualAmount,
+            settlementAmount = transaction.settlementAmount,
+            isSettlement = if (transaction.isSettlement) 1L else 0L,
             id = transaction.id
         )
     }
@@ -214,7 +220,10 @@ class DatabaseHelper(
             paymentMethod = this.paymentMethod?.let { PaymentMethod.valueOf(it) },
             balanceCardId = this.balanceCardId,
             giftCardId = this.giftCardId,
-            cardName = this.cardName
+            cardName = this.cardName,
+            actualAmount = this.actualAmount,
+            settlementAmount = this.settlementAmount,
+            isSettlement = this.isSettlement == 1L
         )
     }
 

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,6 +26,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -75,7 +79,19 @@ fun AddTransactionScreen(
     var date by remember {
         mutableStateOf(editTransaction?.date ?: selectedDate ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
     }
-    
+
+    // 더치페이 관련 state
+    var isSettlement by remember { mutableStateOf(editTransaction?.isSettlement ?: false) }
+    var actualAmount by remember {
+        val initialActualAmount = editTransaction?.actualAmount?.toLong()?.toString() ?: ""
+        mutableStateOf(initialActualAmount)
+    }
+    var splitCount by remember { mutableStateOf("") }
+    var settlementAmount by remember {
+        val initialSettlementAmount = editTransaction?.settlementAmount?.toLong()?.toString() ?: ""
+        mutableStateOf(initialSettlementAmount)
+    }
+
     val isEditMode = editTransaction != null
     
     val categories = when (selectedType) {
@@ -87,13 +103,14 @@ fun AddTransactionScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
         Text(
             text = if (isEditMode) "거래 편집" else "거래 추가",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
         
         // Transaction Type Selection
@@ -361,6 +378,15 @@ fun AddTransactionScreen(
             onValueChange = { newValue ->
                 if (newValue.isEmpty() || newValue.matches(Regex("^\\d+\\.?\\d*$"))) {
                     amount = newValue
+
+                    // 더치페이 활성화 시 정산받을 금액 자동 계산
+                    if (isSettlement && actualAmount.isNotBlank()) {
+                        val actual = actualAmount.toDoubleOrNull() ?: 0.0
+                        val myAmount = newValue.toDoubleOrNull() ?: 0.0
+                        if (actual > myAmount) {
+                            settlementAmount = (actual - myAmount).toInt().toString()
+                        }
+                    }
                 }
             },
             label = { Text("금액", color = Color.Black) },
@@ -374,9 +400,67 @@ fun AddTransactionScreen(
                 focusedTextColor = Color.Black
             )
         )
-        
+
+        // 더치페이/정산 섹션 (지출일 때만)
+        if (selectedType == TransactionType.EXPENSE) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SettlementSection(
+                isSettlement = isSettlement,
+                onSettlementChange = {
+                    isSettlement = it
+                    if (!it) {
+                        actualAmount = ""
+                        splitCount = ""
+                        settlementAmount = ""
+                    }
+                },
+                actualAmount = actualAmount,
+                onActualAmountChange = { newValue ->
+                    if (newValue.isEmpty() || newValue.matches(Regex("^\\d+\\.?\\d*$"))) {
+                        actualAmount = newValue
+                        // 자동 계산
+                        val actual = newValue.toDoubleOrNull() ?: 0.0
+                        val split = splitCount.toIntOrNull() ?: 0
+                        if (actual > 0 && split > 0) {
+                            val myShare = actual / split
+                            amount = myShare.toInt().toString()
+                            settlementAmount = (actual - myShare).toInt().toString()
+                        }
+                    }
+                },
+                splitCount = splitCount,
+                onSplitCountChange = { newValue ->
+                    if (newValue.isEmpty() || newValue.matches(Regex("^\\d+$"))) {
+                        splitCount = newValue
+                        // 자동 계산
+                        val actual = actualAmount.toDoubleOrNull() ?: 0.0
+                        val split = newValue.toIntOrNull() ?: 0
+                        if (actual > 0 && split > 0) {
+                            val myShare = actual / split
+                            amount = myShare.toInt().toString()
+                            settlementAmount = (actual - myShare).toInt().toString()
+                        }
+                    }
+                },
+                settlementAmount = settlementAmount,
+                onSettlementAmountChange = { newValue ->
+                    if (newValue.isEmpty() || newValue.matches(Regex("^\\d+\\.?\\d*$"))) {
+                        settlementAmount = newValue
+                        // 역계산: 내 부담액 = 실제 결제액 - 정산 받을 금액
+                        val actual = actualAmount.toDoubleOrNull() ?: 0.0
+                        val settlement = newValue.toDoubleOrNull() ?: 0.0
+                        if (actual > settlement) {
+                            amount = (actual - settlement).toInt().toString()
+                        }
+                    }
+                },
+                myAmount = amount
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Category Selection
         CategoryDropdown(
             categories = categories,
@@ -414,9 +498,9 @@ fun AddTransactionScreen(
                 focusedTextColor = Color.Black
             )
         )
-        
-        Spacer(modifier = Modifier.weight(1f))
-        
+
+        Spacer(modifier = Modifier.height(32.dp))
+
         // Save/Cancel Buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -513,7 +597,10 @@ fun AddTransactionScreen(
                                     selectedType == TransactionType.INCOME && (selectedIncomeType == IncomeType.BALANCE_CARD || selectedIncomeType == IncomeType.GIFT_CARD) -> cardName
                                     selectedType == TransactionType.EXPENSE && selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> selectedBalanceCard?.name
                                     else -> null
-                                }
+                                },
+                                actualAmount = if (isSettlement) actualAmount.toDoubleOrNull() else null,
+                                settlementAmount = if (isSettlement) settlementAmount.toDoubleOrNull() else null,
+                                isSettlement = isSettlement
                             )
                             onSave(listOf(transaction))
                         }
@@ -650,6 +737,116 @@ private fun <T> CardSelectionDropdown(
                         onCardSelected(card)
                         expanded = false
                     }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettlementSection(
+    isSettlement: Boolean,
+    onSettlementChange: (Boolean) -> Unit,
+    actualAmount: String,
+    onActualAmountChange: (String) -> Unit,
+    splitCount: String,
+    onSplitCountChange: (String) -> Unit,
+    settlementAmount: String,
+    onSettlementAmountChange: (String) -> Unit,
+    myAmount: String
+) {
+    Column {
+        // 더치페이 토글
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "더치페이/정산",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            Switch(
+                checked = isSettlement,
+                onCheckedChange = onSettlementChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color.Gray,
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = Color.LightGray
+                )
+            )
+        }
+
+        if (isSettlement) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 실제 결제 금액
+            OutlinedTextField(
+                value = actualAmount,
+                onValueChange = onActualAmountChange,
+                label = { Text("실제 결제 금액", color = Color.Black) },
+                suffix = { Text("원", color = Color.Black) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    focusedLabelColor = Color.Gray,
+                    unfocusedTextColor = Color.Black,
+                    focusedTextColor = Color.Black
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 분할 인원
+                OutlinedTextField(
+                    value = splitCount,
+                    onValueChange = onSplitCountChange,
+                    label = { Text("분할 인원", color = Color.Black) },
+                    suffix = { Text("명", color = Color.Black) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Gray,
+                        focusedLabelColor = Color.Gray,
+                        unfocusedTextColor = Color.Black,
+                        focusedTextColor = Color.Black
+                    )
+                )
+
+                // 정산받을 금액
+                OutlinedTextField(
+                    value = settlementAmount,
+                    onValueChange = onSettlementAmountChange,
+                    label = { Text("정산받을 금액", color = Color.Black) },
+                    suffix = { Text("원", color = Color.Black) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Gray,
+                        focusedLabelColor = Color.Gray,
+                        unfocusedTextColor = Color.Black,
+                        focusedTextColor = Color.Black
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 내 부담액 표시
+            if (myAmount.isNotBlank()) {
+                Text(
+                    text = "💡 내 부담액: ${myAmount}원",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
             }
         }
