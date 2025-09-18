@@ -418,6 +418,8 @@ fun AddTransactionScreen(
                         actualAmount = ""
                         splitCount = ""
                         settlementAmount = ""
+                    } else {
+                        selectedPaymentMethod = PaymentMethod.CARD
                     }
                 },
                 actualAmount = actualAmount,
