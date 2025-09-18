@@ -511,15 +511,24 @@ fun AddTransactionScreen(
         // Save/Cancel Buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OutlinedButton(
                 onClick = onCancel,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.Gray
+                )
             ) {
-                Text("취소")
+                Text(
+                    text = "취소",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium
+                )
             }
-            
+
             Button(
                 onClick = {
                     val isValidInput = amount.isNotBlank() && category.isNotBlank() &&
@@ -613,7 +622,9 @@ fun AddTransactionScreen(
                         }
                     }
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp),
                 enabled = amount.isNotBlank() && category.isNotBlank() &&
                           // 수입 유효성 검사
                           (selectedType == TransactionType.EXPENSE ||
@@ -626,10 +637,16 @@ fun AddTransactionScreen(
                            (selectedPaymentMethod == PaymentMethod.BALANCE_CARD && selectedBalanceCard != null) ||
                            (selectedPaymentMethod == PaymentMethod.GIFT_CARD && selectedGiftCard != null)),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.LightGray
+                    containerColor = if (selectedType == TransactionType.INCOME) Color(0xFF4CAF50) else Color(0xFFF44336),
+                    disabledContainerColor = Color.LightGray
                 )
             ) {
-                Text("저장", color = Color.Black)
+                Text(
+                    text = "저장",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
