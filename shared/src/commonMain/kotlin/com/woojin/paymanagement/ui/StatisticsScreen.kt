@@ -231,7 +231,7 @@ private fun SummaryCard(
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 SummaryItem(
                     label = "총 수입",
@@ -275,9 +275,19 @@ private fun SummaryItem(
         )
         
         Spacer(modifier = Modifier.height(4.dp))
-        
+
+        println("label: $label, amount: ${amount}, color: $color")
         Text(
-            text = "${if (amount > 0 && label != "잔액") "+" else ""}${Utils.formatAmount(amount)}원",
+//            text = "${if (amount > 0 && label != "잔액") "+" else ""}${Utils.formatAmount(amount)}원",
+            text = when {
+                label == "잔액" && amount > 0 -> "+${Utils.formatAmount(amount)}원"
+                label == "잔액" && amount < 0 -> "-${Utils.formatAmount(kotlin.math.abs(amount))}원"
+                label == "잔액" -> "${Utils.formatAmount(amount)}원"
+                amount > 0 -> "+${Utils.formatAmount(amount)}원"
+                amount < 0 -> "-${Utils.formatAmount(amount)}원"
+                else -> "${Utils.formatAmount(amount)}원"
+
+            },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = color
