@@ -139,7 +139,12 @@ fun AddTransactionScreen(
                         .weight(1f)
                         .selectable(
                             selected = (type == selectedType),
-                            onClick = { selectedType = type },
+                            onClick = {
+                                if (selectedType != type) {
+                                    selectedType = type
+                                    category = "카테고리"
+                                }
+                            },
                             role = Role.RadioButton
                         ),
                     verticalAlignment = Alignment.CenterVertically
