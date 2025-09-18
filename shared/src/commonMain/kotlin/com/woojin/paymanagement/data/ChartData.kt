@@ -29,11 +29,13 @@ object ChartDataCalculator {
         "기타수입" to Color(0xFF9C27B0),   // 보라색 (기타/특별함)
 
         // 지출 카테고리
+        "데이트" to Color(0xFFEC407A),     // 분홍색 (로맨스/특별함)
         "교통비" to Color(0xFF2196F3),     // 파란색 (교통/이동)
         "생활용품" to Color(0xFF607D8B),   // 회색 (일상용품)
         "쇼핑" to Color(0xFFE91E63),       // 핑크색 (쇼핑/소비)
         "적금" to Color(0xFF43A047),       // 초록색 (저축/미래)
         "투자" to Color(0xFF7B1FA2),       // 진한 보라색 (투자/장기)
+        "정기결제" to Color(0xFFFF9800),   // 주황색 (정기/자동화)
         "기타지출" to Color(0xFF795548)    // 갈색 (기타/일반)
     )
     
