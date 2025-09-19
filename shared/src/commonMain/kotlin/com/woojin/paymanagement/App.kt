@@ -165,8 +165,8 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
                                     transaction.incomeType == com.woojin.paymanagement.data.IncomeType.BALANCE_CARD &&
                                     transaction.balanceCardId != null && transaction.cardName != null) {
                                     val balanceCard = com.woojin.paymanagement.data.BalanceCard(
-                                        id = transaction.balanceCardId!!,
-                                        name = transaction.cardName!!,
+                                        id = transaction.balanceCardId,
+                                        name = transaction.cardName,
                                         initialAmount = transaction.amount,
                                         currentBalance = transaction.amount,
                                         createdDate = transaction.date,
@@ -180,8 +180,8 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
                                     transaction.incomeType == com.woojin.paymanagement.data.IncomeType.GIFT_CARD &&
                                     transaction.giftCardId != null && transaction.cardName != null) {
                                     val giftCard = com.woojin.paymanagement.data.GiftCard(
-                                        id = transaction.giftCardId!!,
-                                        name = transaction.cardName!!,
+                                        id = transaction.giftCardId,
+                                        name = transaction.cardName,
                                         totalAmount = transaction.amount,
                                         usedAmount = 0.0,
                                         createdDate = transaction.date,
@@ -195,7 +195,7 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
                                     transaction.paymentMethod == com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD &&
                                     transaction.balanceCardId != null) {
                                     // 데이터베이스에서 최신 카드 정보 조회
-                                    val currentCard = databaseHelper.getBalanceCardById(transaction.balanceCardId!!)
+                                    val currentCard = databaseHelper.getBalanceCardById(transaction.balanceCardId)
                                     if (currentCard != null) {
                                         val newBalance = currentCard.currentBalance - transaction.amount
                                         databaseHelper.updateBalanceCardBalance(
@@ -211,7 +211,7 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
                                     transaction.paymentMethod == com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD &&
                                     transaction.giftCardId != null) {
                                     // 데이터베이스에서 최신 카드 정보 조회
-                                    val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId!!)
+                                    val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId)
                                     if (currentCard != null) {
                                         val newUsedAmount = currentCard.usedAmount + transaction.amount
                                         // 상품권이 한 번 사용되면 완전히 비활성화 (환급 발생)
@@ -278,8 +278,8 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
                                     transaction.incomeType == com.woojin.paymanagement.data.IncomeType.BALANCE_CARD &&
                                     transaction.balanceCardId != null && transaction.cardName != null) {
                                     val balanceCard = com.woojin.paymanagement.data.BalanceCard(
-                                        id = transaction.balanceCardId!!,
-                                        name = transaction.cardName!!,
+                                        id = transaction.balanceCardId,
+                                        name = transaction.cardName,
                                         initialAmount = transaction.amount,
                                         currentBalance = transaction.amount,
                                         createdDate = transaction.date,
@@ -293,8 +293,8 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
                                     transaction.incomeType == com.woojin.paymanagement.data.IncomeType.GIFT_CARD &&
                                     transaction.giftCardId != null && transaction.cardName != null) {
                                     val giftCard = com.woojin.paymanagement.data.GiftCard(
-                                        id = transaction.giftCardId!!,
-                                        name = transaction.cardName!!,
+                                        id = transaction.giftCardId,
+                                        name = transaction.cardName,
                                         totalAmount = transaction.amount,
                                         usedAmount = 0.0,
                                         createdDate = transaction.date,
@@ -308,7 +308,7 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
                                     transaction.paymentMethod == com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD &&
                                     transaction.balanceCardId != null) {
                                     // 데이터베이스에서 최신 카드 정보 조회
-                                    val currentCard = databaseHelper.getBalanceCardById(transaction.balanceCardId!!)
+                                    val currentCard = databaseHelper.getBalanceCardById(transaction.balanceCardId)
                                     if (currentCard != null) {
                                         val newBalance = currentCard.currentBalance - transaction.amount
                                         databaseHelper.updateBalanceCardBalance(
@@ -324,7 +324,7 @@ fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesMa
                                     transaction.paymentMethod == com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD &&
                                     transaction.giftCardId != null) {
                                     // 데이터베이스에서 최신 카드 정보 조회
-                                    val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId!!)
+                                    val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId)
                                     if (currentCard != null) {
                                         val newUsedAmount = currentCard.usedAmount + transaction.amount
                                         // 상품권이 한 번 사용되면 완전히 비활성화 (환급 발생)
