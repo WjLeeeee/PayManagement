@@ -1,11 +1,18 @@
 package com.woojin.paymanagement
 
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.database.PayManagementDatabase
+import com.woojin.paymanagement.di.databaseModule
 import com.woojin.paymanagement.ui.AddTransactionScreen
 import com.woojin.paymanagement.ui.CalendarScreen
 import com.woojin.paymanagement.ui.DateDetailScreen
@@ -13,18 +20,46 @@ import com.woojin.paymanagement.ui.PaydaySetupScreen
 import com.woojin.paymanagement.ui.StatisticsScreen
 import com.woojin.paymanagement.ui.TutorialScreen
 import com.woojin.paymanagement.utils.PreferencesManager
-import com.woojin.paymanagement.utils.PaydayAdjustment
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
+import org.koin.core.context.startKoin
+import org.koin.dsl.module
 
 @Composable
 fun App(databaseDriverFactory: DatabaseDriverFactory, preferencesManager: PreferencesManager) {
+    // Koin 초기화
+    LaunchedEffect(Unit) {
+        initializeKoin(databaseDriverFactory, preferencesManager)
+    }
+
     MaterialTheme {
         PayManagementApp(databaseDriverFactory, preferencesManager)
+    }
+}
+
+// Koin 초기화 함수
+private fun initializeKoin(
+    databaseDriverFactory: DatabaseDriverFactory,
+    preferencesManager: PreferencesManager
+) {
+    try {
+        startKoin {
+            modules(
+                // 플랫폼별 의존성들을 동적으로 제공하는 모듈
+                module {
+                    single<DatabaseDriverFactory> { databaseDriverFactory }
+                    single<PreferencesManager> { preferencesManager }
+                },
+                // 공통 의존성들
+                databaseModule
+            )
+        }
+    } catch (e: Exception) {
+        // 이미 초기화된 경우 무시
+        println("Koin already initialized: ${e.message}")
     }
 }
 
