@@ -60,6 +60,10 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.random.Random
 
+private fun formatWithCommas(number: Long): String {
+    return number.toString().reversed().chunked(3).joinToString(",").reversed()
+}
+
 @Composable
 fun AddTransactionScreen(
     selectedDate: LocalDate? = null,
@@ -386,15 +390,28 @@ fun AddTransactionScreen(
         OutlinedTextField(
             value = amount,
             onValueChange = { newValue ->
-                if (newValue.isEmpty() || newValue.matches(Regex("^\\d+\\.?\\d*$"))) {
-                    amount = newValue
+                // 콤마 제거하여 순수 숫자만 추출
+                val digitsOnly = newValue.replace(",", "")
+
+                if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
+                    // 천단위 콤마 추가
+                    val formattedAmount = if (digitsOnly.isNotEmpty()) {
+                        val number = digitsOnly.toLongOrNull() ?: 0L
+                        formatWithCommas(number)
+                    } else {
+                        ""
+                    }
+
+                    amount = formattedAmount
 
                     // 더치페이 활성화 시 정산받을 금액 자동 계산
                     if (isSettlement && actualAmount.isNotBlank()) {
-                        val actual = actualAmount.toDoubleOrNull() ?: 0.0
-                        val myAmount = newValue.toDoubleOrNull() ?: 0.0
+                        val actualDigits = actualAmount.replace(",", "")
+                        val actual = actualDigits.toDoubleOrNull() ?: 0.0
+                        val myAmount = digitsOnly.toDoubleOrNull() ?: 0.0
                         if (actual > myAmount) {
-                            settlementAmount = (actual - myAmount).toInt().toString()
+                            val settlementValue = (actual - myAmount).toLong()
+                            settlementAmount = formatWithCommas(settlementValue)
                         }
                     }
                 }
@@ -429,15 +446,27 @@ fun AddTransactionScreen(
                 },
                 actualAmount = actualAmount,
                 onActualAmountChange = { newValue ->
-                    if (newValue.isEmpty() || newValue.matches(Regex("^\\d+\\.?\\d*$"))) {
-                        actualAmount = newValue
+                    // 콤마 제거하여 순수 숫자만 추출
+                    val digitsOnly = newValue.replace(",", "")
+
+                    if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
+                        // 천단위 콤마 추가
+                        val formattedAmount = if (digitsOnly.isNotEmpty()) {
+                            val number = digitsOnly.toLongOrNull() ?: 0L
+                            formatWithCommas(number)
+                        } else {
+                            ""
+                        }
+
+                        actualAmount = formattedAmount
+
                         // 자동 계산
-                        val actual = newValue.toDoubleOrNull() ?: 0.0
+                        val actual = digitsOnly.toDoubleOrNull() ?: 0.0
                         val split = splitCount.toIntOrNull() ?: 0
                         if (actual > 0 && split > 0) {
                             val myShare = actual / split
-                            amount = myShare.toInt().toString()
-                            settlementAmount = (actual - myShare).toInt().toString()
+                            amount = formatWithCommas(myShare.toLong())
+                            settlementAmount = formatWithCommas((actual - myShare).toLong())
                         }
                     }
                 },
@@ -446,12 +475,13 @@ fun AddTransactionScreen(
                     if (newValue.isEmpty() || newValue.matches(Regex("^\\d+$"))) {
                         splitCount = newValue
                         // 자동 계산
-                        val actual = actualAmount.toDoubleOrNull() ?: 0.0
+                        val actualDigits = actualAmount.replace(",", "")
+                        val actual = actualDigits.toDoubleOrNull() ?: 0.0
                         val split = newValue.toIntOrNull() ?: 0
                         if (actual > 0 && split > 0) {
                             val myShare = actual / split
-                            amount = myShare.toInt().toString()
-                            settlementAmount = (actual - myShare).toInt().toString()
+                            amount = formatWithCommas(myShare.toLong())
+                            settlementAmount = formatWithCommas((actual - myShare).toLong())
                         }
                     }
                 },
@@ -549,7 +579,8 @@ fun AddTransactionScreen(
                              (selectedPaymentMethod == PaymentMethod.GIFT_CARD && selectedGiftCard != null))
 
                     if (isValidInput) {
-                        val expenseAmount = amount.toDoubleOrNull() ?: 0.0
+                        val amountDigits = amount.replace(",", "")
+                        val expenseAmount = amountDigits.toDoubleOrNull() ?: 0.0
 
                         // 잔액권 지출 시 특별 처리
                         if (selectedType == TransactionType.EXPENSE && selectedPaymentMethod == PaymentMethod.BALANCE_CARD && selectedBalanceCard != null) {
@@ -619,8 +650,14 @@ fun AddTransactionScreen(
                                     selectedType == TransactionType.EXPENSE && selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> selectedBalanceCard?.name
                                     else -> null
                                 },
-                                actualAmount = if (isSettlement) actualAmount.toDoubleOrNull() else null,
-                                settlementAmount = if (isSettlement) settlementAmount.toDoubleOrNull() else null,
+                                actualAmount = if (isSettlement) {
+                                    val actualDigits = actualAmount.replace(",", "")
+                                    actualDigits.toDoubleOrNull()
+                                } else null,
+                                settlementAmount = if (isSettlement) {
+                                    val settlementDigits = settlementAmount.replace(",", "")
+                                    settlementDigits.toDoubleOrNull()
+                                } else null,
                                 isSettlement = isSettlement
                             )
                             onSave(listOf(transaction))
