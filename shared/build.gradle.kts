@@ -45,6 +45,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines.extensions)
+            implementation(libs.koin.core)
         }
         
         androidMain.dependencies {
