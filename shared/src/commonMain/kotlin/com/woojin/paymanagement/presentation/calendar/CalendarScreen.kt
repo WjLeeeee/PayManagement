@@ -1,4 +1,4 @@
-package com.woojin.paymanagement.ui
+package com.woojin.paymanagement.presentation.calendar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,10 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,8 +43,6 @@ import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.utils.PayPeriod
-import com.woojin.paymanagement.utils.PayPeriodCalculator
-import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -59,45 +53,21 @@ import kotlinx.datetime.todayIn
 
 @Composable
 fun CalendarScreen(
-    transactions: List<Transaction> = emptyList(),
-    selectedDate: LocalDate? = null,
-    initialPayPeriod: PayPeriod? = null,
-    onDateSelected: (LocalDate) -> Unit = {},
+    viewModel: CalendarViewModel,
     onDateDetailClick: (LocalDate) -> Unit = {},
     onStatisticsClick: (PayPeriod) -> Unit = {},
     onAddTransactionClick: () -> Unit = {},
-    onPayPeriodChanged: (PayPeriod) -> Unit = {},
-    preferencesManager: PreferencesManager
+    onPayPeriodChanged: (PayPeriod) -> Unit = {}
 ) {
-    // 월급 기준으로 현재 기간 계산
-    val payday = preferencesManager.getPayday()
-    val adjustment = preferencesManager.getPaydayAdjustment()
-    
-    var currentPayPeriod by remember {
-        mutableStateOf(
-            initialPayPeriod ?: PayPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
-        )
-    }
+    val uiState = viewModel.uiState
 
     // 급여 기간 변경 시 App.kt에 알림
-    LaunchedEffect(currentPayPeriod) {
-        onPayPeriodChanged(currentPayPeriod)
-    }
-    
-    // 초기 선택 날짜 설정 (첫 로드 시에만)
-    var internalSelectedDate by remember {
-        mutableStateOf(
-            selectedDate ?: PayPeriodCalculator.getRecommendedDateForPeriod(currentPayPeriod, payday, adjustment)
-        )
-    }
-    
-    // 외부에서 selectedDate가 변경되면 내부 상태도 업데이트
-    LaunchedEffect(selectedDate) {
-        selectedDate?.let { 
-            internalSelectedDate = it 
+    LaunchedEffect(uiState.currentPayPeriod) {
+        uiState.currentPayPeriod?.let { payPeriod ->
+            onPayPeriodChanged(payPeriod)
         }
     }
-    
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -107,58 +77,52 @@ fun CalendarScreen(
                 .padding(16.dp)
         ) {
             // Pay Period Navigation
-            PayPeriodHeader(
-                currentPayPeriod = currentPayPeriod,
-                onPreviousPeriod = {
-                    currentPayPeriod = PayPeriodCalculator.getPreviousPayPeriod(currentPayPeriod, payday, adjustment)
-                    // 새로운 기간에 맞는 날짜로 조정
-                    val newSelectedDate = PayPeriodCalculator.getRecommendedDateForPeriod(currentPayPeriod, payday, adjustment)
-                    internalSelectedDate = newSelectedDate
-                    onDateSelected(newSelectedDate)
-                },
-                onNextPeriod = {
-                    currentPayPeriod = PayPeriodCalculator.getNextPayPeriod(currentPayPeriod, payday, adjustment)
-                    // 새로운 기간에 맞는 날짜로 조정
-                    val newSelectedDate = PayPeriodCalculator.getRecommendedDateForPeriod(currentPayPeriod, payday, adjustment)
-                    internalSelectedDate = newSelectedDate
-                    onDateSelected(newSelectedDate)
-                }
-            )
+            if (uiState.currentPayPeriod != null) {
+                PayPeriodHeader(
+                    currentPayPeriod = uiState.currentPayPeriod,
+                    onPreviousPeriod = { viewModel.navigateToPreviousPeriod() },
+                    onNextPeriod = { viewModel.navigateToNextPeriod() }
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Pay Period Summary
-            PayPeriodSummaryCard(
-                transactions = transactions,
-                payPeriod = currentPayPeriod,
-                onStatisticsClick = { onStatisticsClick(currentPayPeriod) }
-            )
+                // Pay Period Summary
+                PayPeriodSummaryCard(
+                    transactions = uiState.transactions,
+                    payPeriod = uiState.currentPayPeriod,
+                    onStatisticsClick = { onStatisticsClick(uiState.currentPayPeriod) }
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Calendar Grid
-            CalendarGrid(
-                payPeriod = currentPayPeriod,
-                transactions = transactions,
-                selectedDate = internalSelectedDate,
-                onDateSelected = { date ->
-                    internalSelectedDate = date
-                    onDateSelected(date)
-                }
-            )
+                // Calendar Grid
+                CalendarGrid(
+                    payPeriod = uiState.currentPayPeriod,
+                    transactions = uiState.transactions,
+                    selectedDate = uiState.selectedDate,
+                    onDateSelected = { date -> viewModel.selectDate(date) }
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Daily Transaction Display
-            DailyTransactionCard(
-                selectedDate = internalSelectedDate,
-                transactions = transactions,
-                onClick = { date ->
-                    if (date != null) {
-                        onDateDetailClick(date)
+                // Daily Transaction Display
+                DailyTransactionCard(
+                    selectedDate = uiState.selectedDate,
+                    transactions = uiState.transactions,
+                    onClick = { date ->
+                        if (date != null) {
+                            onDateDetailClick(date)
+                        }
                     }
-                }
-            )
+                )
+            } else {
+                // 로딩 상태 표시
+                Text(
+                    text = "로딩 중...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
         }
@@ -201,7 +165,7 @@ private fun PayPeriodHeader(
         TextButton(onClick = onPreviousPeriod) {
             Text("◀", fontSize = 16.sp, color = Color.Black)
         }
-        
+
         Text(
             text = currentPayPeriod.displayText,
             style = MaterialTheme.typography.titleMedium,
@@ -209,7 +173,7 @@ private fun PayPeriodHeader(
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1f)
         )
-        
+
         TextButton(onClick = onNextPeriod) {
             Text("▶", fontSize = 16.sp, color = Color.Black)
         }
@@ -225,11 +189,12 @@ private fun PayPeriodSummaryCard(
     val periodTransactions = transactions.filter { transaction ->
         transaction.date >= payPeriod.startDate && transaction.date <= payPeriod.endDate
     }
-    
+
     val income = periodTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-    val expense = periodTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+    val expense =
+        periodTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
     val balance = income - expense
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -247,9 +212,9 @@ private fun PayPeriodSummaryCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -262,7 +227,7 @@ private fun PayPeriodSummaryCard(
                         color = Color.Blue
                     )
                 }
-                
+
                 Column {
                     Text("지출", color = Color.Red)
                     Text(
@@ -271,15 +236,17 @@ private fun PayPeriodSummaryCard(
                         color = Color.Red
                     )
                 }
-                
+
                 Column {
                     Text("잔액")
                     Text(
-                        text = "${when {
-                            balance > 0 -> "+"
-                            balance < 0 -> "-"
-                            else -> ""
-                        }}${Utils.formatAmount(balance)}원",
+                        text = "${
+                            when {
+                                balance > 0 -> "+"
+                                balance < 0 -> "-"
+                                else -> ""
+                            }
+                        }${Utils.formatAmount(balance)}원",
                         fontWeight = FontWeight.Bold,
                         color = when {
                             balance > 0 -> Color.Blue
@@ -309,7 +276,7 @@ private fun CalendarGrid(
     // 첫 번째 달의 첫 주 계산
     val firstDayOfFirstMonth = LocalDate(payPeriod.startDate.year, payPeriod.startDate.month, 1)
     val firstDayOfWeek = (firstDayOfFirstMonth.dayOfWeek.ordinal + 1) % 7
-    
+
     Column {
         // Week Header
         Row(
@@ -326,9 +293,9 @@ private fun CalendarGrid(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         // Calendar Days
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
@@ -341,14 +308,14 @@ private fun CalendarGrid(
             items(emptyDaysAtStart) {
                 Box(modifier = Modifier.height(40.dp))
             }
-            
+
             // All dates in pay period
             items(allDates) { date ->
                 val dayTransactions = transactions.filter { it.date == date }
                 val hasIncome = dayTransactions.any { it.type == TransactionType.INCOME }
                 val hasExpense = dayTransactions.any { it.type == TransactionType.EXPENSE }
                 val isInCurrentPeriod = date >= payPeriod.startDate && date <= payPeriod.endDate
-                
+
                 CalendarDay(
                     day = date.dayOfMonth,
                     hasIncome = hasIncome,
@@ -424,7 +391,7 @@ private fun DailyTransactionCard(
     val dayTransactions = selectedDate?.let { date ->
         transactions.filter { it.date == date }
     } ?: emptyList()
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -446,9 +413,9 @@ private fun DailyTransactionCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             if (dayTransactions.isNotEmpty()) {
                 dayTransactions.forEach { transaction ->
                     TransactionItem(transaction)
@@ -504,7 +471,11 @@ private fun TransactionItem(transaction: Transaction) {
                 )
 
                 Text(
-                    text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${Utils.formatAmount(transaction.amount)}원",
+                    text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
+                        Utils.formatAmount(
+                            transaction.amount
+                        )
+                    }원",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (transaction.type == TransactionType.INCOME) Color.Blue else Color.Red,
                     fontWeight = FontWeight.Bold
@@ -521,6 +492,7 @@ private fun TransactionItem(transaction: Transaction) {
                         null -> "현금"
                     }
                 }
+
                 TransactionType.EXPENSE -> {
                     when (transaction.paymentMethod) {
                         com.woojin.paymanagement.data.PaymentMethod.CASH -> "현금"

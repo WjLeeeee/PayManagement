@@ -11,10 +11,11 @@ import androidx.compose.runtime.setValue
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.database.DatabaseHelper
-import com.woojin.paymanagement.database.PayManagementDatabase
 import com.woojin.paymanagement.di.databaseModule
+import com.woojin.paymanagement.di.domainModule
+import com.woojin.paymanagement.di.presentationModule
+import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.ui.AddTransactionScreen
-import com.woojin.paymanagement.ui.CalendarScreen
 import com.woojin.paymanagement.ui.DateDetailScreen
 import com.woojin.paymanagement.ui.PaydaySetupScreen
 import com.woojin.paymanagement.ui.StatisticsScreen
@@ -25,8 +26,8 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
-import org.koin.core.context.startKoin
 import org.koin.core.Koin
+import org.koin.core.context.startKoin
 import org.koin.dsl.module
 
 // Koin 인스턴스를 저장할 변수
@@ -68,7 +69,9 @@ private fun initializeKoin(
                     single<PreferencesManager> { preferencesManager }
                 },
                 // 공통 의존성들
-                databaseModule
+                databaseModule,
+                domainModule,
+                presentationModule
             )
         }.koin
 
@@ -159,13 +162,32 @@ fun PayManagementApp() {
         }
         
         Screen.Calendar -> {
+            // Koin에서 ViewModel 주입 (remember로 상태 유지)
+            val calendarViewModel = remember { koinInject<com.woojin.paymanagement.presentation.calendar.CalendarViewModel>() }
+
+            // ViewModel 초기화
+            LaunchedEffect(Unit) {
+                calendarViewModel.initializeCalendar(
+                    transactions = transactions,
+                    initialPayPeriod = currentCalendarPayPeriod,
+                    selectedDate = selectedDate
+                )
+            }
+
+            // 거래 내역 업데이트
+            LaunchedEffect(transactions) {
+                calendarViewModel.updateTransactions(transactions)
+            }
+
+            // ViewModel의 selectedDate와 App의 selectedDate 동기화
+            LaunchedEffect(calendarViewModel.uiState.selectedDate) {
+                calendarViewModel.uiState.selectedDate?.let { newSelectedDate ->
+                    selectedDate = newSelectedDate
+                }
+            }
+
             CalendarScreen(
-                transactions = transactions,
-                selectedDate = selectedDate,
-                initialPayPeriod = currentCalendarPayPeriod,
-                onDateSelected = { date ->
-                    selectedDate = date
-                },
+                viewModel = calendarViewModel,
                 onDateDetailClick = { date ->
                     selectedDate = date
                     currentScreen = Screen.DateDetail
@@ -181,8 +203,7 @@ fun PayManagementApp() {
                 },
                 onPayPeriodChanged = { payPeriod ->
                     currentCalendarPayPeriod = payPeriod
-                },
-                preferencesManager = preferencesManager
+                }
             )
         }
         
