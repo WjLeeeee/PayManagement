@@ -59,10 +59,9 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.random.Random
-
-private fun formatWithCommas(number: Long): String {
-    return number.toString().reversed().chunked(3).joinToString(",").reversed()
-}
+import com.woojin.paymanagement.utils.formatWithCommas
+import com.woojin.paymanagement.utils.removeCommas
+import com.woojin.paymanagement.utils.parseAmountToDouble
 
 @Composable
 fun AddTransactionScreen(
@@ -391,7 +390,7 @@ fun AddTransactionScreen(
             value = amount,
             onValueChange = { newValue ->
                 // 콤마 제거하여 순수 숫자만 추출
-                val digitsOnly = newValue.replace(",", "")
+                val digitsOnly = removeCommas(newValue)
 
                 if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
                     // 천단위 콤마 추가
@@ -406,8 +405,7 @@ fun AddTransactionScreen(
 
                     // 더치페이 활성화 시 정산받을 금액 자동 계산
                     if (isSettlement && actualAmount.isNotBlank()) {
-                        val actualDigits = actualAmount.replace(",", "")
-                        val actual = actualDigits.toDoubleOrNull() ?: 0.0
+                        val actual = parseAmountToDouble(actualAmount)
                         val myAmount = digitsOnly.toDoubleOrNull() ?: 0.0
                         if (actual > myAmount) {
                             val settlementValue = (actual - myAmount).toLong()
@@ -447,7 +445,7 @@ fun AddTransactionScreen(
                 actualAmount = actualAmount,
                 onActualAmountChange = { newValue ->
                     // 콤마 제거하여 순수 숫자만 추출
-                    val digitsOnly = newValue.replace(",", "")
+                    val digitsOnly = removeCommas(newValue)
 
                     if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
                         // 천단위 콤마 추가
@@ -475,8 +473,7 @@ fun AddTransactionScreen(
                     if (newValue.isEmpty() || newValue.matches(Regex("^\\d+$"))) {
                         splitCount = newValue
                         // 자동 계산
-                        val actualDigits = actualAmount.replace(",", "")
-                        val actual = actualDigits.toDoubleOrNull() ?: 0.0
+                        val actual = parseAmountToDouble(actualAmount)
                         val split = newValue.toIntOrNull() ?: 0
                         if (actual > 0 && split > 0) {
                             val myShare = actual / split
@@ -579,8 +576,7 @@ fun AddTransactionScreen(
                              (selectedPaymentMethod == PaymentMethod.GIFT_CARD && selectedGiftCard != null))
 
                     if (isValidInput) {
-                        val amountDigits = amount.replace(",", "")
-                        val expenseAmount = amountDigits.toDoubleOrNull() ?: 0.0
+                        val expenseAmount = parseAmountToDouble(amount)
 
                         // 잔액권 지출 시 특별 처리
                         if (selectedType == TransactionType.EXPENSE && selectedPaymentMethod == PaymentMethod.BALANCE_CARD && selectedBalanceCard != null) {
@@ -650,14 +646,8 @@ fun AddTransactionScreen(
                                     selectedType == TransactionType.EXPENSE && selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> selectedBalanceCard?.name
                                     else -> null
                                 },
-                                actualAmount = if (isSettlement) {
-                                    val actualDigits = actualAmount.replace(",", "")
-                                    actualDigits.toDoubleOrNull()
-                                } else null,
-                                settlementAmount = if (isSettlement) {
-                                    val settlementDigits = settlementAmount.replace(",", "")
-                                    settlementDigits.toDoubleOrNull()
-                                } else null,
+                                actualAmount = if (isSettlement) parseAmountToDouble(actualAmount) else null,
+                                settlementAmount = if (isSettlement) parseAmountToDouble(settlementAmount) else null,
                                 isSettlement = isSettlement
                             )
                             onSave(listOf(transaction))
