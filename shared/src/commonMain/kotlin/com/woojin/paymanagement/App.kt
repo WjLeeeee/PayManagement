@@ -26,17 +26,31 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 import org.koin.core.context.startKoin
+import org.koin.core.Koin
 import org.koin.dsl.module
+
+// Koin 인스턴스를 저장할 변수
+var koinInstance: Koin? = null
+
+// Koin 의존성 주입을 위한 헬퍼 함수
+inline fun <reified T> koinInject(): T = requireNotNull(koinInstance).get()
 
 @Composable
 fun App(databaseDriverFactory: DatabaseDriverFactory, preferencesManager: PreferencesManager) {
+    var isKoinInitialized by remember { mutableStateOf(false) }
+
     // Koin 초기화
     LaunchedEffect(Unit) {
         initializeKoin(databaseDriverFactory, preferencesManager)
+        isKoinInitialized = true
     }
 
     MaterialTheme {
-        PayManagementApp(databaseDriverFactory, preferencesManager)
+        if (isKoinInitialized) {
+            PayManagementApp()
+        } else {
+            // 로딩 화면 또는 빈 화면
+        }
     }
 }
 
@@ -46,7 +60,7 @@ private fun initializeKoin(
     preferencesManager: PreferencesManager
 ) {
     try {
-        startKoin {
+        val koin = startKoin {
             modules(
                 // 플랫폼별 의존성들을 동적으로 제공하는 모듈
                 module {
@@ -56,7 +70,10 @@ private fun initializeKoin(
                 // 공통 의존성들
                 databaseModule
             )
-        }
+        }.koin
+
+        // 전역 변수에 Koin 인스턴스 저장
+        koinInstance = koin
     } catch (e: Exception) {
         // 이미 초기화된 경우 무시
         println("Koin already initialized: ${e.message}")
@@ -64,9 +81,10 @@ private fun initializeKoin(
 }
 
 @Composable
-fun PayManagementApp(databaseDriverFactory: DatabaseDriverFactory, preferencesManager: PreferencesManager) {
-    val database = remember { PayManagementDatabase(databaseDriverFactory.createDriver()) }
-    val databaseHelper = remember { DatabaseHelper(database) }
+fun PayManagementApp() {
+    // DI로 의존성 주입받기
+    val preferencesManager: PreferencesManager = koinInject()
+    val databaseHelper: DatabaseHelper = koinInject()
     val scope = rememberCoroutineScope()
 
     // 초기 화면 결정 로직

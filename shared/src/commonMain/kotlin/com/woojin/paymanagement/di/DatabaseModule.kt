@@ -1,5 +1,6 @@
 package com.woojin.paymanagement.di
 
+import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.database.PayManagementDatabase
 import org.koin.dsl.module
@@ -9,7 +10,8 @@ val databaseModule = module {
 
     // PayManagementDatabase 싱글톤으로 제공
     single<PayManagementDatabase> {
-        PayManagementDatabase(get()) // DatabaseDriverFactory.createDriver()를 주입받음
+        val databaseDriverFactory = get<DatabaseDriverFactory>()
+        PayManagementDatabase(databaseDriverFactory.createDriver())
     }
 
     // DatabaseHelper 싱글톤으로 제공
