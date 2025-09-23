@@ -19,6 +19,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -74,7 +76,10 @@ fun AddTransactionScreen(
 ) {
     var amount by remember {
         val initialAmount = editTransaction?.amount?.toLong()?.toString() ?: ""
-        mutableStateOf(initialAmount)
+        mutableStateOf(TextFieldValue(
+            text = if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()) else "",
+            selection = TextRange(if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()).length else 0)
+        ))
     }
     var selectedType by remember { mutableStateOf(editTransaction?.type ?: TransactionType.EXPENSE) }
     var selectedIncomeType by remember { mutableStateOf(editTransaction?.incomeType ?: IncomeType.CASH) }
@@ -316,8 +321,8 @@ fun AddTransactionScreen(
                 )
 
                 // 잔액권 사용 안내
-                if (selectedBalanceCard != null && amount.isNotBlank()) {
-                    val expenseAmount = amount.toDoubleOrNull() ?: 0.0
+                if (selectedBalanceCard != null && amount.text.isNotBlank()) {
+                    val expenseAmount = parseAmountToDouble(amount.text)
                     val balanceCardAmount = selectedBalanceCard!!.currentBalance
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -353,8 +358,8 @@ fun AddTransactionScreen(
                 )
 
                 // 상품권 사용 안내
-                if (selectedGiftCard != null && amount.isNotBlank()) {
-                    val expenseAmount = amount.toDoubleOrNull() ?: 0.0
+                if (selectedGiftCard != null && amount.text.isNotBlank()) {
+                    val expenseAmount = parseAmountToDouble(amount.text)
                     val giftCardAmount = selectedGiftCard!!.remainingAmount
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -390,7 +395,7 @@ fun AddTransactionScreen(
             value = amount,
             onValueChange = { newValue ->
                 // 콤마 제거하여 순수 숫자만 추출
-                val digitsOnly = removeCommas(newValue)
+                val digitsOnly = removeCommas(newValue.text)
 
                 if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
                     // 천단위 콤마 추가
@@ -401,7 +406,18 @@ fun AddTransactionScreen(
                         ""
                     }
 
-                    amount = formattedAmount
+                    // 커서 위치 계산
+                    val oldText = amount.text
+                    val oldCursorPos = newValue.selection.start
+                    val oldCommaCount = oldText.take(oldCursorPos).count { it == ',' }
+                    val newCommaCount = formattedAmount.take(oldCursorPos + (formattedAmount.length - oldText.length)).count { it == ',' }
+                    val cursorOffset = newCommaCount - oldCommaCount
+                    val newCursorPos = (oldCursorPos + cursorOffset).coerceIn(0, formattedAmount.length)
+
+                    amount = TextFieldValue(
+                        text = formattedAmount,
+                        selection = TextRange(newCursorPos)
+                    )
 
                     // 더치페이 활성화 시 정산받을 금액 자동 계산
                     if (isSettlement && actualAmount.isNotBlank()) {
@@ -463,7 +479,11 @@ fun AddTransactionScreen(
                         val split = splitCount.toIntOrNull() ?: 0
                         if (actual > 0 && split > 0) {
                             val myShare = actual / split
-                            amount = formatWithCommas(myShare.toLong())
+                            val myShareText = formatWithCommas(myShare.toLong())
+                            amount = TextFieldValue(
+                                text = myShareText,
+                                selection = TextRange(myShareText.length)
+                            )
                             settlementAmount = formatWithCommas((actual - myShare).toLong())
                         }
                     }
@@ -477,7 +497,11 @@ fun AddTransactionScreen(
                         val split = newValue.toIntOrNull() ?: 0
                         if (actual > 0 && split > 0) {
                             val myShare = actual / split
-                            amount = formatWithCommas(myShare.toLong())
+                            val myShareText = formatWithCommas(myShare.toLong())
+                            amount = TextFieldValue(
+                                text = myShareText,
+                                selection = TextRange(myShareText.length)
+                            )
                             settlementAmount = formatWithCommas((actual - myShare).toLong())
                         }
                     }
@@ -490,11 +514,15 @@ fun AddTransactionScreen(
                         val actual = actualAmount.toDoubleOrNull() ?: 0.0
                         val settlement = newValue.toDoubleOrNull() ?: 0.0
                         if (actual > settlement) {
-                            amount = (actual - settlement).toInt().toString()
+                            val newAmountText = (actual - settlement).toInt().toString()
+                            amount = TextFieldValue(
+                                text = newAmountText,
+                                selection = TextRange(newAmountText.length)
+                            )
                         }
                     }
                 },
-                myAmount = amount
+                myAmount = amount.text
             )
         }
 
@@ -563,7 +591,7 @@ fun AddTransactionScreen(
 
             Button(
                 onClick = {
-                    val isValidInput = amount.isNotBlank() && category.isNotBlank() &&
+                    val isValidInput = amount.text.isNotBlank() && category.isNotBlank() &&
                             // 수입일 때: 현금이거나 카드 이름이 입력됨
                             (selectedType == TransactionType.EXPENSE ||
                              selectedIncomeType == IncomeType.CASH ||
@@ -576,7 +604,7 @@ fun AddTransactionScreen(
                              (selectedPaymentMethod == PaymentMethod.GIFT_CARD && selectedGiftCard != null))
 
                     if (isValidInput) {
-                        val expenseAmount = parseAmountToDouble(amount)
+                        val expenseAmount = parseAmountToDouble(amount.text)
 
                         // 잔액권 지출 시 특별 처리
                         if (selectedType == TransactionType.EXPENSE && selectedPaymentMethod == PaymentMethod.BALANCE_CARD && selectedBalanceCard != null) {
@@ -657,7 +685,7 @@ fun AddTransactionScreen(
                 modifier = Modifier
                     .weight(1f)
                     .height(40.dp),
-                enabled = amount.isNotBlank() && category.isNotBlank() &&
+                enabled = amount.text.isNotBlank() && category.isNotBlank() &&
                           // 수입 유효성 검사
                           (selectedType == TransactionType.EXPENSE ||
                            selectedIncomeType == IncomeType.CASH ||
