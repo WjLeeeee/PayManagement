@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
@@ -289,7 +291,8 @@ fun CategoryDropdown(
     selectedCategory: String,
     onCategorySelected: (String) -> Unit,
     transactionType: TransactionType,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    focusRequester: FocusRequester? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -308,7 +311,10 @@ fun CategoryDropdown(
             },
             modifier = Modifier
                 .menuAnchor()
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .let { modifier ->
+                    focusRequester?.let { modifier.focusRequester(it) } ?: modifier
+                },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = if (transactionType == TransactionType.INCOME) Color.Blue else Color.Red,
                 focusedLabelColor = if (transactionType == TransactionType.INCOME) Color.Blue else Color.Red,

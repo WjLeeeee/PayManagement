@@ -114,9 +114,11 @@ class AddTransactionViewModel(
             }
 
             val oldText = uiState.amount.text
-            val oldCursorPos = newValue.selection.start
-            val oldCommaCount = oldText.take(oldCursorPos).count { it == ',' }
-            val newCommaCount = formattedAmount.take(oldCursorPos + (formattedAmount.length - oldText.length)).count { it == ',' }
+            val oldCursorPos = newValue.selection.start.coerceIn(0, oldText.length)
+            val oldCommaCount = if (oldCursorPos > 0) oldText.take(oldCursorPos).count { it == ',' } else 0
+
+            val newCursorCalculation = (oldCursorPos + (formattedAmount.length - oldText.length)).coerceIn(0, formattedAmount.length)
+            val newCommaCount = if (newCursorCalculation > 0) formattedAmount.take(newCursorCalculation).count { it == ',' } else 0
             val cursorOffset = newCommaCount - oldCommaCount
             val newCursorPos = (oldCursorPos + cursorOffset).coerceIn(0, formattedAmount.length)
 
