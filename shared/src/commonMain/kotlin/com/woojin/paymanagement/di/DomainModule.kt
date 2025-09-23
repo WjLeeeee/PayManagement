@@ -2,8 +2,13 @@ package com.woojin.paymanagement.di
 
 import com.woojin.paymanagement.data.repository.TransactionRepositoryImpl
 import com.woojin.paymanagement.domain.repository.TransactionRepository
+import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
+import com.woojin.paymanagement.domain.usecase.GetAvailableGiftCardsUseCase
 import com.woojin.paymanagement.domain.usecase.GetDailyTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodSummaryUseCase
+import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
+import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -20,4 +25,11 @@ val domainModule = module {
     // Use Cases
     factory { GetPayPeriodSummaryUseCase() }
     factory { GetDailyTransactionsUseCase() }
+
+    // AddTransaction Use Cases
+    factoryOf(::SaveTransactionUseCase)
+    factoryOf(::SaveMultipleTransactionsUseCase)
+    factoryOf(::UpdateTransactionUseCase)
+    factoryOf(::GetAvailableBalanceCardsUseCase)
+    factoryOf(::GetAvailableGiftCardsUseCase)
 }

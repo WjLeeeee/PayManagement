@@ -14,8 +14,8 @@ import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.di.databaseModule
 import com.woojin.paymanagement.di.domainModule
 import com.woojin.paymanagement.di.presentationModule
+import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
 import com.woojin.paymanagement.presentation.calendar.CalendarScreen
-import com.woojin.paymanagement.ui.AddTransactionScreen
 import com.woojin.paymanagement.ui.DateDetailScreen
 import com.woojin.paymanagement.ui.PaydaySetupScreen
 import com.woojin.paymanagement.ui.StatisticsScreen
@@ -221,16 +221,18 @@ fun PayManagementApp() {
         }
         
         Screen.AddTransaction -> {
+            // Koin에서 ViewModel 주입 (remember로 상태 유지)
+            val addTransactionViewModel = remember { koinInject<com.woojin.paymanagement.presentation.addtransaction.AddTransactionViewModel>() }
+
             AddTransactionScreen(
+                transactions = transactions,
                 selectedDate = selectedDate,
                 editTransaction = editTransaction,
-                availableBalanceCards = availableBalanceCards,
-                availableGiftCards = availableGiftCards,
+                viewModel = addTransactionViewModel,
                 onSave = { newTransactions ->
                     scope.launch {
                         if (editTransaction != null) {
-                            // 편집 모드: 기존 거래 업데이트 (단일 거래)
-                            databaseHelper.updateTransaction(newTransactions.first())
+                            // 편집 모드: 거래 업데이트는 이미 UseCase에서 처리됨
                         } else {
                             // 추가 모드: 새 거래들 추가 (복수 거래 가능)
                             newTransactions.forEach { transaction ->
@@ -297,7 +299,7 @@ fun PayManagementApp() {
                                     }
                                 }
 
-                                databaseHelper.insertTransaction(transaction)
+                                // 거래 저장은 이미 UseCase에서 처리됨
                             }
                         }
                     }
@@ -336,15 +338,17 @@ fun PayManagementApp() {
         
         Screen.EditTransaction -> {
             // EditTransaction은 AddTransaction과 동일하게 처리
+            val editTransactionViewModel = remember { koinInject<com.woojin.paymanagement.presentation.addtransaction.AddTransactionViewModel>() }
+
             AddTransactionScreen(
+                transactions = transactions,
                 selectedDate = selectedDate,
                 editTransaction = editTransaction,
-                availableBalanceCards = availableBalanceCards,
-                availableGiftCards = availableGiftCards,
+                viewModel = editTransactionViewModel,
                 onSave = { newTransactions ->
                     scope.launch {
                         if (editTransaction != null) {
-                            databaseHelper.updateTransaction(newTransactions.first())
+                            // 편집 모드: 거래 업데이트는 이미 UseCase에서 처리됨
                         } else {
                             newTransactions.forEach { transaction ->
                                 // 잔액권 수입인 경우 잔액권 생성
@@ -410,7 +414,7 @@ fun PayManagementApp() {
                                     }
                                 }
 
-                                databaseHelper.insertTransaction(transaction)
+                                // 거래 저장은 이미 UseCase에서 처리됨
                             }
                         }
                     }
