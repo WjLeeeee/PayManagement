@@ -2,10 +2,13 @@ package com.woojin.paymanagement.di
 
 import com.woojin.paymanagement.data.repository.TransactionRepositoryImpl
 import com.woojin.paymanagement.domain.repository.TransactionRepository
+import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
+import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
 import com.woojin.paymanagement.domain.usecase.GetAvailableGiftCardsUseCase
 import com.woojin.paymanagement.domain.usecase.GetDailyTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodSummaryUseCase
+import com.woojin.paymanagement.domain.usecase.GetTransactionsByDateUseCase
 import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
@@ -25,6 +28,7 @@ val domainModule = module {
     // Use Cases
     factory { GetPayPeriodSummaryUseCase() }
     factory { GetDailyTransactionsUseCase() }
+    factory { CalculateDailySummaryUseCase() }
 
     // AddTransaction Use Cases
     factoryOf(::SaveTransactionUseCase)
@@ -32,4 +36,8 @@ val domainModule = module {
     factoryOf(::UpdateTransactionUseCase)
     factoryOf(::GetAvailableBalanceCardsUseCase)
     factoryOf(::GetAvailableGiftCardsUseCase)
+
+    // DateDetail Use Cases
+    factoryOf(::GetTransactionsByDateUseCase)
+    factoryOf(::DeleteTransactionUseCase)
 }

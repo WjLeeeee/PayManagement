@@ -16,7 +16,7 @@ import com.woojin.paymanagement.di.domainModule
 import com.woojin.paymanagement.di.presentationModule
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
 import com.woojin.paymanagement.presentation.calendar.CalendarScreen
-import com.woojin.paymanagement.ui.DateDetailScreen
+import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
 import com.woojin.paymanagement.ui.PaydaySetupScreen
 import com.woojin.paymanagement.ui.StatisticsScreen
 import com.woojin.paymanagement.ui.TutorialScreen
@@ -312,9 +312,13 @@ fun PayManagementApp() {
         }
         
         Screen.DateDetail -> {
+            // Koin에서 ViewModel 주입 (remember로 상태 유지)
+            val dateDetailViewModel = remember { koinInject<com.woojin.paymanagement.presentation.datedetail.DateDetailViewModel>() }
+
             DateDetailScreen(
                 selectedDate = selectedDate,
                 transactions = transactions,
+                viewModel = dateDetailViewModel,
                 onBack = {
                     currentScreen = Screen.Calendar
                 },
