@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -20,15 +21,18 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
-import com.woojin.paymanagement.utils.parseAmountToDouble
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
@@ -43,6 +47,7 @@ fun AddTransactionScreen(
 ) {
     val uiState = viewModel.uiState
     val scope = rememberCoroutineScope()
+    val categoryFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(transactions, selectedDate, editTransaction) {
         viewModel.initialize(transactions, selectedDate, editTransaction)
@@ -105,7 +110,17 @@ fun AddTransactionScreen(
             onValueChange = viewModel::updateAmount,
             label = { Text("금액", color = Color.Black) },
             suffix = { Text("원", color = Color.Black) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Next
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = {
+                    scope.launch {
+                        categoryFocusRequester.requestFocus()
+                    }
+                }
+            ),
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = if (uiState.selectedType == TransactionType.INCOME) Color.Blue else Color.Red,
@@ -139,7 +154,8 @@ fun AddTransactionScreen(
             categories = uiState.categories,
             selectedCategory = uiState.category,
             onCategorySelected = viewModel::updateCategory,
-            transactionType = uiState.selectedType
+            transactionType = uiState.selectedType,
+            focusRequester = categoryFocusRequester
         )
 
         Spacer(modifier = Modifier.height(16.dp))
