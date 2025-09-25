@@ -17,7 +17,7 @@ import com.woojin.paymanagement.di.presentationModule
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
 import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
-import com.woojin.paymanagement.ui.PaydaySetupScreen
+import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
 import com.woojin.paymanagement.ui.TutorialScreen
 import com.woojin.paymanagement.utils.PreferencesManager
@@ -142,7 +142,11 @@ fun PayManagementApp() {
     
     when (currentScreen) {
         Screen.PaydaySetup -> {
+            // Koin에서 ViewModel 주입 (remember로 상태 유지)
+            val paydaySetupViewModel = remember { koinInject<com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupViewModel>() }
+
             PaydaySetupScreen(
+                viewModel = paydaySetupViewModel,
                 onSetupComplete = { payday, adjustment ->
                     preferencesManager.setPayday(payday)
                     preferencesManager.setPaydayAdjustment(adjustment)

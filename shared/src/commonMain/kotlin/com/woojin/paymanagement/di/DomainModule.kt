@@ -15,6 +15,9 @@ import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.CalculateChartDataUseCase
 import com.woojin.paymanagement.domain.usecase.AnalyzePaymentMethodsUseCase
+import com.woojin.paymanagement.domain.usecase.GetPaydaySetupUseCase
+import com.woojin.paymanagement.domain.usecase.SavePaydaySetupUseCase
+import com.woojin.paymanagement.domain.usecase.ValidatePaydaySetupUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -48,4 +51,9 @@ val domainModule = module {
     factoryOf(::GetPayPeriodTransactionsUseCase)
     factoryOf(::CalculateChartDataUseCase)
     factoryOf(::AnalyzePaymentMethodsUseCase)
+
+    // PaydaySetup Use Cases
+    factoryOf(::GetPaydaySetupUseCase)
+    factoryOf(::SavePaydaySetupUseCase)
+    factoryOf(::ValidatePaydaySetupUseCase)
 }

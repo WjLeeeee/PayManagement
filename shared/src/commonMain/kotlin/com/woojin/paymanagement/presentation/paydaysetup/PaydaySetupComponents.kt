@@ -1,4 +1,4 @@
-package com.woojin.paymanagement.ui
+package com.woojin.paymanagement.presentation.paydaysetup
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,7 +12,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,49 +25,49 @@ import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.utils.PaydayAdjustment
 
 @Composable
-fun PaydaySetupScreen(
-    onSetupComplete: (payday: Int, adjustment: PaydayAdjustment) -> Unit
+fun PaydaySetupHeader(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier
 ) {
-    var selectedPayday by remember { mutableStateOf(25) }
-    var selectedAdjustment by remember { mutableStateOf(PaydayAdjustment.BEFORE_WEEKEND) }
-    
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(40.dp))
-        
-        // Title
         Text(
-            text = "월급날 설정",
+            text = title,
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Text(
-            text = "월급날을 선택하시면 해당 날짜 기준으로\n한 달 단위로 관리됩니다",
+            text = description,
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = Color.Gray
         )
-        
-        Spacer(modifier = Modifier.height(40.dp))
-        
-        // Payday Selection
+    }
+}
+
+@Composable
+fun PaydaySelector(
+    selectedPayday: Int,
+    onPaydaySelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
         Text(
             text = "월급날을 선택해주세요",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Medium,
             color = Color.Black
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -78,73 +78,64 @@ fun PaydaySetupScreen(
                 PaydaySelectionItem(
                     day = day,
                     isSelected = selectedPayday == day,
-                    onClick = { selectedPayday = day }
+                    onClick = { onPaydaySelected(day) }
                 )
             }
         }
-        
-        Spacer(modifier = Modifier.height(40.dp))
-        
-        // Weekend/Holiday Adjustment
+    }
+}
+
+@Composable
+fun PaydayAdjustmentSelector(
+    selectedAdjustment: PaydayAdjustment,
+    onAdjustmentSelected: (PaydayAdjustment) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
         Text(
             text = "월급날이 주말/공휴일인 경우",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Medium,
             color = Color.Black
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
-        Column(
-            modifier = Modifier.selectableGroup()
-        ) {
+
+        Column(modifier = Modifier.selectableGroup()) {
             PaydayAdjustment.values().forEach { adjustment ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = (adjustment == selectedAdjustment),
-                            onClick = { selectedAdjustment = adjustment },
-                            role = Role.RadioButton
-                        )
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = (adjustment == selectedAdjustment),
-                        onClick = null,
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = Color.Gray
-                        )
-                    )
-                    Text(
-                        text = when (adjustment) {
-                            PaydayAdjustment.BEFORE_WEEKEND -> "이전 평일에 지급"
-                            PaydayAdjustment.AFTER_WEEKEND -> "이후 평일에 지급"
-                        },
-                        modifier = Modifier.padding(start = 16.dp),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Black
-                    )
-                }
+                AdjustmentOption(
+                    adjustment = adjustment,
+                    isSelected = adjustment == selectedAdjustment,
+                    onSelected = { onAdjustmentSelected(adjustment) }
+                )
             }
         }
-        
-        Spacer(modifier = Modifier.weight(1f))
-        
-        // Complete Button
-        Button(
-            onClick = {
-                onSetupComplete(selectedPayday, selectedAdjustment)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.LightGray
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
+    }
+}
+
+@Composable
+fun PaydaySetupButton(
+    onClick: () -> Unit,
+    isLoading: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        enabled = !isLoading,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.LightGray
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = Color.Black,
+                modifier = Modifier.size(24.dp)
+            )
+        } else {
             Text(
                 text = "설정 완료",
                 color = Color.Black,
@@ -152,8 +143,38 @@ fun PaydaySetupScreen(
                 fontWeight = FontWeight.Bold
             )
         }
-        
-        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+fun ErrorMessage(
+    error: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = error,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f)
+            )
+
+            TextButton(onClick = onDismiss) {
+                Text("닫기", color = Color.Red)
+            }
+        }
     }
 }
 
@@ -183,6 +204,42 @@ private fun PaydaySelectionItem(
             fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             color = if (isSelected) Color.White else Color.Black
+        )
+    }
+}
+
+@Composable
+private fun AdjustmentOption(
+    adjustment: PaydayAdjustment,
+    isSelected: Boolean,
+    onSelected: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(
+                selected = isSelected,
+                onClick = onSelected,
+                role = Role.RadioButton
+            )
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = isSelected,
+            onClick = null,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Color.Gray
+            )
+        )
+        Text(
+            text = when (adjustment) {
+                PaydayAdjustment.BEFORE_WEEKEND -> "이전 평일에 지급"
+                PaydayAdjustment.AFTER_WEEKEND -> "이후 평일에 지급"
+            },
+            modifier = Modifier.padding(start = 16.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = Color.Black
         )
     }
 }
