@@ -1,4 +1,4 @@
-package com.woojin.paymanagement.ui.components
+package com.woojin.paymanagement.presentation.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
