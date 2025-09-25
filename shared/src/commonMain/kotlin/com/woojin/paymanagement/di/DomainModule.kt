@@ -12,6 +12,9 @@ import com.woojin.paymanagement.domain.usecase.GetTransactionsByDateUseCase
 import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.GetPayPeriodTransactionsUseCase
+import com.woojin.paymanagement.domain.usecase.CalculateChartDataUseCase
+import com.woojin.paymanagement.domain.usecase.AnalyzePaymentMethodsUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -40,4 +43,9 @@ val domainModule = module {
     // DateDetail Use Cases
     factoryOf(::GetTransactionsByDateUseCase)
     factoryOf(::DeleteTransactionUseCase)
+
+    // Statistics Use Cases
+    factoryOf(::GetPayPeriodTransactionsUseCase)
+    factoryOf(::CalculateChartDataUseCase)
+    factoryOf(::AnalyzePaymentMethodsUseCase)
 }
