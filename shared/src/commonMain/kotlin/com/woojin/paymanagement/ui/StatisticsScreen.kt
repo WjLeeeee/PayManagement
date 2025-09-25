@@ -15,9 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.woojin.paymanagement.data.ChartDataCalculator
 import com.woojin.paymanagement.data.Transaction
-import com.woojin.paymanagement.data.PaymentMethodAnalyzer
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.BalanceCardSummary
 import com.woojin.paymanagement.data.GiftCard
@@ -25,10 +23,11 @@ import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
 import com.woojin.paymanagement.ui.components.PieChart
 import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
+import com.woojin.paymanagement.presentation.statistics.StatisticsViewModel
+import com.woojin.paymanagement.presentation.statistics.StatisticsUiState
 import com.woojin.paymanagement.utils.PayPeriod
-import com.woojin.paymanagement.utils.PayPeriodCalculator
-import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.Utils
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun StatisticsScreen(
@@ -37,29 +36,27 @@ fun StatisticsScreen(
     availableGiftCards: List<GiftCard> = emptyList(),
     initialPayPeriod: PayPeriod? = null,
     onBack: () -> Unit,
-    preferencesManager: PreferencesManager
+    viewModel: StatisticsViewModel
 ) {
-    var showCalculatorDialog by remember { mutableStateOf(false) }
-    val payday = preferencesManager.getPayday()
-    val adjustment = preferencesManager.getPaydayAdjustment()
-    
-    var currentPayPeriod by remember {
-        mutableStateOf(
-            initialPayPeriod ?: PayPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
-        )
+    var uiState by remember { mutableStateOf(StatisticsUiState()) }
+
+    LaunchedEffect(initialPayPeriod, availableBalanceCards, availableGiftCards) {
+        viewModel.initializeStatistics(initialPayPeriod, availableBalanceCards, availableGiftCards)
+
+        viewModel.getStatisticsFlow(availableBalanceCards, availableGiftCards)
+            .collectLatest { newState ->
+                uiState = newState
+            }
     }
-    
-    // 현재 급여 기간의 거래만 필터링
-    val periodTransactions = transactions.filter { transaction ->
-        transaction.date >= currentPayPeriod.startDate && transaction.date <= currentPayPeriod.endDate
+
+    LaunchedEffect(viewModel.uiState.currentPayPeriod) {
+        if (viewModel.uiState.currentPayPeriod != null) {
+            viewModel.getStatisticsFlow(availableBalanceCards, availableGiftCards)
+                .collectLatest { newState ->
+                    uiState = newState
+                }
+        }
     }
-    
-    val chartData = ChartDataCalculator.calculateChartData(periodTransactions)
-    val paymentSummary = PaymentMethodAnalyzer.analyzePaymentMethods(
-        transactions = periodTransactions,
-        availableBalanceCards = availableBalanceCards,
-        availableGiftCards = availableGiftCards
-    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -84,7 +81,7 @@ fun StatisticsScreen(
                 modifier = Modifier.weight(1f)
             )
 
-            TextButton(onClick = { showCalculatorDialog = true }) {
+            TextButton(onClick = { viewModel.showCalculatorDialog() }) {
                 Text(
                     text = "계산기",
                     color = Color.Black,
@@ -96,65 +93,71 @@ fun StatisticsScreen(
         Spacer(modifier = Modifier.height(16.dp))
         
         // Period Navigation
-        PayPeriodNavigationCard(
-            currentPayPeriod = currentPayPeriod,
-            onPreviousPeriod = {
-                currentPayPeriod = PayPeriodCalculator.getPreviousPayPeriod(currentPayPeriod, payday, adjustment)
-            },
-            onNextPeriod = {
-                currentPayPeriod = PayPeriodCalculator.getNextPayPeriod(currentPayPeriod, payday, adjustment)
-            }
-        )
+        uiState.currentPayPeriod?.let { currentPayPeriod ->
+            PayPeriodNavigationCard(
+                currentPayPeriod = currentPayPeriod,
+                onPreviousPeriod = { viewModel.moveToPreviousPeriod() },
+                onNextPeriod = { viewModel.moveToNextPeriod() }
+            )
+        }
         
         Spacer(modifier = Modifier.height(16.dp))
         
         // Summary Card
-        SummaryCard(
-            totalIncome = chartData.totalIncome,
-            totalExpense = chartData.totalExpense
-        )
+        uiState.chartData?.let { chartData ->
+            SummaryCard(
+                totalIncome = chartData.totalIncome,
+                totalExpense = chartData.totalExpense
+            )
+        }
         
         Spacer(modifier = Modifier.height(24.dp))
         
         // Income Chart
-        if (chartData.incomeItems.isNotEmpty()) {
-            ChartSection(
-                title = "수입 분석",
-                items = chartData.incomeItems,
-                total = chartData.totalIncome
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
+        uiState.chartData?.let { chartData ->
+            if (chartData.incomeItems.isNotEmpty()) {
+                ChartSection(
+                    title = "수입 분석",
+                    items = chartData.incomeItems,
+                    total = chartData.totalIncome
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
         
         // Expense Chart
-        if (chartData.expenseItems.isNotEmpty()) {
-            ChartSection(
-                title = "지출 분석",
-                items = chartData.expenseItems,
-                total = chartData.totalExpense
-            )
+        uiState.chartData?.let { chartData ->
+            if (chartData.expenseItems.isNotEmpty()) {
+                ChartSection(
+                    title = "지출 분석",
+                    items = chartData.expenseItems,
+                    total = chartData.totalExpense
+                )
+            }
         }
 
         // Payment Method Summary
-        if (paymentSummary.cashIncome > 0 || paymentSummary.cashExpense > 0 || paymentSummary.cardExpense > 0 ||
-            paymentSummary.balanceCards.isNotEmpty() || paymentSummary.giftCards.isNotEmpty()) {
+        uiState.paymentSummary?.let { paymentSummary ->
+            if (paymentSummary.cashIncome > 0 || paymentSummary.cashExpense > 0 || paymentSummary.cardExpense > 0 ||
+                paymentSummary.balanceCards.isNotEmpty() || paymentSummary.giftCards.isNotEmpty()) {
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-            Text(
-                text = "결제 수단별 분석",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+                Text(
+                    text = "결제 수단별 분석",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            PaymentMethodSection(paymentSummary = paymentSummary)
+                PaymentMethodSection(paymentSummary = paymentSummary)
+            }
         }
 
-        if (chartData.incomeItems.isEmpty() && chartData.expenseItems.isEmpty()) {
+        if (uiState.chartData?.let { it.incomeItems.isEmpty() && it.expenseItems.isEmpty() } == true) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -180,10 +183,10 @@ fun StatisticsScreen(
         }
 
         // Calculator Dialog
-        if (showCalculatorDialog) {
+        if (uiState.showCalculatorDialog) {
             CalculatorDialog(
                 transactions = transactions,
-                onDismiss = { showCalculatorDialog = false }
+                onDismiss = { viewModel.hideCalculatorDialog() }
             )
         }
     }

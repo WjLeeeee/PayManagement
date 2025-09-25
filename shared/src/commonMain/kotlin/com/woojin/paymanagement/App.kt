@@ -208,6 +208,9 @@ fun PayManagementApp() {
         }
         
         Screen.Statistics -> {
+            // Koin에서 ViewModel 주입 (remember로 상태 유지)
+            val statisticsViewModel = remember { koinInject<com.woojin.paymanagement.presentation.statistics.StatisticsViewModel>() }
+
             StatisticsScreen(
                 transactions = transactions,
                 availableBalanceCards = availableBalanceCards,
@@ -216,7 +219,7 @@ fun PayManagementApp() {
                 onBack = {
                     currentScreen = Screen.Calendar
                 },
-                preferencesManager = preferencesManager
+                viewModel = statisticsViewModel
             )
         }
         
