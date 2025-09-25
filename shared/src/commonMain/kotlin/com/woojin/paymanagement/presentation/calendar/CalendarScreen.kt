@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -395,6 +397,7 @@ private fun DailyTransactionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .height(200.dp) // 고정 높이 설정
             .clickable { onClick(selectedDate) },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -417,9 +420,14 @@ private fun DailyTransactionCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (dayTransactions.isNotEmpty()) {
-                dayTransactions.forEach { transaction ->
-                    TransactionItem(transaction)
-                    Spacer(modifier = Modifier.height(8.dp))
+                // LazyColumn으로 스크롤 가능한 거래 목록 생성
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(dayTransactions) { transaction ->
+                        TransactionItem(transaction)
+                    }
                 }
             } else if (selectedDate != null) {
                 Text(
