@@ -24,6 +24,7 @@ import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
 import com.woojin.paymanagement.ui.components.PieChart
+import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import com.woojin.paymanagement.utils.PreferencesManager
@@ -38,6 +39,7 @@ fun StatisticsScreen(
     onBack: () -> Unit,
     preferencesManager: PreferencesManager
 ) {
+    var showCalculatorDialog by remember { mutableStateOf(false) }
     val payday = preferencesManager.getPayday()
     val adjustment = preferencesManager.getPaydayAdjustment()
     
@@ -58,14 +60,15 @@ fun StatisticsScreen(
         availableBalanceCards = availableBalanceCards,
         availableGiftCards = availableGiftCards
     )
-    
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // Header with back button
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+        // Header with back button and calculator button
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -73,13 +76,21 @@ fun StatisticsScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
             }
-            
+
             Text(
                 text = "통계",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
+
+            TextButton(onClick = { showCalculatorDialog = true }) {
+                Text(
+                    text = "계산기",
+                    color = Color.Black,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -165,7 +176,16 @@ fun StatisticsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Calculator Dialog
+        if (showCalculatorDialog) {
+            CalculatorDialog(
+                transactions = transactions,
+                onDismiss = { showCalculatorDialog = false }
+            )
+        }
     }
 }
 
