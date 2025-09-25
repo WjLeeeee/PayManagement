@@ -36,22 +36,26 @@ fun StatisticsScreen(
     onBack: () -> Unit,
     viewModel: StatisticsViewModel
 ) {
-    var uiState by remember { mutableStateOf(StatisticsUiState()) }
+    // ViewModel의 uiState를 직접 사용
+    val uiState = viewModel.uiState
+
+    // 통계 데이터를 위한 별도 상태
+    var statisticsData by remember { mutableStateOf(StatisticsUiState()) }
 
     LaunchedEffect(initialPayPeriod, availableBalanceCards, availableGiftCards) {
         viewModel.initializeStatistics(initialPayPeriod, availableBalanceCards, availableGiftCards)
 
         viewModel.getStatisticsFlow(availableBalanceCards, availableGiftCards)
             .collectLatest { newState ->
-                uiState = newState
+                statisticsData = newState
             }
     }
 
-    LaunchedEffect(viewModel.uiState.currentPayPeriod) {
-        if (viewModel.uiState.currentPayPeriod != null) {
+    LaunchedEffect(uiState.currentPayPeriod) {
+        if (uiState.currentPayPeriod != null) {
             viewModel.getStatisticsFlow(availableBalanceCards, availableGiftCards)
                 .collectLatest { newState ->
-                    uiState = newState
+                    statisticsData = newState
                 }
         }
     }
@@ -98,21 +102,21 @@ fun StatisticsScreen(
                 onNextPeriod = { viewModel.moveToNextPeriod() }
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Summary Card
-        uiState.chartData?.let { chartData ->
+        statisticsData.chartData?.let { chartData ->
             SummaryCard(
                 totalIncome = chartData.totalIncome,
                 totalExpense = chartData.totalExpense
             )
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // Income Chart
-        uiState.chartData?.let { chartData ->
+        statisticsData.chartData?.let { chartData ->
             if (chartData.incomeItems.isNotEmpty()) {
                 ChartSection(
                     title = "수입 분석",
@@ -123,9 +127,9 @@ fun StatisticsScreen(
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
-        
+
         // Expense Chart
-        uiState.chartData?.let { chartData ->
+        statisticsData.chartData?.let { chartData ->
             if (chartData.expenseItems.isNotEmpty()) {
                 ChartSection(
                     title = "지출 분석",
@@ -136,7 +140,7 @@ fun StatisticsScreen(
         }
 
         // Payment Method Summary
-        uiState.paymentSummary?.let { paymentSummary ->
+        statisticsData.paymentSummary?.let { paymentSummary ->
             if (paymentSummary.cashIncome > 0 || paymentSummary.cashExpense > 0 || paymentSummary.cardExpense > 0 ||
                 paymentSummary.balanceCards.isNotEmpty() || paymentSummary.giftCards.isNotEmpty()) {
 
@@ -155,7 +159,7 @@ fun StatisticsScreen(
             }
         }
 
-        if (uiState.chartData?.let { it.incomeItems.isEmpty() && it.expenseItems.isEmpty() } == true) {
+        if (statisticsData.chartData?.let { it.incomeItems.isEmpty() && it.expenseItems.isEmpty() } == true) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
