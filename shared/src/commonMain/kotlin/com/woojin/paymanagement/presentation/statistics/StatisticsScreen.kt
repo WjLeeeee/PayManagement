@@ -21,7 +21,7 @@ import com.woojin.paymanagement.data.BalanceCardSummary
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
-import com.woojin.paymanagement.ui.components.PieChart
+import com.woojin.paymanagement.presentation.components.PieChart
 import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
