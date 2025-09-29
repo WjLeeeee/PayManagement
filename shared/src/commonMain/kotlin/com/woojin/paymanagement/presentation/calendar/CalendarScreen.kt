@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,18 +34,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialOverlay
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.Clock
@@ -56,12 +62,20 @@ import kotlinx.datetime.todayIn
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel,
+    tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel,
     onDateDetailClick: (LocalDate) -> Unit = {},
     onStatisticsClick: (PayPeriod) -> Unit = {},
     onAddTransactionClick: () -> Unit = {},
     onPayPeriodChanged: (PayPeriod) -> Unit = {}
 ) {
     val uiState = viewModel.uiState
+    val tutorialUiState = tutorialViewModel.uiState
+
+    // 네비게이션바 높이 계산
+    val density = LocalDensity.current
+    val navigationBarHeight = with(density) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
 
     // 급여 기간 변경 시 App.kt에 알림
     LaunchedEffect(uiState.currentPayPeriod) {
@@ -69,6 +83,8 @@ fun CalendarScreen(
             onPayPeriodChanged(payPeriod)
         }
     }
+
+    // EdgeToEdge 대응은 CalendarTutorialOverlay에서 처리됩니다
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -92,7 +108,8 @@ fun CalendarScreen(
                 PayPeriodSummaryCard(
                     transactions = uiState.transactions,
                     payPeriod = uiState.currentPayPeriod,
-                    onStatisticsClick = { onStatisticsClick(uiState.currentPayPeriod) }
+                    onStatisticsClick = { onStatisticsClick(uiState.currentPayPeriod) },
+                    tutorialViewModel = tutorialViewModel
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -102,7 +119,8 @@ fun CalendarScreen(
                     payPeriod = uiState.currentPayPeriod,
                     transactions = uiState.transactions,
                     selectedDate = uiState.selectedDate,
-                    onDateSelected = { date -> viewModel.selectDate(date) }
+                    onDateSelected = { date -> viewModel.selectDate(date) },
+                    tutorialViewModel = tutorialViewModel
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -115,7 +133,8 @@ fun CalendarScreen(
                         if (date != null) {
                             onDateDetailClick(date)
                         }
-                    }
+                    },
+                    tutorialViewModel = tutorialViewModel
                 )
             } else {
                 // 로딩 상태 표시
@@ -134,7 +153,19 @@ fun CalendarScreen(
             onClick = onAddTransactionClick,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp),
+                .padding(
+                    start = 16.dp,
+                    top = 16.dp,
+                    end = 16.dp,
+                    bottom = 16.dp + navigationBarHeight
+                )
+                .onGloballyPositioned { coordinates ->
+                    val bounds = coordinates.boundsInWindow()
+                    tutorialViewModel.updateTargetBounds(
+                        "floating_action_button",
+                        bounds
+                    )
+                },
             containerColor = Color.LightGray,
             shape = RoundedCornerShape(12.dp),
             elevation = FloatingActionButtonDefaults.elevation(
@@ -148,6 +179,19 @@ fun CalendarScreen(
                 imageVector = Icons.Default.Add,
                 contentDescription = "거래 내역 추가",
                 tint = Color.Black
+            )
+        }
+
+        // Tutorial Overlay
+        if (tutorialUiState.shouldShowTutorial && tutorialUiState.currentStep != null) {
+            CalendarTutorialOverlay(
+                currentStep = tutorialUiState.currentStep,
+                totalSteps = tutorialUiState.steps.size,
+                currentStepIndex = tutorialUiState.currentStepIndex,
+                onNext = tutorialViewModel::nextStep,
+                onSkip = tutorialViewModel::skipTutorial,
+                onComplete = tutorialViewModel::completeTutorial,
+                calendarGridBounds = tutorialViewModel.getTargetBounds("calendar_grid")
             )
         }
     }
@@ -186,7 +230,8 @@ private fun PayPeriodHeader(
 private fun PayPeriodSummaryCard(
     transactions: List<Transaction>,
     payPeriod: PayPeriod,
-    onStatisticsClick: () -> Unit = {}
+    onStatisticsClick: () -> Unit = {},
+    tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
 ) {
     val periodTransactions = transactions.filter { transaction ->
         transaction.date >= payPeriod.startDate && transaction.date <= payPeriod.endDate
@@ -200,7 +245,14 @@ private fun PayPeriodSummaryCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onStatisticsClick() },
+            .clickable { onStatisticsClick() }
+            .onGloballyPositioned { coordinates ->
+                val bounds = coordinates.boundsInWindow()
+                tutorialViewModel?.updateTargetBounds(
+                    "pay_period_summary",
+                    bounds
+                )
+            },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.LightGray
@@ -267,7 +319,8 @@ private fun CalendarGrid(
     payPeriod: PayPeriod,
     transactions: List<Transaction>,
     selectedDate: LocalDate?,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
 ) {
     // 오늘 날짜 계산
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -279,7 +332,15 @@ private fun CalendarGrid(
     val firstDayOfFirstMonth = LocalDate(payPeriod.startDate.year, payPeriod.startDate.month, 1)
     val firstDayOfWeek = (firstDayOfFirstMonth.dayOfWeek.ordinal + 1) % 7
 
-    Column {
+    Column(
+        modifier = Modifier.onGloballyPositioned { coordinates ->
+            val bounds = coordinates.boundsInWindow()
+            tutorialViewModel?.updateTargetBounds(
+                "calendar_grid",
+                bounds
+            )
+        }
+    ) {
         // Week Header
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -388,7 +449,8 @@ private fun CalendarDay(
 private fun DailyTransactionCard(
     selectedDate: LocalDate?,
     transactions: List<Transaction>,
-    onClick: (LocalDate?) -> Unit = {}
+    onClick: (LocalDate?) -> Unit = {},
+    tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
 ) {
     val dayTransactions = selectedDate?.let { date ->
         transactions.filter { it.date == date }
@@ -398,7 +460,14 @@ private fun DailyTransactionCard(
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp) // 고정 높이 설정
-            .clickable { onClick(selectedDate) },
+            .clickable { onClick(selectedDate) }
+            .onGloballyPositioned { coordinates ->
+                val bounds = coordinates.boundsInWindow()
+                tutorialViewModel?.updateTargetBounds(
+                    "transaction_card",
+                    bounds
+                )
+            },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.LightGray

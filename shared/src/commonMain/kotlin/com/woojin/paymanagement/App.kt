@@ -19,7 +19,6 @@ import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
-import com.woojin.paymanagement.ui.TutorialScreen
 import com.woojin.paymanagement.utils.PreferencesManager
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -92,7 +91,6 @@ fun PayManagementApp() {
 
     // 초기 화면 결정 로직
     val initialScreen = when {
-        preferencesManager.isFirstLaunch() -> Screen.Tutorial
         !preferencesManager.isPaydaySet() -> Screen.PaydaySetup
         else -> Screen.Calendar
     }
@@ -150,17 +148,7 @@ fun PayManagementApp() {
                 onSetupComplete = { payday, adjustment ->
                     preferencesManager.setPayday(payday)
                     preferencesManager.setPaydayAdjustment(adjustment)
-                    preferencesManager.setFirstLaunchCompleted()
                     currentScreen = Screen.Calendar
-                }
-            )
-        }
-        
-        Screen.Tutorial -> {
-            TutorialScreen(
-                onTutorialComplete = {
-                    preferencesManager.setTutorialCompleted()
-                    currentScreen = Screen.PaydaySetup
                 }
             )
         }
@@ -168,6 +156,7 @@ fun PayManagementApp() {
         Screen.Calendar -> {
             // Koin에서 ViewModel 주입 (remember로 상태 유지)
             val calendarViewModel = remember { koinInject<com.woojin.paymanagement.presentation.calendar.CalendarViewModel>() }
+            val tutorialViewModel = remember { koinInject<com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel>() }
 
             // ViewModel 초기화
             LaunchedEffect(Unit) {
@@ -192,6 +181,7 @@ fun PayManagementApp() {
 
             CalendarScreen(
                 viewModel = calendarViewModel,
+                tutorialViewModel = tutorialViewModel,
                 onDateDetailClick = { date ->
                     selectedDate = date
                     currentScreen = Screen.DateDetail
@@ -441,7 +431,6 @@ fun PayManagementApp() {
 
 enum class Screen {
     PaydaySetup,
-    Tutorial,
     Calendar,
     Statistics,
     AddTransaction,
