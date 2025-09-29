@@ -18,6 +18,10 @@ import com.woojin.paymanagement.domain.usecase.AnalyzePaymentMethodsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPaydaySetupUseCase
 import com.woojin.paymanagement.domain.usecase.SavePaydaySetupUseCase
 import com.woojin.paymanagement.domain.usecase.ValidatePaydaySetupUseCase
+import com.woojin.paymanagement.domain.usecase.ProcessTransactionWithCardsUseCase
+import com.woojin.paymanagement.domain.usecase.card.ManageBalanceCardUseCase
+import com.woojin.paymanagement.domain.usecase.card.ManageGiftCardUseCase
+import com.woojin.paymanagement.domain.usecase.navigation.NavigateToScreenUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -56,4 +60,10 @@ val domainModule = module {
     factoryOf(::GetPaydaySetupUseCase)
     factoryOf(::SavePaydaySetupUseCase)
     factoryOf(::ValidatePaydaySetupUseCase)
+
+    // App Navigation & Card Management Use Cases
+    factoryOf(::NavigateToScreenUseCase)
+    factoryOf(::ManageBalanceCardUseCase)
+    factoryOf(::ManageGiftCardUseCase)
+    factoryOf(::ProcessTransactionWithCardsUseCase)
 }
