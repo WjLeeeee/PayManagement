@@ -5,16 +5,6 @@ import platform.Foundation.NSUserDefaults
 actual class PreferencesManager {
     private val userDefaults = NSUserDefaults.standardUserDefaults
     
-    actual fun isFirstLaunch(): Boolean {
-        return userDefaults.boolForKey("is_first_launch").takeIf { 
-            userDefaults.objectForKey("is_first_launch") != null 
-        } ?: true
-    }
-    
-    actual fun setFirstLaunchCompleted() {
-        userDefaults.setBool(false, forKey = "is_first_launch")
-    }
-    
     actual fun getPayday(): Int {
         return userDefaults.integerForKey("payday").takeIf { 
             userDefaults.objectForKey("payday") != null 
@@ -42,13 +32,13 @@ actual class PreferencesManager {
         userDefaults.setObject(adjustment.name, forKey = "payday_adjustment")
     }
     
-    actual fun isTutorialCompleted(): Boolean {
-        return userDefaults.boolForKey("tutorial_completed").takeIf { 
-            userDefaults.objectForKey("tutorial_completed") != null 
+    actual fun isCalendarTutorialCompleted(): Boolean {
+        return userDefaults.boolForKey("calendar_tutorial_completed").takeIf {
+            userDefaults.objectForKey("calendar_tutorial_completed") != null
         } ?: false
     }
-    
-    actual fun setTutorialCompleted() {
-        userDefaults.setBool(true, forKey = "tutorial_completed")
+
+    actual fun setCalendarTutorialCompleted() {
+        userDefaults.setBool(true, forKey = "calendar_tutorial_completed")
     }
 }

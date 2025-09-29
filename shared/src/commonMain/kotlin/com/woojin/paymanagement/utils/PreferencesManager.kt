@@ -1,18 +1,15 @@
 package com.woojin.paymanagement.utils
 
 expect class PreferencesManager {
-    fun isFirstLaunch(): Boolean
-    fun setFirstLaunchCompleted()
-    
     fun getPayday(): Int // 1-31
     fun setPayday(day: Int)
     fun isPaydaySet(): Boolean
-    
+
     fun getPaydayAdjustment(): PaydayAdjustment
     fun setPaydayAdjustment(adjustment: PaydayAdjustment)
-    
-    fun isTutorialCompleted(): Boolean
-    fun setTutorialCompleted()
+
+    fun isCalendarTutorialCompleted(): Boolean
+    fun setCalendarTutorialCompleted()
 }
 
 enum class PaydayAdjustment {
