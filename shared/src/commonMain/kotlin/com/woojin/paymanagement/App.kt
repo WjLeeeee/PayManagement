@@ -78,7 +78,6 @@ private fun initializeKoin(
         koinInstance = koin
     } catch (e: Exception) {
         // 이미 초기화된 경우 무시
-        println("Koin already initialized: ${e.message}")
     }
 }
 
@@ -114,7 +113,6 @@ fun PayManagementApp() {
             }
         } catch (e: Exception) {
             // 데이터베이스 오류 시 빈 리스트 유지
-            println("Database error: ${e.message}")
         }
     }
 
@@ -123,9 +121,7 @@ fun PayManagementApp() {
             databaseHelper.getActiveBalanceCards().collect {
                 availableBalanceCards = it
             }
-        } catch (e: Exception) {
-            println("Balance cards error: ${e.message}")
-        }
+        } catch (e: Exception) { }
     }
 
     LaunchedEffect(Unit) {
@@ -133,9 +129,7 @@ fun PayManagementApp() {
             databaseHelper.getActiveGiftCards().collect {
                 availableGiftCards = it
             }
-        } catch (e: Exception) {
-            println("Gift cards error: ${e.message}")
-        }
+        } catch (e: Exception) { }
     }
     
     when (currentScreen) {
