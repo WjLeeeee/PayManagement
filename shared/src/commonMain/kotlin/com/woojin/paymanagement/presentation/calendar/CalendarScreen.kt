@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -459,7 +460,7 @@ private fun DailyTransactionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp) // 고정 높이 설정
+            .heightIn(min = 0.dp, max = 200.dp)
             .clickable { onClick(selectedDate) }
             .onGloballyPositioned { coordinates ->
                 val bounds = coordinates.boundsInWindow()
