@@ -45,5 +45,5 @@ data class AddTransactionUiState(
 val AddTransactionUiState.categories: List<String>
     get() = when (selectedType) {
         TransactionType.INCOME -> listOf("급여", "식비", "당근", "K-패스 환급", "투자수익", "기타수입")
-        TransactionType.EXPENSE -> listOf("식비", "데이트", "생활비", "생활용품", "쇼핑", "교통비", "적금", "투자", "정기결제", "기타지출")
+        TransactionType.EXPENSE -> listOf("식비", "데이트", "생활비", "생활용품", "쇼핑", "대출이자", "모임통장", "교통비", "적금", "투자", "정기결제", "기타지출")
     }
