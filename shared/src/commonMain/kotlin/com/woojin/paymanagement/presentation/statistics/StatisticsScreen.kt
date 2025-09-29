@@ -301,7 +301,6 @@ private fun SummaryItem(
         
         Spacer(modifier = Modifier.height(4.dp))
 
-        println("label: $label, amount: ${amount}, color: $color")
         Text(
 //            text = "${if (amount > 0 && label != "잔액") "+" else ""}${Utils.formatAmount(amount)}원",
             text = when {
