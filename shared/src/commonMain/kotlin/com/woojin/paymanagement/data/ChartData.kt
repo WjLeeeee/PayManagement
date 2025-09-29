@@ -33,6 +33,8 @@ object ChartDataCalculator {
         "생활비" to Color(0xFF78909C),     // 차분한 청회색 (일상/생활 전반) - 새로 추가
         "생활용품" to Color(0xFF607D8B),   // 회색 (일상용품)
         "쇼핑" to Color(0xFFE91E63),       // 핑크색 (쇼핑/소비)
+        "대출이자" to Color(0xFFD32F2F),     // 경고적인 빨간색 (부담/의무지출)
+        "모임통장" to Color(0xFF26A69A),     // 친근한 청록색 (사회적/공동체)
         "교통비" to Color(0xFF2196F3),     // 파란색 (교통/이동)
         "적금" to Color(0xFF43A047),       // 초록색 (저축/미래)
         "투자" to Color(0xFF7B1FA2),       // 진한 보라색 (투자/장기)
