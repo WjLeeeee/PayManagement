@@ -1,7 +1,9 @@
 package com.woojin.paymanagement.presentation.statistics
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -10,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -325,6 +328,29 @@ private fun ChartSection(
     items: List<com.woojin.paymanagement.data.ChartItem>,
     total: Double
 ) {
+    // 4% 미만 항목들을 "기타"로 묶기
+    val (processedItems, mainItems, smallItems) = remember(items, total) {
+        val threshold = 4.0f
+        val mainItems = items.filter { it.percentage >= threshold }
+        val smallItems = items.filter { it.percentage < threshold }
+
+        if (smallItems.isEmpty()) {
+            Triple(items, items, emptyList())
+        } else {
+            val etcAmount = smallItems.sumOf { it.amount.toDouble() }
+            val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
+
+            val etcItem = com.woojin.paymanagement.data.ChartItem(
+                category = "기타",
+                amount = etcAmount,
+                percentage = etcPercentage,
+                color = Color.Gray
+            )
+
+            Triple(mainItems + etcItem, mainItems, smallItems)
+        }
+    }
+
     Column {
         Text(
             text = title,
@@ -332,9 +358,9 @@ private fun ChartSection(
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -345,12 +371,109 @@ private fun ChartSection(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 PieChart(
-                    items = items,
-                    chartSize = 180.dp,
-                    showLegend = true
+                    items = processedItems,
+                    chartSize = 120.dp,
+                    showLegend = false
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Legend: 주요 항목 + 기타(소항목들)
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // 주요 항목들 표시
+                    mainItems.forEach { item ->
+                        ChartLegendItem(item = item, isSubItem = false)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    // 기타 항목이 있으면 표시
+                    if (smallItems.isNotEmpty()) {
+                        // "기타" 헤더
+                        val etcTotal = smallItems.sumOf { it.amount.toDouble() }
+                        val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
+
+                        ChartLegendItem(
+                            item = com.woojin.paymanagement.data.ChartItem(
+                                category = "기타",
+                                amount = etcTotal,
+                                percentage = etcPercentage,
+                                color = Color.Gray
+                            ),
+                            isSubItem = false
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 기타 내부 항목들 (들여쓰기)
+                        smallItems.forEach { item ->
+                            ChartLegendItem(item = item, isSubItem = true)
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChartLegendItem(
+    item: com.woojin.paymanagement.data.ChartItem,
+    isSubItem: Boolean = false
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = if (isSubItem) 24.dp else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            if (isSubItem) {
+                // 서브 아이템은 "ㄴ" 표시
+                Text(
+                    text = "ㄴ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(item.color)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
+                Text(
+                    text = item.category,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isSubItem) FontWeight.Normal else FontWeight.Medium,
+                    color = if (isSubItem) Color.DarkGray else Color.Black
+                )
+                Text(
+                    text = "${Utils.formatAmount(item.amount)}원",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
                 )
             }
         }
+
+        Text(
+            text = "${(item.percentage * 10).toInt() / 10.0}%",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (isSubItem) FontWeight.Normal else FontWeight.Bold,
+            color = if (isSubItem) Color.DarkGray else Color.Black
+        )
     }
 }
 
