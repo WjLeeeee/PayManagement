@@ -7,6 +7,8 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
 import com.woojin.paymanagement.domain.usecase.GetDailyTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodSummaryUseCase
+import com.woojin.paymanagement.domain.usecase.GetMoneyVisibilityUseCase
+import com.woojin.paymanagement.domain.usecase.SetMoneyVisibilityUseCase
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import kotlinx.datetime.LocalDate
@@ -14,7 +16,9 @@ import kotlinx.datetime.LocalDate
 class CalendarViewModel(
     private val preferencesRepository: PreferencesRepository,
     private val getPayPeriodSummaryUseCase: GetPayPeriodSummaryUseCase,
-    private val getDailyTransactionsUseCase: GetDailyTransactionsUseCase
+    private val getDailyTransactionsUseCase: GetDailyTransactionsUseCase,
+    private val getMoneyVisibilityUseCase: GetMoneyVisibilityUseCase,
+    private val setMoneyVisibilityUseCase: SetMoneyVisibilityUseCase
 ) {
     var uiState by mutableStateOf(CalendarUiState())
         private set
@@ -33,10 +37,13 @@ class CalendarViewModel(
         val recommendedDate = selectedDate
             ?: PayPeriodCalculator.getRecommendedDateForPeriod(currentPayPeriod, payday, adjustment)
 
+        val isMoneyVisible = getMoneyVisibilityUseCase()
+
         updateState(
             transactions = transactions,
             payPeriod = currentPayPeriod,
-            selectedDate = recommendedDate
+            selectedDate = recommendedDate,
+            isMoneyVisible = isMoneyVisible
         )
     }
 
@@ -86,6 +93,12 @@ class CalendarViewModel(
         )
     }
 
+    fun toggleMoneyVisibility() {
+        val newVisibility = !uiState.isMoneyVisible
+        setMoneyVisibilityUseCase(newVisibility)
+        uiState = uiState.copy(isMoneyVisible = newVisibility)
+    }
+
     private fun updateState(
         transactions: List<Transaction> = uiState.transactions,
         payPeriod: PayPeriod = uiState.currentPayPeriod ?: PayPeriodCalculator.getCurrentPayPeriod(
@@ -93,7 +106,8 @@ class CalendarViewModel(
             adjustment
         ),
         selectedDate: LocalDate = uiState.selectedDate
-            ?: PayPeriodCalculator.getRecommendedDateForPeriod(payPeriod, payday, adjustment)
+            ?: PayPeriodCalculator.getRecommendedDateForPeriod(payPeriod, payday, adjustment),
+        isMoneyVisible: Boolean = uiState.isMoneyVisible
     ) {
         val payPeriodSummary = getPayPeriodSummaryUseCase(transactions, payPeriod)
         val dailyTransactions = getDailyTransactionsUseCase(transactions, selectedDate)
@@ -103,7 +117,8 @@ class CalendarViewModel(
             selectedDate = selectedDate,
             transactions = transactions,
             payPeriodSummary = payPeriodSummary,
-            dailyTransactions = dailyTransactions
+            dailyTransactions = dailyTransactions,
+            isMoneyVisible = isMoneyVisible
         )
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -38,6 +39,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -109,6 +111,8 @@ fun CalendarScreen(
                 PayPeriodSummaryCard(
                     transactions = uiState.transactions,
                     payPeriod = uiState.currentPayPeriod,
+                    isMoneyVisible = uiState.isMoneyVisible,
+                    onToggleVisibility = { viewModel.toggleMoneyVisibility() },
                     onStatisticsClick = { onStatisticsClick(uiState.currentPayPeriod) },
                     tutorialViewModel = tutorialViewModel
                 )
@@ -231,6 +235,8 @@ private fun PayPeriodHeader(
 private fun PayPeriodSummaryCard(
     transactions: List<Transaction>,
     payPeriod: PayPeriod,
+    isMoneyVisible: Boolean,
+    onToggleVisibility: () -> Unit,
     onStatisticsClick: () -> Unit = {},
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
 ) {
@@ -262,11 +268,29 @@ private fun PayPeriodSummaryCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = "급여 기간 요약",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "급여 기간 요약",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                androidx.compose.material3.IconButton(
+                    onClick = onToggleVisibility,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = if (isMoneyVisible) "금액 숨기기" else "금액 보기",
+                        tint = if (isMoneyVisible) Color.Black.copy(alpha = 0.3f) else Color.Black,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -279,7 +303,8 @@ private fun PayPeriodSummaryCard(
                     Text(
                         text = "+${Utils.formatAmount(income)}원",
                         fontWeight = FontWeight.Bold,
-                        color = Color.Blue
+                        color = Color.Blue,
+                        modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
                     )
                 }
 
@@ -288,7 +313,8 @@ private fun PayPeriodSummaryCard(
                     Text(
                         text = "-${Utils.formatAmount(expense)}원",
                         fontWeight = FontWeight.Bold,
-                        color = Color.Red
+                        color = Color.Red,
+                        modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
                     )
                 }
 
@@ -308,6 +334,7 @@ private fun PayPeriodSummaryCard(
                             balance < 0 -> Color.Red
                             else -> Color.Black
                         },
+                        modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
                     )
                 }
             }

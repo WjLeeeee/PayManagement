@@ -41,4 +41,14 @@ actual class PreferencesManager {
     actual fun setCalendarTutorialCompleted() {
         userDefaults.setBool(true, forKey = "calendar_tutorial_completed")
     }
+
+    actual fun isMoneyVisible(): Boolean {
+        return userDefaults.boolForKey("money_visible").takeIf {
+            userDefaults.objectForKey("money_visible") != null
+        } ?: true // 기본값 true (보임)
+    }
+
+    actual fun setMoneyVisible(visible: Boolean) {
+        userDefaults.setBool(visible, forKey = "money_visible")
+    }
 }

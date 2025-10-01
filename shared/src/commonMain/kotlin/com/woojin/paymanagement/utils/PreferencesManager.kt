@@ -10,6 +10,9 @@ expect class PreferencesManager {
 
     fun isCalendarTutorialCompleted(): Boolean
     fun setCalendarTutorialCompleted()
+
+    fun isMoneyVisible(): Boolean
+    fun setMoneyVisible(visible: Boolean)
 }
 
 enum class PaydayAdjustment {
