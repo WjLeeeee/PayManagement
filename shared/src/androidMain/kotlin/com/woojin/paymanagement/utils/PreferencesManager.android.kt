@@ -34,4 +34,12 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setCalendarTutorialCompleted() {
         prefs.edit().putBoolean("calendar_tutorial_completed", true).apply()
     }
+
+    actual fun isMoneyVisible(): Boolean {
+        return prefs.getBoolean("money_visible", true) // 기본값 true (보임)
+    }
+
+    actual fun setMoneyVisible(visible: Boolean) {
+        prefs.edit().putBoolean("money_visible", visible).apply()
+    }
 }

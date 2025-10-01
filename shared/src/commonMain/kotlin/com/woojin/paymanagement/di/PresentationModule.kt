@@ -11,7 +11,7 @@ import org.koin.dsl.module
 
 val presentationModule = module {
     // ViewModels
-    factory { CalendarViewModel(get(), get(), get()) }
+    factory { CalendarViewModel(get(), get(), get(), get(), get()) }
     single { AddTransactionViewModel(get(), get(), get(), get(), get()) }
     factory { DateDetailViewModel(get(), get(), get()) }
     factory { PaydaySetupViewModel(get(), get(), get()) }

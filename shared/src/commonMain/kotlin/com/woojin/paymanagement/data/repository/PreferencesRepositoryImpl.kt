@@ -23,4 +23,12 @@ class PreferencesRepositoryImpl(
     override fun setPaydayAdjustment(adjustment: PaydayAdjustment) {
         preferencesManager.setPaydayAdjustment(adjustment)
     }
+
+    override fun isMoneyVisible(): Boolean {
+        return preferencesManager.isMoneyVisible()
+    }
+
+    override fun setMoneyVisible(visible: Boolean) {
+        preferencesManager.setMoneyVisible(visible)
+    }
 }

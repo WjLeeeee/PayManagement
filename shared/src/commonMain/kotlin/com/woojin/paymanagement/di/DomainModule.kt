@@ -18,6 +18,8 @@ import com.woojin.paymanagement.domain.usecase.AnalyzePaymentMethodsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPaydaySetupUseCase
 import com.woojin.paymanagement.domain.usecase.SavePaydaySetupUseCase
 import com.woojin.paymanagement.domain.usecase.ValidatePaydaySetupUseCase
+import com.woojin.paymanagement.domain.usecase.GetMoneyVisibilityUseCase
+import com.woojin.paymanagement.domain.usecase.SetMoneyVisibilityUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -56,4 +58,8 @@ val domainModule = module {
     factoryOf(::GetPaydaySetupUseCase)
     factoryOf(::SavePaydaySetupUseCase)
     factoryOf(::ValidatePaydaySetupUseCase)
+
+    // Money Visibility Use Cases
+    factoryOf(::GetMoneyVisibilityUseCase)
+    factoryOf(::SetMoneyVisibilityUseCase)
 }
