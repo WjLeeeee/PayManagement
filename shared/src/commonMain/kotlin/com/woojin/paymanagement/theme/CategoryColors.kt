@@ -19,6 +19,7 @@ object CategoryColors {
         "생활비" to Color(0xFF78909C),     // 차분한 청회색 (일상/생활 전반)
         "생활용품" to Color(0xFF607D8B),   // 회색 (일상용품)
         "쇼핑" to Color(0xFFE91E63),       // 핑크색 (쇼핑/소비)
+        "공과금" to Color(0xFFFBC02D),     // 밝은 노란색 (공공/에너지/필수)
         "대출이자" to Color(0xFFD32F2F),   // 경고적인 빨간색 (부담/의무지출)
         "모임통장" to Color(0xFF26A69A),   // 친근한 청록색 (사회적/공동체)
         "교통비" to Color(0xFF2196F3),     // 파란색 (교통/이동)
