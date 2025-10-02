@@ -1,4 +1,16 @@
--- Schema version 4
+-- Schema version 6
+
+-- ParsedTransaction 관련 테이블 및 쿼리들
+CREATE TABLE ParsedTransactionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    amount REAL NOT NULL,
+    merchantName TEXT NOT NULL,
+    date TEXT NOT NULL,
+    rawNotification TEXT NOT NULL,
+    isProcessed INTEGER NOT NULL DEFAULT 0,
+    createdAt INTEGER NOT NULL
+);
+
 CREATE TABLE TransactionEntity (
     id TEXT NOT NULL PRIMARY KEY,
     amount REAL NOT NULL,
@@ -128,3 +140,29 @@ WHERE id = ?;
 deleteGiftCard:
 DELETE FROM GiftCardEntity
 WHERE id = ?;
+
+-- ParsedTransaction 관련 쿼리들
+insertParsedTransaction:
+INSERT INTO ParsedTransactionEntity(id, amount, merchantName, date, rawNotification, isProcessed, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+selectAllParsedTransactions:
+SELECT * FROM ParsedTransactionEntity
+ORDER BY createdAt DESC;
+
+selectUnprocessedParsedTransactions:
+SELECT * FROM ParsedTransactionEntity
+WHERE isProcessed = 0
+ORDER BY createdAt DESC;
+
+updateParsedTransactionProcessed:
+UPDATE ParsedTransactionEntity
+SET isProcessed = 1
+WHERE id = ?;
+
+deleteParsedTransaction:
+DELETE FROM ParsedTransactionEntity
+WHERE id = ?;
+
+deleteAllParsedTransactions:
+DELETE FROM ParsedTransactionEntity;

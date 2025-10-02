@@ -20,6 +20,10 @@ import com.woojin.paymanagement.domain.usecase.SavePaydaySetupUseCase
 import com.woojin.paymanagement.domain.usecase.ValidatePaydaySetupUseCase
 import com.woojin.paymanagement.domain.usecase.GetMoneyVisibilityUseCase
 import com.woojin.paymanagement.domain.usecase.SetMoneyVisibilityUseCase
+import com.woojin.paymanagement.domain.usecase.GetUnprocessedParsedTransactionsUseCase
+import com.woojin.paymanagement.domain.usecase.InsertParsedTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.MarkParsedTransactionProcessedUseCase
+import com.woojin.paymanagement.domain.usecase.DeleteParsedTransactionUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -62,4 +66,10 @@ val domainModule = module {
     // Money Visibility Use Cases
     factoryOf(::GetMoneyVisibilityUseCase)
     factoryOf(::SetMoneyVisibilityUseCase)
+
+    // ParsedTransaction Use Cases
+    factoryOf(::GetUnprocessedParsedTransactionsUseCase)
+    factoryOf(::InsertParsedTransactionUseCase)
+    factoryOf(::MarkParsedTransactionProcessedUseCase)
+    factoryOf(::DeleteParsedTransactionUseCase)
 }

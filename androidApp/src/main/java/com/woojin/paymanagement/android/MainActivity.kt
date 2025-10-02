@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.woojin.paymanagement.App
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.PreferencesManager
+import com.woojin.paymanagement.utils.NotificationPermissionChecker
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +56,11 @@ fun StatusBarOverlayScreen() {
                 Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
                 
                 // 실제 앱 콘텐츠
-                App(DatabaseDriverFactory(context = context), PreferencesManager(context = context))
+                App(
+                    databaseDriverFactory = DatabaseDriverFactory(context = context),
+                    preferencesManager = PreferencesManager(context = context),
+                    notificationPermissionChecker = NotificationPermissionChecker(context = context)
+                )
             }
         }
     }
