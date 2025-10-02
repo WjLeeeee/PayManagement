@@ -14,10 +14,15 @@ import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.di.databaseModule
 import com.woojin.paymanagement.di.domainModule
 import com.woojin.paymanagement.di.presentationModule
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
 import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
+import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionListScreen
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
 import com.woojin.paymanagement.utils.PreferencesManager
 import kotlinx.coroutines.launch
@@ -36,12 +41,16 @@ var koinInstance: Koin? = null
 inline fun <reified T> koinInject(): T = requireNotNull(koinInstance).get()
 
 @Composable
-fun App(databaseDriverFactory: DatabaseDriverFactory, preferencesManager: PreferencesManager) {
+fun App(
+    databaseDriverFactory: DatabaseDriverFactory,
+    preferencesManager: PreferencesManager,
+    notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker
+) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
     // Koin 초기화
     LaunchedEffect(Unit) {
-        initializeKoin(databaseDriverFactory, preferencesManager)
+        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker)
         isKoinInitialized = true
     }
 
@@ -57,7 +66,8 @@ fun App(databaseDriverFactory: DatabaseDriverFactory, preferencesManager: Prefer
 // Koin 초기화 함수
 private fun initializeKoin(
     databaseDriverFactory: DatabaseDriverFactory,
-    preferencesManager: PreferencesManager
+    preferencesManager: PreferencesManager,
+    notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker
 ) {
     try {
         val koin = startKoin {
@@ -66,6 +76,7 @@ private fun initializeKoin(
                 module {
                     single<DatabaseDriverFactory> { databaseDriverFactory }
                     single<PreferencesManager> { preferencesManager }
+                    single<com.woojin.paymanagement.utils.NotificationPermissionChecker> { notificationPermissionChecker }
                 },
                 // 공통 의존성들
                 databaseModule,
@@ -99,6 +110,8 @@ fun PayManagementApp() {
     var previousScreen by remember { mutableStateOf(Screen.Calendar) }
     var selectedPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     var currentCalendarPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
+    var selectedParsedTransaction by remember { mutableStateOf<com.woojin.paymanagement.data.ParsedTransaction?>(null) }
+    var showPermissionDialog by remember { mutableStateOf(false) }
     
     // 데이터베이스 초기화를 지연시켜 크래시 방지
     var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
@@ -131,7 +144,31 @@ fun PayManagementApp() {
             }
         } catch (e: Exception) { }
     }
-    
+
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDialog = false },
+            title = { Text("권한 필요") },
+            text = { Text("이 기능을 사용하려면 알림 권한이 필요합니다. 권한 설정 화면으로 이동하시겠습니까?") },
+            confirmButton = {
+                Button(onClick = {
+                    showPermissionDialog = false
+                    // 실제 설정 이동
+                    val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
+                    notificationPermissionChecker.openSettings()
+                }) {
+                    Text("확인")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPermissionDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+
     when (currentScreen) {
         Screen.PaydaySetup -> {
             // Koin에서 ViewModel 주입 (remember로 상태 유지)
@@ -191,6 +228,14 @@ fun PayManagementApp() {
                 },
                 onPayPeriodChanged = { payPeriod ->
                     currentCalendarPayPeriod = payPeriod
+                },
+                onParsedTransactionsClick = {
+                    val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
+                    if (notificationPermissionChecker.hasPermission()) {
+                        currentScreen = Screen.ParsedTransactionList
+                    } else {
+                        showPermissionDialog = true
+                    }
                 }
             )
         }
@@ -219,6 +264,7 @@ fun PayManagementApp() {
                 transactions = transactions,
                 selectedDate = selectedDate,
                 editTransaction = editTransaction,
+                parsedTransaction = selectedParsedTransaction,
                 viewModel = addTransactionViewModel,
                 onSave = { newTransactions ->
                     scope.launch {
@@ -292,11 +338,21 @@ fun PayManagementApp() {
 
                                 // 거래 저장은 이미 UseCase에서 처리됨
                             }
+
+                            // 파싱된 거래에서 온 경우 처리됨 표시
+                            selectedParsedTransaction?.let { parsedTransaction ->
+                                val parsedTransactionViewModel = koinInject<com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionViewModel>()
+                                parsedTransactionViewModel.markAsProcessed(parsedTransaction.id)
+                            }
                         }
+
+                        // 파싱된 거래 상태 초기화
+                        selectedParsedTransaction = null
                     }
                     currentScreen = previousScreen
                 },
                 onCancel = {
+                    selectedParsedTransaction = null
                     currentScreen = previousScreen
                 }
             )
@@ -420,6 +476,22 @@ fun PayManagementApp() {
                 }
             )
         }
+
+        Screen.ParsedTransactionList -> {
+            val parsedTransactionViewModel = remember { koinInject<com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionViewModel>() }
+
+            ParsedTransactionListScreen(
+                viewModel = parsedTransactionViewModel,
+                onTransactionClick = { parsedTransaction ->
+                    selectedParsedTransaction = parsedTransaction
+                    previousScreen = Screen.ParsedTransactionList
+                    currentScreen = Screen.AddTransaction
+                },
+                onBack = {
+                    currentScreen = Screen.Calendar
+                }
+            )
+        }
     }
 }
 
@@ -429,5 +501,6 @@ enum class Screen {
     Statistics,
     AddTransaction,
     DateDetail,
-    EditTransaction
+    EditTransaction,
+    ParsedTransactionList
 }

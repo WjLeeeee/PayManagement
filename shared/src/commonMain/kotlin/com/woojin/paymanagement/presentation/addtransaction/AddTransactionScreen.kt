@@ -41,6 +41,7 @@ fun AddTransactionScreen(
     transactions: List<Transaction>,
     selectedDate: LocalDate? = null,
     editTransaction: Transaction? = null,
+    parsedTransaction: com.woojin.paymanagement.data.ParsedTransaction? = null,
     viewModel: AddTransactionViewModel,
     onSave: (List<Transaction>) -> Unit,
     onCancel: () -> Unit
@@ -49,8 +50,12 @@ fun AddTransactionScreen(
     val scope = rememberCoroutineScope()
     val categoryFocusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(transactions, selectedDate, editTransaction) {
-        viewModel.initialize(transactions, selectedDate, editTransaction)
+    LaunchedEffect(transactions, selectedDate, editTransaction, parsedTransaction) {
+        if (parsedTransaction != null) {
+            viewModel.initializeWithParsedTransaction(transactions, parsedTransaction)
+        } else {
+            viewModel.initialize(transactions, selectedDate, editTransaction)
+        }
     }
 
     Column(

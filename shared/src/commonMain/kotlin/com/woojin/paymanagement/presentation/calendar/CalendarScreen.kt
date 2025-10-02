@@ -69,7 +69,8 @@ fun CalendarScreen(
     onDateDetailClick: (LocalDate) -> Unit = {},
     onStatisticsClick: (PayPeriod) -> Unit = {},
     onAddTransactionClick: () -> Unit = {},
-    onPayPeriodChanged: (PayPeriod) -> Unit = {}
+    onPayPeriodChanged: (PayPeriod) -> Unit = {},
+    onParsedTransactionsClick: () -> Unit = {}
 ) {
     val uiState = viewModel.uiState
     val tutorialUiState = tutorialViewModel.uiState
@@ -102,7 +103,8 @@ fun CalendarScreen(
                 PayPeriodHeader(
                     currentPayPeriod = uiState.currentPayPeriod,
                     onPreviousPeriod = { viewModel.navigateToPreviousPeriod() },
-                    onNextPeriod = { viewModel.navigateToNextPeriod() }
+                    onNextPeriod = { viewModel.navigateToNextPeriod() },
+                    onParsedTransactionsClick = onParsedTransactionsClick
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -206,27 +208,42 @@ fun CalendarScreen(
 private fun PayPeriodHeader(
     currentPayPeriod: PayPeriod,
     onPreviousPeriod: () -> Unit,
-    onNextPeriod: () -> Unit
+    onNextPeriod: () -> Unit,
+    onParsedTransactionsClick: () -> Unit = {}
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TextButton(onClick = onPreviousPeriod) {
-            Text("◀", fontSize = 16.sp, color = Color.Black)
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = onPreviousPeriod) {
+                Text("◀", fontSize = 16.sp, color = Color.Black)
+            }
+
+            Text(
+                text = currentPayPeriod.displayText,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+
+            TextButton(onClick = onNextPeriod) {
+                Text("▶", fontSize = 16.sp, color = Color.Black)
+            }
         }
 
-        Text(
-            text = currentPayPeriod.displayText,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.weight(1f)
-        )
-
-        TextButton(onClick = onNextPeriod) {
-            Text("▶", fontSize = 16.sp, color = Color.Black)
+        // 카드 알림 버튼
+        TextButton(
+            onClick = onParsedTransactionsClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "📱 카드 결제 내역 보기",
+                fontSize = 14.sp,
+                color = Color.DarkGray
+            )
         }
     }
 }

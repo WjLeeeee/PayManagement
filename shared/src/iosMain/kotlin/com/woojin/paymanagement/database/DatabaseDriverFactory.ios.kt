@@ -8,13 +8,23 @@ actual class DatabaseDriverFactory {
         return try {
             NativeSqliteDriver(
                 schema = PayManagementDatabase.Schema,
-                name = "PayManagementDatabase.db"
+                name = "PayManagementDatabase.db",
+                onConfiguration = { config ->
+                    config.copy(
+                        version = 6
+                    )
+                }
             )
         } catch (e: Exception) {
             // 오류 발생 시 재시도
             NativeSqliteDriver(
                 schema = PayManagementDatabase.Schema,
-                name = "PayManagementDatabase.db"
+                name = "PayManagementDatabase.db",
+                onConfiguration = { config ->
+                    config.copy(
+                        version = 6
+                    )
+                }
             )
         }
     }

@@ -11,6 +11,7 @@ import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.GiftCardUtils
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
+import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
@@ -98,6 +99,35 @@ class AddTransactionViewModel(
                 editTransaction = null
             )
         }
+
+        validateInput()
+    }
+
+    fun initializeWithParsedTransaction(
+        transactions: List<Transaction>,
+        parsedTransaction: ParsedTransaction
+    ) {
+        reset()
+
+        val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions)
+        val availableGiftCards = getAvailableGiftCardsUseCase(transactions)
+
+        val amountText = formatWithCommas(parsedTransaction.amount.toLong())
+
+        uiState = uiState.copy(
+            amount = TextFieldValue(
+                text = amountText,
+                selection = TextRange(amountText.length)
+            ),
+            selectedType = TransactionType.EXPENSE, // 카드 사용은 지출
+            selectedPaymentMethod = PaymentMethod.CARD, // 결제수단은 카드
+            memo = parsedTransaction.merchantName, // 가맹점명을 메모에
+            date = parsedTransaction.date, // 파싱된 날짜
+            availableBalanceCards = availableBalanceCards,
+            availableGiftCards = availableGiftCards,
+            isEditMode = false,
+            editTransaction = null
+        )
 
         validateInput()
     }

@@ -8,6 +8,7 @@ import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
+import com.woojin.paymanagement.data.ParsedTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
@@ -208,6 +209,49 @@ class DatabaseHelper(
         queries.deleteGiftCard(id)
     }
 
+    // ParsedTransaction 관련 메서드들
+    fun getAllParsedTransactions(): Flow<List<ParsedTransaction>> {
+        return queries.selectAllParsedTransactions()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toParsedTransaction() }
+            }
+    }
+
+    fun getUnprocessedParsedTransactions(): Flow<List<ParsedTransaction>> {
+        return queries.selectUnprocessedParsedTransactions()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toParsedTransaction() }
+            }
+    }
+
+    suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction) {
+        queries.insertParsedTransaction(
+            id = parsedTransaction.id,
+            amount = parsedTransaction.amount,
+            merchantName = parsedTransaction.merchantName,
+            date = parsedTransaction.date.toString(),
+            rawNotification = parsedTransaction.rawNotification,
+            isProcessed = if (parsedTransaction.isProcessed) 1L else 0L,
+            createdAt = parsedTransaction.createdAt
+        )
+    }
+
+    suspend fun markParsedTransactionAsProcessed(id: String) {
+        queries.updateParsedTransactionProcessed(id)
+    }
+
+    suspend fun deleteParsedTransaction(id: String) {
+        queries.deleteParsedTransaction(id)
+    }
+
+    suspend fun deleteAllParsedTransactions() {
+        queries.deleteAllParsedTransactions()
+    }
+
     private fun TransactionEntity.toTransaction(): Transaction {
         return Transaction(
             id = this.id,
@@ -247,6 +291,18 @@ class DatabaseHelper(
             createdDate = LocalDate.parse(this.createdDate),
             isActive = this.isActive == 1L,
             minimumUsageRate = this.minimumUsageRate
+        )
+    }
+
+    private fun ParsedTransactionEntity.toParsedTransaction(): ParsedTransaction {
+        return ParsedTransaction(
+            id = this.id,
+            amount = this.amount,
+            merchantName = this.merchantName,
+            date = LocalDate.parse(this.date),
+            rawNotification = this.rawNotification,
+            isProcessed = this.isProcessed == 1L,
+            createdAt = this.createdAt
         )
     }
 }
