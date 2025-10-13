@@ -90,6 +90,8 @@ fun CalendarScreen(
 
     // EdgeToEdge 대응은 CalendarTutorialOverlay에서 처리됩니다
 
+    var fabExpanded by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -103,8 +105,7 @@ fun CalendarScreen(
                 PayPeriodHeader(
                     currentPayPeriod = uiState.currentPayPeriod,
                     onPreviousPeriod = { viewModel.navigateToPreviousPeriod() },
-                    onNextPeriod = { viewModel.navigateToNextPeriod() },
-                    onParsedTransactionsClick = onParsedTransactionsClick
+                    onNextPeriod = { viewModel.navigateToNextPeriod() }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -155,10 +156,11 @@ fun CalendarScreen(
             Spacer(modifier = Modifier.weight(1f))
         }
 
-        // Floating Action Button
-        FloatingActionButton(
-            onClick = onAddTransactionClick,
-            modifier = Modifier
+        // Expandable Floating Action Button
+        ExpandableFab(
+            expanded = fabExpanded,
+            onExpandedChange = { fabExpanded = it },
+            fabModifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
                     start = 16.dp,
@@ -173,21 +175,19 @@ fun CalendarScreen(
                         bounds
                     )
                 },
-            containerColor = Color.LightGray,
-            shape = RoundedCornerShape(12.dp),
-            elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp,
-                focusedElevation = 0.dp,
-                hoveredElevation = 0.dp
+            items = listOf(
+                FabAction(
+                    icon = "📱",
+                    label = "카드 결제 내역",
+                    onClick = onParsedTransactionsClick
+                ),
+                FabAction(
+                    icon = "➕",
+                    label = "거래 추가",
+                    onClick = onAddTransactionClick
+                )
             )
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "거래 내역 추가",
-                tint = Color.Black
-            )
-        }
+        )
 
         // Tutorial Overlay
         if (tutorialUiState.shouldShowTutorial && tutorialUiState.currentStep != null) {
@@ -208,42 +208,27 @@ fun CalendarScreen(
 private fun PayPeriodHeader(
     currentPayPeriod: PayPeriod,
     onPreviousPeriod: () -> Unit,
-    onNextPeriod: () -> Unit,
-    onParsedTransactionsClick: () -> Unit = {}
+    onNextPeriod: () -> Unit
 ) {
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(onClick = onPreviousPeriod) {
-                Text("◀", fontSize = 16.sp, color = Color.Black)
-            }
-
-            Text(
-                text = currentPayPeriod.displayText,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
-            )
-
-            TextButton(onClick = onNextPeriod) {
-                Text("▶", fontSize = 16.sp, color = Color.Black)
-            }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(onClick = onPreviousPeriod) {
+            Text("◀", fontSize = 16.sp, color = Color.Black)
         }
 
-        // 카드 알림 버튼
-        TextButton(
-            onClick = onParsedTransactionsClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                "📱 카드 결제 내역 보기",
-                fontSize = 14.sp,
-                color = Color.DarkGray
-            )
+        Text(
+            text = currentPayPeriod.displayText,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f)
+        )
+
+        TextButton(onClick = onNextPeriod) {
+            Text("▶", fontSize = 16.sp, color = Color.Black)
         }
     }
 }
