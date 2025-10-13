@@ -51,13 +51,13 @@ class CardNotificationListenerService : NotificationListenerService() {
             Log.d(TAG, "Notification received - Title: $title")
             Log.d(TAG, "Notification received - Text: $bigText")
 
-            // 승인 알림인지 확인
-            if (title.contains("신한카드") && bigText.contains("승인")) {
-                val parsedTransaction = parseNotification(bigText)
+            // 승인 알림인지 확인 (일반 승인 또는 자동납부 승인)
+            if (title.contains("신한카드") &&
+                (bigText.contains("승인") || title.contains("자동납부"))) {
+                val parsedTransaction = parseNotification(bigText, title)
 
                 parsedTransaction?.let { transaction ->
                     Log.d(TAG, "Parsed transaction: $transaction")
-                    // TODO: 파싱된 거래를 저장
                     saveParsedTransaction(transaction)
                 }
             }
@@ -69,14 +69,20 @@ class CardNotificationListenerService : NotificationListenerService() {
     /**
      * 신한카드 알림 텍스트를 파싱하여 ParsedTransaction 생성
      *
-     * 예시 포맷:
+     * 예시 포맷 1 (일반 승인):
      * [신한카드(9686)승인] 이*진
      * -승인금액: 7,818원(일시불)
      * -승인일시: 10/02 14:20
      * -가맹점명: (주)비바리퍼블리카
      * -누적금액: 205,032원
+     *
+     * 예시 포맷 2 (자동납부):
+     * [신한카드 자동납부 정상승인] 이우진님
+     * -승인일자: 10/10
+     * -승인금액: 1,020원(일시불)
+     * -가맹점명: 서울도시가스(주)
      */
-    private fun parseNotification(text: String): ParsedTransaction? {
+    private fun parseNotification(text: String, title: String): ParsedTransaction? {
         try {
             // 승인금액 파싱: "승인금액: 7,818원(일시불)" -> 7818.0
             val amountRegex = """승인금액:\s*([\d,]+)원""".toRegex()
@@ -85,11 +91,27 @@ class CardNotificationListenerService : NotificationListenerService() {
                 ?.replace(",", "")
                 ?.toDoubleOrNull()
 
-            // 승인일시 파싱: "승인일시: 10/02 14:20" -> LocalDate
-            val dateRegex = """승인일시:\s*(\d{1,2})/(\d{1,2})\s+\d{1,2}:\d{1,2}""".toRegex()
-            val dateMatch = dateRegex.find(text)
-            val month = dateMatch?.groupValues?.get(1)?.toIntOrNull()
-            val day = dateMatch?.groupValues?.get(2)?.toIntOrNull()
+            var month: Int? = null
+            var day: Int? = null
+
+            // 승인일시 파싱 (일반 승인): "승인일시: 10/02 14:20" -> LocalDate
+            val dateTimeRegex = """승인일시:\s*(\d{1,2})/(\d{1,2})\s+\d{1,2}:\d{1,2}""".toRegex()
+            val dateTimeMatch = dateTimeRegex.find(text)
+
+            if (dateTimeMatch != null) {
+                // 일반 승인 포맷
+                month = dateTimeMatch.groupValues[1].toIntOrNull()
+                day = dateTimeMatch.groupValues[2].toIntOrNull()
+            } else {
+                // 승인일자 파싱 (자동납부): "승인일자: 10/10" -> LocalDate
+                val dateOnlyRegex = """승인일자:\s*(\d{1,2})/(\d{1,2})""".toRegex()
+                val dateOnlyMatch = dateOnlyRegex.find(text)
+
+                if (dateOnlyMatch != null) {
+                    month = dateOnlyMatch.groupValues[1].toIntOrNull()
+                    day = dateOnlyMatch.groupValues[2].toIntOrNull()
+                }
+            }
 
             // 가맹점명 파싱: "가맹점명: (주)비바리퍼블리카" -> (주)비바리퍼블리카
             val merchantRegex = """가맹점명:\s*(.+?)(?:\n|$)""".toRegex()
@@ -99,6 +121,7 @@ class CardNotificationListenerService : NotificationListenerService() {
             // 모든 필수 값이 있는지 확인
             if (amount == null || month == null || day == null || merchantName.isNullOrBlank()) {
                 Log.w(TAG, "Failed to parse notification - missing required fields")
+                Log.w(TAG, "amount=$amount, month=$month, day=$day, merchantName=$merchantName")
                 return null
             }
 
@@ -106,7 +129,7 @@ class CardNotificationListenerService : NotificationListenerService() {
             val calendar = Calendar.getInstance()
             val currentYear = calendar.get(Calendar.YEAR)
 
-            // kotlinx.datetime.LocalDate 생성
+            // LocalDate 생성
             val transactionDate = try {
                 kotlinx.datetime.LocalDate(currentYear, month, day)
             } catch (e: Exception) {
