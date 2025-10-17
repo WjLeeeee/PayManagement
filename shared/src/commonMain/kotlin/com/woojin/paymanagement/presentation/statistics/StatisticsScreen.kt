@@ -328,6 +328,9 @@ private fun ChartSection(
     items: List<com.woojin.paymanagement.data.ChartItem>,
     total: Double
 ) {
+    // 선택된 카테고리 상태
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
+
     // 4% 미만 항목들을 "기타"로 묶기
     val (processedItems, mainItems, smallItems) = remember(items, total) {
         val threshold = 4.0f
@@ -373,7 +376,10 @@ private fun ChartSection(
                 PieChart(
                     items = processedItems,
                     chartSize = 120.dp,
-                    showLegend = false
+                    showLegend = false,
+                    onItemSelected = { category ->
+                        selectedCategory = category
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -384,7 +390,11 @@ private fun ChartSection(
                 ) {
                     // 주요 항목들 표시
                     mainItems.forEach { item ->
-                        ChartLegendItem(item = item, isSubItem = false)
+                        ChartLegendItem(
+                            item = item,
+                            isSubItem = false,
+                            isSelected = selectedCategory == item.category
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
@@ -401,14 +411,19 @@ private fun ChartSection(
                                 percentage = etcPercentage,
                                 color = Color.Gray
                             ),
-                            isSubItem = false
+                            isSubItem = false,
+                            isSelected = selectedCategory == "기타"
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // 기타 내부 항목들 (들여쓰기)
                         smallItems.forEach { item ->
-                            ChartLegendItem(item = item, isSubItem = true)
+                            ChartLegendItem(
+                                item = item,
+                                isSubItem = true,
+                                isSelected = selectedCategory == item.category
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
@@ -421,12 +436,18 @@ private fun ChartSection(
 @Composable
 private fun ChartLegendItem(
     item: com.woojin.paymanagement.data.ChartItem,
-    isSubItem: Boolean = false
+    isSubItem: Boolean = false,
+    isSelected: Boolean = false
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = if (isSubItem) 24.dp else 0.dp),
+            .padding(start = if (isSubItem) 24.dp else 0.dp)
+            .background(
+                color = if (isSelected) item.color.copy(alpha = 0.15f) else Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(vertical = if (isSelected) 8.dp else 0.dp, horizontal = if (isSelected) 8.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -446,7 +467,7 @@ private fun ChartLegendItem(
 
             Box(
                 modifier = Modifier
-                    .size(16.dp)
+                    .size(if (isSelected) 20.dp else 16.dp)
                     .clip(CircleShape)
                     .background(item.color)
             )
@@ -456,22 +477,23 @@ private fun ChartLegendItem(
             Column {
                 Text(
                     text = item.category,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isSubItem) FontWeight.Normal else FontWeight.Medium,
+                    style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (isSelected) FontWeight.Bold else if (isSubItem) FontWeight.Normal else FontWeight.Medium,
                     color = if (isSubItem) Color.DarkGray else Color.Black
                 )
                 Text(
                     text = "${Utils.formatAmount(item.amount)}원",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    style = if (isSelected) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (isSelected) Color.Black else Color.Gray
                 )
             }
         }
 
         Text(
             text = "${(item.percentage * 10).toInt() / 10.0}%",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (isSubItem) FontWeight.Normal else FontWeight.Bold,
+            style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+            fontWeight = if (isSelected) FontWeight.ExtraBold else if (isSubItem) FontWeight.Normal else FontWeight.Bold,
             color = if (isSubItem) Color.DarkGray else Color.Black
         )
     }
