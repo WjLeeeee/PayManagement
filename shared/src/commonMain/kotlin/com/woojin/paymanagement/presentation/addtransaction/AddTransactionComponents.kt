@@ -6,8 +6,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -577,6 +582,79 @@ fun SettlementSection(
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray,
                         modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun CategoryChipGrid(
+    categories: List<String>,
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit,
+    transactionType: TransactionType,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = "카테고리",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Medium,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            categories.forEach { category ->
+                val isSelected = category == selectedCategory
+                val backgroundColor = when {
+                    isSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
+                    isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                    else -> Color(0xFFF5F5F5) // 연한 회색
+                }
+                val borderColor = when {
+                    isSelected && transactionType == TransactionType.INCOME -> Color(0xFF2196F3) // 파랑
+                    isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFF44336) // 빨강
+                    else -> Color.Transparent
+                }
+                val textColor = when {
+                    isSelected -> Color.Black
+                    else -> Color.DarkGray
+                }
+
+                Row(
+                    modifier = Modifier
+                        .border(
+                            width = if (isSelected) 2.dp else 0.dp,
+                            color = borderColor,
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .background(
+                            color = backgroundColor,
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .clickable { onCategorySelected(category) }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = getCategoryEmoji(category),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = category,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = textColor
                     )
                 }
             }

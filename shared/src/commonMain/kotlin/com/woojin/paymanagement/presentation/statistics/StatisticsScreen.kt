@@ -26,6 +26,7 @@ import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
 import com.woojin.paymanagement.presentation.components.PieChart
 import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
+import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.coroutines.flow.collectLatest
@@ -475,12 +476,21 @@ private fun ChartLegendItem(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column {
-                Text(
-                    text = item.category,
-                    style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else if (isSubItem) FontWeight.Normal else FontWeight.Medium,
-                    color = if (isSubItem) Color.DarkGray else Color.Black
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = getCategoryEmoji(item.category),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = item.category,
+                        style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else if (isSubItem) FontWeight.Normal else FontWeight.Medium,
+                        color = if (isSubItem) Color.DarkGray else Color.Black
+                    )
+                }
                 Text(
                     text = "${Utils.formatAmount(item.amount)}원",
                     style = if (isSelected) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,

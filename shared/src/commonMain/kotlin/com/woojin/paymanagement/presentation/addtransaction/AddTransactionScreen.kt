@@ -155,12 +155,11 @@ fun AddTransactionScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Category Selection
-        CategoryDropdown(
+        CategoryChipGrid(
             categories = uiState.categories,
             selectedCategory = uiState.category,
             onCategorySelected = viewModel::updateCategory,
-            transactionType = uiState.selectedType,
-            focusRequester = categoryFocusRequester
+            transactionType = uiState.selectedType
         )
 
         Spacer(modifier = Modifier.height(16.dp))
