@@ -2,7 +2,9 @@ package com.woojin.paymanagement.presentation.calendar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +67,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel,
@@ -130,7 +133,14 @@ fun CalendarScreen(
                     payPeriod = uiState.currentPayPeriod,
                     transactions = uiState.transactions,
                     selectedDate = uiState.selectedDate,
-                    onDateSelected = { date -> viewModel.selectDate(date) },
+                    isMoveMode = uiState.isMoveMode,
+                    onDateSelected = { date ->
+                        if (uiState.isMoveMode) {
+                            viewModel.moveTransactionToDate(date)
+                        } else {
+                            viewModel.selectDate(date)
+                        }
+                    },
                     tutorialViewModel = tutorialViewModel
                 )
 
@@ -140,8 +150,16 @@ fun CalendarScreen(
                 DailyTransactionCard(
                     selectedDate = uiState.selectedDate,
                     transactions = uiState.transactions,
+                    isMoveMode = uiState.isMoveMode,
+                    transactionToMove = uiState.transactionToMove,
+                    onTransactionLongClick = { transaction ->
+                        viewModel.startMoveMode(transaction)
+                    },
+                    onCancelMoveMode = {
+                        viewModel.cancelMoveMode()
+                    },
                     onClick = { date ->
-                        if (date != null) {
+                        if (date != null && !uiState.isMoveMode) {
                             onDateDetailClick(date)
                         }
                     },
@@ -417,6 +435,7 @@ private fun CalendarGrid(
     payPeriod: PayPeriod,
     transactions: List<Transaction>,
     selectedDate: LocalDate?,
+    isMoveMode: Boolean = false,
     onDateSelected: (LocalDate) -> Unit,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
 ) {
@@ -576,10 +595,15 @@ private fun CalendarDay(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DailyTransactionCard(
     selectedDate: LocalDate?,
     transactions: List<Transaction>,
+    isMoveMode: Boolean = false,
+    transactionToMove: Transaction? = null,
+    onTransactionLongClick: (Transaction) -> Unit = {},
+    onCancelMoveMode: () -> Unit = {},
     onClick: (LocalDate?) -> Unit = {},
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
 ) {
@@ -623,21 +647,48 @@ private fun DailyTransactionCard(
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                Text(
-                    text = if (selectedDate != null) {
-                        val count = dayTransactions.size
-                        if (count > 0) {
-                            "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역 (${count}건)"
-                        } else {
-                            "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
-                        }
+                // 헤더 또는 이동 모드 메시지
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isMoveMode) {
+                        Text(
+                            text = "📍 이동할 날짜를 선택하세요",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2196F3),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "취소",
+                            color = Color.Red,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable { onCancelMoveMode() }
+                                .padding(4.dp)
+                        )
                     } else {
-                        "📝 날짜를 선택해서 메모 보기"
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
+                        Text(
+                            text = if (selectedDate != null) {
+                                val count = dayTransactions.size
+                                if (count > 0) {
+                                    "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역 (${count}건)"
+                                } else {
+                                    "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
+                                }
+                            } else {
+                                "📝 날짜를 선택해서 메모 보기"
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -648,7 +699,11 @@ private fun DailyTransactionCard(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(dayTransactions) { transaction ->
-                            TransactionItem(transaction)
+                            TransactionItem(
+                                transaction = transaction,
+                                isSelected = isMoveMode && transaction.id == transactionToMove?.id,
+                                onLongClick = { onTransactionLongClick(transaction) }
+                            )
                         }
                     }
                 } else if (selectedDate != null) {
@@ -669,10 +724,32 @@ private fun DailyTransactionCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TransactionItem(transaction: Transaction) {
+private fun TransactionItem(
+    transaction: Transaction,
+    isSelected: Boolean = false,
+    onLongClick: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick
+            )
+            .then(
+                if (isSelected) {
+                    Modifier
+                        .background(
+                            color = Color(0xFF2196F3).copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(8.dp)
+                } else {
+                    Modifier
+                }
+            ),
         verticalAlignment = Alignment.Top
     ) {
         // 거래 유형 표시

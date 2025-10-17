@@ -12,7 +12,9 @@ data class CalendarUiState(
     val payPeriodSummary: PayPeriodSummary = PayPeriodSummary(),
     val dailyTransactions: List<Transaction> = emptyList(),
     val isMoneyVisible: Boolean = true,
-    val error: String? = null
+    val error: String? = null,
+    val isMoveMode: Boolean = false,
+    val transactionToMove: Transaction? = null
 )
 
 data class PayPeriodSummary(
