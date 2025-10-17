@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -265,80 +267,145 @@ private fun PayPeriodSummaryCard(
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.LightGray
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "급여 기간 요약",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
                 )
-
-                androidx.compose.material3.IconButton(
-                    onClick = onToggleVisibility,
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = if (isMoneyVisible) "금액 숨기기" else "금액 보기",
-                        tint = if (isMoneyVisible) Color.Black.copy(alpha = 0.3f) else Color.Black,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                Column {
-                    Text("수입", color = Color.Blue)
+                // 헤더
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "+${Utils.formatAmount(income)}원",
+                        text = "급여 기간 요약",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Blue,
-                        modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                        color = Color.Black
                     )
+
+                    androidx.compose.material3.IconButton(
+                        onClick = onToggleVisibility,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = if (isMoneyVisible) "금액 숨기기" else "금액 보기",
+                            tint = if (isMoneyVisible) Color.Black.copy(alpha = 0.3f) else Color.Black,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
-                Column {
-                    Text("지출", color = Color.Red)
-                    Text(
-                        text = "-${Utils.formatAmount(expense)}원",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Red,
-                        modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
-                    )
-                }
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Column {
-                    Text("잔액")
-                    Text(
-                        text = "${
-                            when {
-                                balance > 0 -> "+"
-                                balance < 0 -> "-"
-                                else -> ""
-                            }
-                        }${Utils.formatAmount(balance)}원",
-                        fontWeight = FontWeight.Bold,
-                        color = when {
-                            balance > 0 -> Color.Blue
-                            balance < 0 -> Color.Red
-                            else -> Color.Black
-                        },
-                        modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
-                    )
+                // 수입/지출/잔액 표시 (아이콘 추가)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // 수입
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "💰",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "수입",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Blue
+                            )
+                        }
+                        Text(
+                            text = "+${Utils.formatAmount(income)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Blue,
+                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                        )
+                    }
+
+                    // 지출
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "💸",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "지출",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Red
+                            )
+                        }
+                        Text(
+                            text = "-${Utils.formatAmount(expense)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Red,
+                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                        )
+                    }
+
+                    // 잔액
+                    Column(horizontalAlignment = Alignment.End) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "💵",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "잔액",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Black
+                            )
+                        }
+                        Text(
+                            text = "${
+                                when {
+                                    balance > 0 -> "+"
+                                    balance < 0 -> "-"
+                                    else -> ""
+                                }
+                            }${Utils.formatAmount(kotlin.math.abs(balance))}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                balance > 0 -> Color.Blue
+                                balance < 0 -> Color.Red
+                                else -> Color.Black
+                            },
+                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                        )
+                    }
                 }
             }
         }
@@ -409,6 +476,7 @@ private fun CalendarGrid(
                 val hasIncome = dayTransactions.any { it.type == TransactionType.INCOME }
                 val hasExpense = dayTransactions.any { it.type == TransactionType.EXPENSE }
                 val isInCurrentPeriod = date >= payPeriod.startDate && date <= payPeriod.endDate
+                val dayOfWeek = date.dayOfWeek.ordinal // 0=Monday, 6=Sunday
 
                 CalendarDay(
                     day = date.dayOfMonth,
@@ -417,6 +485,7 @@ private fun CalendarGrid(
                     isSelected = selectedDate == date,
                     isInCurrentPeriod = isInCurrentPeriod,
                     isToday = date == today,
+                    dayOfWeek = dayOfWeek,
                     onClick = { onDateSelected(date) }
                 )
             }
@@ -443,21 +512,22 @@ private fun CalendarDay(
     isSelected: Boolean,
     isInCurrentPeriod: Boolean = true,
     isToday: Boolean = false,
+    dayOfWeek: Int, // 0=Monday, 5=Saturday, 6=Sunday
     onClick: () -> Unit
 ) {
+    // 주말 배경색 계산 (토요일: 파랑, 일요일: 빨강)
+    val weekendBackground = when (dayOfWeek) {
+        5 -> Color(0xFFE3F2FD).copy(alpha = 0.5f) // 토요일 - 연한 파랑
+        6 -> Color(0xFFFFEBEE).copy(alpha = 0.5f) // 일요일 - 연한 빨강
+        else -> Color.Transparent
+    }
+
     Box(
         modifier = Modifier
             .size(40.dp)
             .clickable { onClick() }
             .clip(CircleShape)
-            .background(
-                when {
-                    hasIncome && hasExpense -> Color.Yellow.copy(alpha = 0.3f)
-                    hasIncome -> Color.Blue.copy(alpha = 0.3f)
-                    hasExpense -> Color.Red.copy(alpha = 0.3f)
-                    else -> Color.Transparent
-                }
-            )
+            .background(weekendBackground)
             .then(
                 when {
                     isToday -> Modifier.border(2.dp, Color.Black, CircleShape)
@@ -467,12 +537,42 @@ private fun CalendarDay(
             ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = day.toString(),
-            fontSize = 14.sp,
-            fontWeight = if (hasIncome || hasExpense) FontWeight.Bold else FontWeight.Normal,
-            color = if (isInCurrentPeriod) Color.Black else Color.Gray
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = day.toString(),
+                fontSize = 14.sp,
+                fontWeight = if (hasIncome || hasExpense) FontWeight.Bold else FontWeight.Normal,
+                color = if (isInCurrentPeriod) Color.Black else Color.Gray
+            )
+
+            // 인디케이터 점
+            if (hasIncome || hasExpense) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    if (hasIncome) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .clip(CircleShape)
+                                .background(Color.Blue)
+                        )
+                    }
+                    if (hasExpense) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .clip(CircleShape)
+                                .background(Color.Red)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -490,7 +590,7 @@ private fun DailyTransactionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 0.dp, max = 200.dp)
+            .heightIn(min = 0.dp, max = 170.dp)
             .clickable { onClick(selectedDate) }
             .onGloballyPositioned { coordinates ->
                 val bounds = coordinates.boundsInWindow()
@@ -501,46 +601,69 @@ private fun DailyTransactionCard(
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.LightGray
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
+                )
         ) {
-            Text(
-                text = if (selectedDate != null) {
-                    "${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
-                } else {
-                    "날짜를 선택해서 메모 보기"
-                },
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = if (selectedDate != null) {
+                        val count = dayTransactions.size
+                        if (count > 0) {
+                            "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역 (${count}건)"
+                        } else {
+                            "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
+                        }
+                    } else {
+                        "📝 날짜를 선택해서 메모 보기"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            if (dayTransactions.isNotEmpty()) {
-                // LazyColumn으로 스크롤 가능한 거래 목록 생성
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(dayTransactions) { transaction ->
-                        TransactionItem(transaction)
+                if (dayTransactions.isNotEmpty()) {
+                    // LazyColumn으로 스크롤 가능한 거래 목록 생성
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(dayTransactions) { transaction ->
+                            TransactionItem(transaction)
+                        }
                     }
+                } else if (selectedDate != null) {
+                    Text(
+                        text = "이 날짜에 거래 내역이 없습니다",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black
+                    )
+                } else {
+                    Text(
+                        text = "캘린더에서 날짜를 클릭하여 해당 날짜의 메모를 확인하세요",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black
+                    )
                 }
-            } else if (selectedDate != null) {
-                Text(
-                    text = "이 날짜에 거래 내역이 없습니다",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black
-                )
-            } else {
-                Text(
-                    text = "캘린더에서 날짜를 클릭하여 해당 날짜의 메모를 확인하세요",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Black
-                )
             }
         }
     }
@@ -583,7 +706,8 @@ private fun TransactionItem(transaction: Transaction) {
                     Text(
                         text = transaction.category,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black
                     )
                 }
 
