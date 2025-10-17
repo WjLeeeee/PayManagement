@@ -30,6 +30,9 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -77,6 +80,7 @@ private fun initializeKoin(
                     single<DatabaseDriverFactory> { databaseDriverFactory }
                     single<PreferencesManager> { preferencesManager }
                     single<com.woojin.paymanagement.utils.NotificationPermissionChecker> { notificationPermissionChecker }
+                    single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
                 },
                 // 공통 의존성들
                 databaseModule,

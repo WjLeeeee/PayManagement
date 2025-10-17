@@ -9,8 +9,11 @@ import com.woojin.paymanagement.domain.usecase.GetDailyTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodSummaryUseCase
 import com.woojin.paymanagement.domain.usecase.GetMoneyVisibilityUseCase
 import com.woojin.paymanagement.domain.usecase.SetMoneyVisibilityUseCase
+import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
 class CalendarViewModel(
@@ -18,7 +21,9 @@ class CalendarViewModel(
     private val getPayPeriodSummaryUseCase: GetPayPeriodSummaryUseCase,
     private val getDailyTransactionsUseCase: GetDailyTransactionsUseCase,
     private val getMoneyVisibilityUseCase: GetMoneyVisibilityUseCase,
-    private val setMoneyVisibilityUseCase: SetMoneyVisibilityUseCase
+    private val setMoneyVisibilityUseCase: SetMoneyVisibilityUseCase,
+    private val updateTransactionUseCase: UpdateTransactionUseCase,
+    private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(CalendarUiState())
         private set
@@ -97,6 +102,45 @@ class CalendarViewModel(
         val newVisibility = !uiState.isMoneyVisible
         setMoneyVisibilityUseCase(newVisibility)
         uiState = uiState.copy(isMoneyVisible = newVisibility)
+    }
+
+    fun startMoveMode(transaction: Transaction) {
+        uiState = uiState.copy(
+            isMoveMode = true,
+            transactionToMove = transaction
+        )
+    }
+
+    fun cancelMoveMode() {
+        uiState = uiState.copy(
+            isMoveMode = false,
+            transactionToMove = null
+        )
+    }
+
+    fun moveTransactionToDate(newDate: LocalDate) {
+        val transaction = uiState.transactionToMove ?: return
+
+        coroutineScope.launch {
+            try {
+                // 거래의 날짜를 새로운 날짜로 업데이트
+                val updatedTransaction = transaction.copy(date = newDate)
+                updateTransactionUseCase(updatedTransaction)
+
+                // 이동 모드 종료
+                uiState = uiState.copy(
+                    isMoveMode = false,
+                    transactionToMove = null
+                )
+            } catch (e: Exception) {
+                // 에러 처리
+                uiState = uiState.copy(
+                    isMoveMode = false,
+                    transactionToMove = null,
+                    error = "거래 이동 중 오류가 발생했습니다: ${e.message}"
+                )
+            }
+        }
     }
 
     private fun updateState(

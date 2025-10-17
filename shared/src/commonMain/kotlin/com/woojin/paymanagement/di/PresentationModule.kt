@@ -12,7 +12,17 @@ import org.koin.dsl.module
 
 val presentationModule = module {
     // ViewModels
-    factory { CalendarViewModel(get(), get(), get(), get(), get()) }
+    factory {
+        CalendarViewModel(
+            preferencesRepository = get(),
+            getPayPeriodSummaryUseCase = get(),
+            getDailyTransactionsUseCase = get(),
+            getMoneyVisibilityUseCase = get(),
+            setMoneyVisibilityUseCase = get(),
+            updateTransactionUseCase = get(),
+            coroutineScope = get()
+        )
+    }
     factory { AddTransactionViewModel(get(), get(), get(), get(), get()) }
     factory { DateDetailViewModel(get(), get(), get()) }
     factory { PaydaySetupViewModel(get(), get(), get()) }
