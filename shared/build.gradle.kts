@@ -51,6 +51,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.sqldelight.android.driver)
             implementation(libs.androidx.core.ktx)
+            implementation(libs.mpandroidchart)
         }
         
         iosMain.dependencies {
