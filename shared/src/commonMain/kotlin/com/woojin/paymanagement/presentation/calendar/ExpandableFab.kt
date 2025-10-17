@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -105,13 +106,13 @@ fun ExpandableFab(
         // 메인 FAB
         FloatingActionButton(
             onClick = { onExpandedChange(!expanded) },
-            containerColor = Color.LightGray,
+            containerColor = Color.White,
             shape = RoundedCornerShape(12.dp),
             elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp,
-                focusedElevation = 0.dp,
-                hoveredElevation = 0.dp
+                defaultElevation = 4.dp,
+                pressedElevation = 6.dp,
+                focusedElevation = 4.dp,
+                hoveredElevation = 6.dp
             )
         ) {
             Icon(
@@ -153,13 +154,13 @@ private fun FabActionItem(
         // 작은 FAB
         SmallFloatingActionButton(
             onClick = onClick,
-            containerColor = Color.LightGray,
+            containerColor = Color.White,
             shape = RoundedCornerShape(12.dp),
             elevation = FloatingActionButtonDefaults.elevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp,
-                focusedElevation = 0.dp,
-                hoveredElevation = 0.dp
+                defaultElevation = 4.dp,
+                pressedElevation = 6.dp,
+                focusedElevation = 4.dp,
+                hoveredElevation = 6.dp
             )
         ) {
             Text(
