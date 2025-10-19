@@ -718,7 +718,11 @@ private fun CashSummaryCard(
                         )
                         val balance = income - expense
                         Text(
-                            text = "${if (balance > 0) "+" else ""}${Utils.formatAmount(balance)}원",
+                            text = when {
+                                balance > 0 -> "+${Utils.formatAmount(balance)}원"
+                                balance < 0 -> "-${Utils.formatAmount(kotlin.math.abs(balance))}원"
+                                else -> "${Utils.formatAmount(balance)}원"
+                            },
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = when {
