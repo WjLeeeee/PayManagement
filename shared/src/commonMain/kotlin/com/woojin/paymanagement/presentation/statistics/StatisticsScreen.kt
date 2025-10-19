@@ -193,7 +193,8 @@ fun StatisticsScreen(
         if (uiState.showCalculatorDialog) {
             CalculatorDialog(
                 transactions = transactions,
-                onDismiss = { viewModel.hideCalculatorDialog() }
+                onDismiss = { viewModel.hideCalculatorDialog() },
+                initialPayPeriod = uiState.currentPayPeriod
             )
         }
     }

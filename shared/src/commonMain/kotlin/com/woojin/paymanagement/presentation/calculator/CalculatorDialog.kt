@@ -38,14 +38,19 @@ import kotlinx.datetime.todayIn
 @Composable
 fun CalculatorDialog(
     transactions: List<Transaction>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    initialPayPeriod: com.woojin.paymanagement.utils.PayPeriod? = null
 ) {
     val calculatorUseCase = remember { CalculatorUseCase() }
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
-    var startDate by remember { mutableStateOf(today.minus(1, DateTimeUnit.MONTH)) }
-    var endDate by remember { mutableStateOf(today) }
-    var selectedTransactionType by remember { mutableStateOf<TransactionType?>(null) }
+    // 급여기간이 있으면 그 기간을 사용, 없으면 오늘부터 1달 전
+    val defaultStartDate = initialPayPeriod?.startDate ?: today.minus(1, DateTimeUnit.MONTH)
+    val defaultEndDate = initialPayPeriod?.endDate ?: today
+
+    var startDate by remember { mutableStateOf(defaultStartDate) }
+    var endDate by remember { mutableStateOf(defaultEndDate) }
+    var selectedTransactionType by remember { mutableStateOf<TransactionType?>(TransactionType.EXPENSE) }
     var selectedCategories by remember { mutableStateOf<Set<String>>(emptySet()) }
     var calculatorResult by remember { mutableStateOf<CalculatorResult?>(null) }
 
@@ -153,19 +158,6 @@ fun CalculatorDialog(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        FilterChip(
-                            onClick = {
-                                selectedTransactionType = if (selectedTransactionType == null) null else null
-                                selectedCategories = emptySet()
-                            },
-                            label = { Text("전체", color = Color.Black) },
-                            selected = selectedTransactionType == null,
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.Gray,
-                                selectedLabelColor = Color.Black
-                            )
-                        )
-
                         FilterChip(
                             onClick = {
                                 selectedTransactionType = TransactionType.INCOME
