@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -207,29 +208,45 @@ private fun PayPeriodNavigationCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.LightGray)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
+                )
         ) {
-            TextButton(onClick = onPreviousPeriod) {
-                Text("◀", fontSize = 20.sp, color = Color.Black)
-            }
-            
-            Text(
-                text = currentPayPeriod.displayText,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
-            )
-            
-            TextButton(onClick = onNextPeriod) {
-                Text("▶", fontSize = 20.sp, color = Color.Black)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onPreviousPeriod) {
+                    Text("◀", fontSize = 16.sp, color = Color.Black)
+                }
+
+                Text(
+                    text = currentPayPeriod.displayText,
+                    color = Color.Black,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+
+                TextButton(onClick = onNextPeriod) {
+                    Text("▶", fontSize = 16.sp, color = Color.Black)
+                }
             }
         }
     }
@@ -241,48 +258,124 @@ private fun SummaryCard(
     totalExpense: Double
 ) {
     val balance = totalIncome - totalExpense
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.LightGray)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
+                )
         ) {
-            Text(
-                text = "급여 기간 요약",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                SummaryItem(
-                    label = "총 수입",
-                    amount = totalIncome,
-                    color = Color.Blue
+                Text(
+                    text = "📊 급여 기간 요약",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
                 )
-                
-                SummaryItem(
-                    label = "총 지출",
-                    amount = totalExpense,
-                    color = Color.Red
-                )
-                
-                SummaryItem(
-                    label = "잔액",
-                    amount = balance,
-                    color = when {
-                        balance > 0 -> Color.Blue
-                        balance < 0 -> Color.Red
-                        else -> Color.Black
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // 수입
+                    Column(horizontalAlignment = Alignment.Start) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "💰",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "수입",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Blue
+                            )
+                        }
+                        Text(
+                            text = "+${Utils.formatAmount(totalIncome)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Blue
+                        )
                     }
-                )
+
+                    // 지출
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "💸",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "지출",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Red
+                            )
+                        }
+                        Text(
+                            text = "-${Utils.formatAmount(totalExpense)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Red
+                        )
+                    }
+
+                    // 잔액
+                    Column(horizontalAlignment = Alignment.End) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "💵",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "잔액",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Black
+                            )
+                        }
+                        Text(
+                            text = "${
+                                when {
+                                    balance > 0 -> "+"
+                                    balance < 0 -> "-"
+                                    else -> ""
+                                }
+                            }${Utils.formatAmount(kotlin.math.abs(balance))}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                balance > 0 -> Color.Blue
+                                balance < 0 -> Color.Red
+                                else -> Color.Black
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -557,68 +650,84 @@ private fun CashSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.LightGray)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
+                )
         ) {
-            Text(
-                text = "💰 현금",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                Column {
-                    Text(
-                        text = "수입",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "+${Utils.formatAmount(income)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Blue
-                    )
-                }
+                Text(
+                    text = "💰 현금",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
 
-                Column {
-                    Text(
-                        text = "지출",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "-${Utils.formatAmount(expense)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Red
-                    )
-                }
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Column {
-                    Text(
-                        text = "차액",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    val balance = income - expense
-                    Text(
-                        text = "${if (balance > 0) "+" else ""}${Utils.formatAmount(balance)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = when {
-                            balance > 0 -> Color.Blue
-                            balance < 0 -> Color.Red
-                            else -> Color.Black
-                        }
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "수입",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(income)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Blue
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "지출",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "-${Utils.formatAmount(expense)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Red
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "차액",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        val balance = income - expense
+                        Text(
+                            text = "${if (balance > 0) "+" else ""}${Utils.formatAmount(balance)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                balance > 0 -> Color.Blue
+                                balance < 0 -> Color.Red
+                                else -> Color.Black
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -634,89 +743,105 @@ private fun CardSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.LightGray)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
+                )
         ) {
-            Text(
-                text = "💳 카드",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                // 지출 (본인 부담) - 항상 표시
-                Column {
-                    Text(
-                        text = "지출 (본인 부담)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "-${Utils.formatAmount(expense)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Red
-                    )
-                }
+                Text(
+                    text = "💳 카드",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
 
-                // 실제 사용 (더치페이 시만 표시, 아니면 빈 공간)
-                Column {
-                    if (actualExpense != expense) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // 지출 (본인 부담) - 항상 표시
+                    Column {
                         Text(
-                            text = "실제 사용",
+                            text = "지출 (본인 부담)",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Gray
                         )
                         Text(
-                            text = "-${Utils.formatAmount(actualExpense)}원",
+                            text = "-${Utils.formatAmount(expense)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF757575)
-                        )
-                    } else {
-                        // 빈 공간으로 레이아웃 유지
-                        Text(
-                            text = "",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = "",
-                            style = MaterialTheme.typography.titleSmall
+                            color = Color.Red
                         )
                     }
-                }
 
-                // 정산수입 (더치페이 시만 표시, 아니면 빈 공간)
-                Column {
-                    if (settlementIncome > 0) {
-                        Text(
-                            text = "정산수입",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
-                        )
-                        Text(
-                            text = "+${Utils.formatAmount(settlementIncome)}원",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Blue
-                        )
-                    } else {
-                        // 빈 공간으로 레이아웃 유지
-                        Text(
-                            text = "",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = "",
-                            style = MaterialTheme.typography.titleSmall
-                        )
+                    // 실제 사용 (더치페이 시만 표시, 아니면 빈 공간)
+                    Column {
+                        if (actualExpense != expense) {
+                            Text(
+                                text = "실제 사용",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "-${Utils.formatAmount(actualExpense)}원",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF757575)
+                            )
+                        } else {
+                            // 빈 공간으로 레이아웃 유지
+                            Text(
+                                text = "",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
+                    }
+
+                    // 정산수입 (더치페이 시만 표시, 아니면 빈 공간)
+                    Column {
+                        if (settlementIncome > 0) {
+                            Text(
+                                text = "정산수입",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "+${Utils.formatAmount(settlementIncome)}원",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Blue
+                            )
+                        } else {
+                            // 빈 공간으로 레이아웃 유지
+                            Text(
+                                text = "",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "",
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                        }
                     }
                 }
             }
@@ -731,63 +856,79 @@ private fun BalanceCardSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.LightGray)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
+                )
         ) {
-            Text(
-                text = "🎫 ${balanceCard.name}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                Column {
-                    Text(
-                        text = "충전",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "+${Utils.formatAmount(balanceCard.income)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Blue
-                    )
-                }
+                Text(
+                    text = "🎫 ${balanceCard.name}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
 
-                Column {
-                    Text(
-                        text = "사용",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "-${Utils.formatAmount(balanceCard.expense)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Red
-                    )
-                }
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Column {
-                    Text(
-                        text = "잔액",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "${Utils.formatAmount(balanceCard.currentBalance)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "충전",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(balanceCard.income)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Blue
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "사용",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "-${Utils.formatAmount(balanceCard.expense)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Red
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "잔액",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "${Utils.formatAmount(balanceCard.currentBalance)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
                 }
             }
         }
@@ -801,63 +942,79 @@ private fun GiftCardSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.LightGray)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
+                )
         ) {
-            Text(
-                text = "🎁 ${giftCard.name}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                Column {
-                    Text(
-                        text = "구매",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "+${Utils.formatAmount(giftCard.income)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Blue
-                    )
-                }
+                Text(
+                    text = "🎁 ${giftCard.name}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
 
-                Column {
-                    Text(
-                        text = "사용",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "-${Utils.formatAmount(giftCard.expense)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Red
-                    )
-                }
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Column {
-                    Text(
-                        text = "잔액",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "${Utils.formatAmount(giftCard.currentBalance)}원",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "구매",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(giftCard.income)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Blue
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "사용",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "-${Utils.formatAmount(giftCard.expense)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Red
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "잔액",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                        Text(
+                            text = "${Utils.formatAmount(giftCard.currentBalance)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
                 }
             }
         }
