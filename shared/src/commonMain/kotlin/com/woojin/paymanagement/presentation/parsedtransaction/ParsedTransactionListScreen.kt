@@ -21,10 +21,76 @@ import kotlinx.coroutines.launch
 fun ParsedTransactionListScreen(
     viewModel: ParsedTransactionViewModel,
     onTransactionClick: (ParsedTransaction) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onSendTestNotifications: ((List<ParsedTransaction>) -> Unit)? = null,
+    hasNotificationPermission: Boolean = true,
+    onRequestNotificationPermission: () -> Unit = {},
+    onCheckPermission: () -> Boolean = { true }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    var showDisableDialog by remember { mutableStateOf(false) }
+    var isNotificationEnabled by remember { mutableStateOf(true) }
+    var hasPermission by remember { mutableStateOf(hasNotificationPermission) }
+
+    // 화면이 보일 때마다 권한 상태 체크 (DisposableEffect 사용)
+    DisposableEffect(Unit) {
+        hasPermission = onCheckPermission()
+        onDispose { }
+    }
+
+    // 주기적으로 권한 상태 체크 (1초마다)
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(1000)
+            hasPermission = onCheckPermission()
+        }
+    }
+
+    // 권한 안내 다이얼로그
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDialog = false },
+            title = { Text("알림 전송 권한 필요") },
+            text = { Text("푸시 알림 기능을 사용하려면 알림 전송 권한이 필요합니다.\n\n설정 화면으로 이동하시겠습니까?") },
+            confirmButton = {
+                Button(onClick = {
+                    showPermissionDialog = false
+                    onRequestNotificationPermission()
+                }) {
+                    Text("설정하기")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPermissionDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    // 알림 비활성화 확인 다이얼로그
+    if (showDisableDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisableDialog = false },
+            title = { Text("알림 끄기") },
+            text = { Text("푸시 알림 기능을 끄시겠습니까?") },
+            confirmButton = {
+                Button(onClick = {
+                    isNotificationEnabled = false
+                    showDisableDialog = false
+                }) {
+                    Text("끄기")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisableDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -47,11 +113,40 @@ fun ParsedTransactionListScreen(
                 modifier = Modifier.weight(1f)
             )
 
+            // 알림 버튼
+            val isEnabled = hasPermission && isNotificationEnabled
+            TextButton(
+                onClick = {
+                    if (!hasPermission) {
+                        // 권한이 없으면 권한 요청 다이얼로그
+                        showPermissionDialog = true
+                    } else if (isNotificationEnabled) {
+                        // 알림이 켜져 있으면 끄기 다이얼로그
+                        showDisableDialog = true
+                    } else {
+                        // 알림이 꺼져 있으면 다시 켜기
+                        isNotificationEnabled = true
+                    }
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = if (isEnabled) Color(0xFF4CAF50) else Color.Gray
+                )
+            ) {
+                Text(
+                    text = if (isEnabled) "🔔 알림" else "🔕 알림",
+                    fontWeight = if (isEnabled) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+
             // 테스트 데이터 추가 버튼
             TextButton(
                 onClick = {
                     scope.launch {
-                        viewModel.addTestData()
+                        val testTransactions = viewModel.addTestData()
+                        // 권한과 알림 활성화 상태 모두 확인
+                        if (hasPermission && isNotificationEnabled) {
+                            onSendTestNotifications?.invoke(testTransactions)
+                        }
                     }
                 }
             ) {

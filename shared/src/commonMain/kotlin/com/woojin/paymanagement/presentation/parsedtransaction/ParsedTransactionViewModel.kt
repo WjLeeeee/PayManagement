@@ -78,8 +78,8 @@ class ParsedTransactionViewModel(
         }
     }
 
-    suspend fun addTestData() {
-        try {
+    suspend fun addTestData(): List<ParsedTransaction> {
+        return try {
             val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
             val testTransactions = listOf(
                 ParsedTransaction(
@@ -114,10 +114,13 @@ class ParsedTransactionViewModel(
             testTransactions.forEach { transaction ->
                 insertParsedTransactionUseCase(transaction)
             }
+
+            testTransactions
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 error = "Failed to add test data: ${e.message}"
             )
+            emptyList()
         }
     }
 
