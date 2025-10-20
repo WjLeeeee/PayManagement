@@ -3,6 +3,7 @@ package com.woojin.paymanagement.android.service
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import com.woojin.paymanagement.android.util.TransactionNotificationHelper
 import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.domain.usecase.InsertParsedTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +27,11 @@ class CardNotificationListenerService : NotificationListenerService() {
 
     private val insertParsedTransactionUseCase: InsertParsedTransactionUseCase by inject()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    override fun onCreate() {
+        super.onCreate()
+        TransactionNotificationHelper.initialize(this)
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
@@ -161,6 +167,9 @@ class CardNotificationListenerService : NotificationListenerService() {
             try {
                 insertParsedTransactionUseCase(transaction)
                 Log.d(TAG, "Successfully saved parsed transaction: ${transaction.merchantName} - ${transaction.amount}원")
+
+                // 파싱 성공 시 사용자에게 알림 전송
+                TransactionNotificationHelper.sendTransactionNotification(this@CardNotificationListenerService, transaction)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save parsed transaction", e)
             }

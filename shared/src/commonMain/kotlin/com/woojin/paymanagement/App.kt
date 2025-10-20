@@ -47,7 +47,8 @@ inline fun <reified T> koinInject(): T = requireNotNull(koinInstance).get()
 fun App(
     databaseDriverFactory: DatabaseDriverFactory,
     preferencesManager: PreferencesManager,
-    notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker
+    notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
+    onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -59,7 +60,7 @@ fun App(
 
     MaterialTheme {
         if (isKoinInitialized) {
-            PayManagementApp()
+            PayManagementApp(onSendTestNotifications = onSendTestNotifications)
         } else {
             // 로딩 화면 또는 빈 화면
         }
@@ -97,7 +98,9 @@ private fun initializeKoin(
 }
 
 @Composable
-fun PayManagementApp() {
+fun PayManagementApp(
+    onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null
+) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
     val databaseHelper: DatabaseHelper = koinInject()
@@ -115,7 +118,8 @@ fun PayManagementApp() {
     var selectedPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     var currentCalendarPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     var selectedParsedTransaction by remember { mutableStateOf<com.woojin.paymanagement.data.ParsedTransaction?>(null) }
-    var showPermissionDialog by remember { mutableStateOf(false) }
+    var showListenerPermissionDialog by remember { mutableStateOf(false) }
+    var showPostPermissionDialog by remember { mutableStateOf(false) }
     
     // 데이터베이스 초기화를 지연시켜 크래시 방지
     var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
@@ -149,23 +153,46 @@ fun PayManagementApp() {
         } catch (e: Exception) { }
     }
 
-    if (showPermissionDialog) {
+    // 알림 리스너 권한 다이얼로그
+    if (showListenerPermissionDialog) {
         AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
-            title = { Text("권한 필요") },
-            text = { Text("이 기능을 사용하려면 알림 권한이 필요합니다. 권한 설정 화면으로 이동하시겠습니까?") },
+            onDismissRequest = { showListenerPermissionDialog = false },
+            title = { Text("알림 리스너 권한 필요") },
+            text = { Text("카드 알림을 감지하려면 알림 리스너 권한이 필요합니다.\n\n설정 화면으로 이동하시겠습니까?") },
             confirmButton = {
                 Button(onClick = {
-                    showPermissionDialog = false
-                    // 실제 설정 이동
+                    showListenerPermissionDialog = false
                     val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
-                    notificationPermissionChecker.openSettings()
+                    notificationPermissionChecker.openListenerSettings()
                 }) {
-                    Text("확인")
+                    Text("설정하기")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
+                TextButton(onClick = { showListenerPermissionDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    // 알림 전송 권한 다이얼로그
+    if (showPostPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPostPermissionDialog = false },
+            title = { Text("알림 전송 권한 필요") },
+            text = { Text("앱 알림을 표시하려면 알림 전송 권한이 필요합니다.\n\n설정 화면으로 이동하시겠습니까?") },
+            confirmButton = {
+                Button(onClick = {
+                    showPostPermissionDialog = false
+                    val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
+                    notificationPermissionChecker.openAppNotificationSettings()
+                }) {
+                    Text("설정하기")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPostPermissionDialog = false }) {
                     Text("취소")
                 }
             }
@@ -235,10 +262,16 @@ fun PayManagementApp() {
                 },
                 onParsedTransactionsClick = {
                     val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
-                    if (notificationPermissionChecker.hasPermission()) {
+
+                    // 알림 리스너 권한만 체크 (카드 알림 감지용)
+                    val hasListener = notificationPermissionChecker.hasListenerPermission()
+
+                    if (hasListener) {
+                        // 알림 리스너 권한이 있으면 화면 이동
                         currentScreen = Screen.ParsedTransactionList
                     } else {
-                        showPermissionDialog = true
+                        // 알림 리스너 권한이 없으면 요청
+                        showListenerPermissionDialog = true
                     }
                 }
             )
@@ -483,6 +516,7 @@ fun PayManagementApp() {
 
         Screen.ParsedTransactionList -> {
             val parsedTransactionViewModel = remember { koinInject<com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionViewModel>() }
+            val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
 
             ParsedTransactionListScreen(
                 viewModel = parsedTransactionViewModel,
@@ -493,6 +527,14 @@ fun PayManagementApp() {
                 },
                 onBack = {
                     currentScreen = Screen.Calendar
+                },
+                onSendTestNotifications = onSendTestNotifications,
+                hasNotificationPermission = notificationPermissionChecker.hasPostNotificationPermission(),
+                onRequestNotificationPermission = {
+                    notificationPermissionChecker.openAppNotificationSettings()
+                },
+                onCheckPermission = {
+                    notificationPermissionChecker.hasPostNotificationPermission()
                 }
             )
         }

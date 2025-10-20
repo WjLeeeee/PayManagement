@@ -14,11 +14,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import com.woojin.paymanagement.App
+import com.woojin.paymanagement.android.util.TransactionNotificationHelper
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.NotificationPermissionChecker
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -59,7 +61,13 @@ fun StatusBarOverlayScreen() {
                 App(
                     databaseDriverFactory = DatabaseDriverFactory(context = context),
                     preferencesManager = PreferencesManager(context = context),
-                    notificationPermissionChecker = NotificationPermissionChecker(context = context)
+                    notificationPermissionChecker = NotificationPermissionChecker(context = context),
+                    onSendTestNotifications = { transactions ->
+                        // 각 테스트 거래에 대해 알림 전송
+                        transactions.forEach { transaction ->
+                            TransactionNotificationHelper.sendTransactionNotification(context, transaction)
+                        }
+                    }
                 )
             }
         }
