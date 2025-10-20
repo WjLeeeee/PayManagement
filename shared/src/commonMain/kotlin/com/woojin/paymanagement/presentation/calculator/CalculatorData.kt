@@ -17,7 +17,8 @@ data class CalculatorResult(
     val totalAmount: Double,
     val transactionCount: Int,
     val averageAmount: Double,
-    val categories: List<CategorySummary>
+    val categories: List<CategorySummary>,
+    val transactionDetails: List<TransactionDetail>
 )
 
 @Serializable
@@ -26,4 +27,11 @@ data class CategorySummary(
     val amount: Double,
     val transactionCount: Int,
     val percentage: Double
+)
+
+@Serializable
+data class TransactionDetail(
+    val amount: Double,
+    val memo: String,
+    val date: LocalDate
 )

@@ -5,6 +5,8 @@ import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.presentation.calculator.CalculatorRequest
 import com.woojin.paymanagement.presentation.calculator.CalculatorResult
 import com.woojin.paymanagement.presentation.calculator.CategorySummary
+import com.woojin.paymanagement.presentation.calculator.TransactionDetail
+import kotlinx.datetime.LocalDate
 
 class CalculatorUseCase {
 
@@ -57,24 +59,45 @@ class CalculatorUseCase {
             )
         }.sortedByDescending { it.amount }
 
+        // 거래 상세 정보 (날짜순 정렬)
+        val transactionDetails = filteredTransactions
+            .sortedBy { it.date }
+            .map { transaction ->
+                TransactionDetail(
+                    amount = transaction.amount,
+                    memo = transaction.memo,
+                    date = transaction.date
+                )
+            }
+
         return CalculatorResult(
             totalAmount = totalAmount,
             transactionCount = transactionCount,
             averageAmount = averageAmount,
-            categories = categorySummaries
+            categories = categorySummaries,
+            transactionDetails = transactionDetails
         )
     }
 
     fun getAvailableCategories(
         transactions: List<Transaction>,
+        startDate: LocalDate,
+        endDate: LocalDate,
         transactionType: TransactionType? = null
     ): List<String> {
-        val filteredTransactions = if (transactionType != null) {
-            transactions.filter { it.type == transactionType }
-        } else {
-            transactions
+        // 기간으로 필터링
+        val periodTransactions = transactions.filter { transaction ->
+            transaction.date >= startDate && transaction.date <= endDate
         }
 
+        // 거래 타입으로 필터링
+        val filteredTransactions = if (transactionType != null) {
+            periodTransactions.filter { it.type == transactionType }
+        } else {
+            periodTransactions
+        }
+
+        // 거래 내역이 1건 이상 있는 카테고리만 반환
         return filteredTransactions
             .map { it.category }
             .distinct()
