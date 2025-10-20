@@ -3,20 +3,43 @@ package com.woojin.paymanagement.presentation.calculator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -60,11 +83,15 @@ fun CalculatorDialog(
 
     // 스크롤 상태
     val scrollState = rememberScrollState()
-    val coroutineScope = rememberCoroutineScope()
 
     // 사용 가능한 카테고리 목록 (거래 내역이 1건 이상 있는 카테고리만)
     val availableCategories = remember(transactions, startDate, endDate, selectedTransactionType) {
-        calculatorUseCase.getAvailableCategories(transactions, startDate, endDate, selectedTransactionType)
+        calculatorUseCase.getAvailableCategories(
+            transactions,
+            startDate,
+            endDate,
+            selectedTransactionType
+        )
     }
 
     // 사용 가능한 카테고리가 변경되면 첫 번째 카테고리를 자동 선택
@@ -142,7 +169,11 @@ fun CalculatorDialog(
                                 .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
                                 .padding(12.dp)
                         ) {
-                            Text("시작일", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            Text(
+                                "시작일",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
                             Text(
                                 "${startDate.year}.${startDate.monthNumber}.${startDate.dayOfMonth}",
                                 style = MaterialTheme.typography.bodyLarge,
@@ -151,7 +182,11 @@ fun CalculatorDialog(
                             )
                         }
 
-                        Text("~", modifier = Modifier.padding(horizontal = 8.dp), color = Color.Black)
+                        Text(
+                            "~",
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            color = Color.Black
+                        )
 
                         Column(
                             modifier = Modifier
@@ -160,7 +195,11 @@ fun CalculatorDialog(
                                 .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
                                 .padding(12.dp)
                         ) {
-                            Text("종료일", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            Text(
+                                "종료일",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
                             Text(
                                 "${endDate.year}.${endDate.monthNumber}.${endDate.dayOfMonth}",
                                 style = MaterialTheme.typography.bodyLarge,
@@ -190,7 +229,12 @@ fun CalculatorDialog(
                                 selectedTransactionType = TransactionType.INCOME
                                 // 거래 타입 변경 시 카테고리는 LaunchedEffect에서 자동으로 설정됨
                             },
-                            label = { Text("수입", color = if (selectedTransactionType == TransactionType.INCOME) Color.White else Color.Black) },
+                            label = {
+                                Text(
+                                    "수입",
+                                    color = if (selectedTransactionType == TransactionType.INCOME) Color.White else Color.Black
+                                )
+                            },
                             selected = selectedTransactionType == TransactionType.INCOME,
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color.Blue,
@@ -203,7 +247,12 @@ fun CalculatorDialog(
                                 selectedTransactionType = TransactionType.EXPENSE
                                 // 거래 타입 변경 시 카테고리는 LaunchedEffect에서 자동으로 설정됨
                             },
-                            label = { Text("지출", color = if (selectedTransactionType == TransactionType.EXPENSE) Color.White else Color.Black) },
+                            label = {
+                                Text(
+                                    "지출",
+                                    color = if (selectedTransactionType == TransactionType.EXPENSE) Color.White else Color.Black
+                                )
+                            },
                             selected = selectedTransactionType == TransactionType.EXPENSE,
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color.Red,
@@ -234,13 +283,21 @@ fun CalculatorDialog(
                             availableCategories.forEach { category ->
                                 val isSelected = category == selectedCategory
                                 val backgroundColor = when {
-                                    isSelected && selectedTransactionType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
-                                    isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                                    isSelected && selectedTransactionType == TransactionType.INCOME -> Color(
+                                        0xFFE3F2FD
+                                    ) // 연한 파랑
+                                    isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(
+                                        0xFFFFEBEE
+                                    ) // 연한 빨강
                                     else -> Color(0xFFF5F5F5) // 연한 회색
                                 }
                                 val borderColor = when {
-                                    isSelected && selectedTransactionType == TransactionType.INCOME -> Color(0xFF2196F3) // 파랑
-                                    isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(0xFFF44336) // 빨강
+                                    isSelected && selectedTransactionType == TransactionType.INCOME -> Color(
+                                        0xFF2196F3
+                                    ) // 파랑
+                                    isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(
+                                        0xFFF44336
+                                    ) // 빨강
                                     else -> Color.Transparent
                                 }
                                 val textColor = when {
@@ -263,11 +320,6 @@ fun CalculatorDialog(
                                             // 이미 선택된 카테고리를 다시 클릭하면 선택 해제하지 않음
                                             if (selectedCategory != category) {
                                                 selectedCategory = category
-                                                // 카테고리 변경 시 결과 영역으로 스크롤
-                                                coroutineScope.launch {
-                                                    kotlinx.coroutines.delay(100) // UI 업데이트 대기
-                                                    scrollState.animateScrollTo(scrollState.maxValue)
-                                                }
                                             }
                                         }
                                         .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -275,7 +327,9 @@ fun CalculatorDialog(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text(
-                                        text = com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji(category),
+                                        text = com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji(
+                                            category
+                                        ),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                     Text(
@@ -531,7 +585,11 @@ private fun CalendarDatePickerDialog(
                             displayYear--
                         }
                     }) {
-                        Text("◀", color = Color.Blue, fontSize = MaterialTheme.typography.titleLarge.fontSize)
+                        Text(
+                            "◀",
+                            color = Color.Blue,
+                            fontSize = MaterialTheme.typography.titleLarge.fontSize
+                        )
                     }
 
                     Text(
@@ -549,7 +607,11 @@ private fun CalendarDatePickerDialog(
                             displayYear++
                         }
                     }) {
-                        Text("▶", color = Color.Blue, fontSize = MaterialTheme.typography.titleLarge.fontSize)
+                        Text(
+                            "▶",
+                            color = Color.Blue,
+                            fontSize = MaterialTheme.typography.titleLarge.fontSize
+                        )
                     }
                 }
 
@@ -602,7 +664,8 @@ private fun CalendarDatePickerDialog(
                         val isToday = date == today
 
                         // 날짜 선택 가능 여부 체크
-                        val isDisabled = (maxDate != null && date > maxDate) || (minDate != null && date < minDate)
+                        val isDisabled =
+                            (maxDate != null && date > maxDate) || (minDate != null && date < minDate)
 
                         Box(
                             modifier = Modifier
