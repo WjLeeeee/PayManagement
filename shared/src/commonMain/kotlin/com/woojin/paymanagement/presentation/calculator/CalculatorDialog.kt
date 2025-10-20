@@ -4,11 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +16,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,14 +29,12 @@ import com.woojin.paymanagement.domain.usecase.CalculatorUseCase
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.Month
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
-import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CalculatorDialog(
     transactions: List<Transaction>,
@@ -51,16 +51,43 @@ fun CalculatorDialog(
     var startDate by remember { mutableStateOf(defaultStartDate) }
     var endDate by remember { mutableStateOf(defaultEndDate) }
     var selectedTransactionType by remember { mutableStateOf<TransactionType?>(TransactionType.EXPENSE) }
-    var selectedCategories by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
     var calculatorResult by remember { mutableStateOf<CalculatorResult?>(null) }
 
     // 날짜 선택 다이얼로그 상태
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
 
-    // 사용 가능한 카테고리 목록
-    val availableCategories = remember(transactions, selectedTransactionType) {
-        calculatorUseCase.getAvailableCategories(transactions, selectedTransactionType)
+    // 스크롤 상태
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // 사용 가능한 카테고리 목록 (거래 내역이 1건 이상 있는 카테고리만)
+    val availableCategories = remember(transactions, startDate, endDate, selectedTransactionType) {
+        calculatorUseCase.getAvailableCategories(transactions, startDate, endDate, selectedTransactionType)
+    }
+
+    // 사용 가능한 카테고리가 변경되면 첫 번째 카테고리를 자동 선택
+    LaunchedEffect(availableCategories) {
+        if (availableCategories.isNotEmpty() && selectedCategory == null) {
+            selectedCategory = availableCategories.first()
+        } else if (availableCategories.isNotEmpty() && selectedCategory !in availableCategories) {
+            // 현재 선택된 카테고리가 목록에 없으면 첫 번째 카테고리 선택
+            selectedCategory = availableCategories.first()
+        }
+    }
+
+    // 자동 계산: 카테고리 선택이 변경될 때마다 자동으로 계산
+    LaunchedEffect(selectedCategory, startDate, endDate, selectedTransactionType) {
+        if (selectedCategory != null) {
+            val request = CalculatorRequest(
+                startDate = startDate,
+                endDate = endDate,
+                transactionType = selectedTransactionType,
+                categories = listOf(selectedCategory!!)
+            )
+            calculatorResult = calculatorUseCase.calculate(transactions, request)
+        }
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -74,7 +101,7 @@ fun CalculatorDialog(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp)
+                    .padding(12.dp)
             ) {
                 // Header
                 Text(
@@ -91,7 +118,7 @@ fun CalculatorDialog(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollState)
                 ) {
                     // 기간 설정
                     Text(
@@ -161,7 +188,7 @@ fun CalculatorDialog(
                         FilterChip(
                             onClick = {
                                 selectedTransactionType = TransactionType.INCOME
-                                selectedCategories = emptySet()
+                                // 거래 타입 변경 시 카테고리는 LaunchedEffect에서 자동으로 설정됨
                             },
                             label = { Text("수입", color = if (selectedTransactionType == TransactionType.INCOME) Color.White else Color.Black) },
                             selected = selectedTransactionType == TransactionType.INCOME,
@@ -174,7 +201,7 @@ fun CalculatorDialog(
                         FilterChip(
                             onClick = {
                                 selectedTransactionType = TransactionType.EXPENSE
-                                selectedCategories = emptySet()
+                                // 거래 타입 변경 시 카테고리는 LaunchedEffect에서 자동으로 설정됨
                             },
                             label = { Text("지출", color = if (selectedTransactionType == TransactionType.EXPENSE) Color.White else Color.Black) },
                             selected = selectedTransactionType == TransactionType.EXPENSE,
@@ -189,59 +216,80 @@ fun CalculatorDialog(
 
                     // 카테고리 선택
                     Text(
-                        text = "카테고리 선택",
+                        text = "카테고리",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Medium,
                         color = Color.Black
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "선택하지 않으면 모든 카테고리가 포함됩니다",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // 카테고리 목록
                     if (availableCategories.isNotEmpty()) {
-                        availableCategories.chunked(2).forEach { categoryPair ->
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                categoryPair.forEach { category ->
-                                    FilterChip(
-                                        onClick = {
-                                            selectedCategories = if (selectedCategories.contains(category)) {
-                                                selectedCategories - category
-                                            } else {
-                                                selectedCategories + category
-                                            }
-                                        },
-                                        label = { Text(category, color = if (selectedCategories.contains(category)) Color.White else Color.Black) },
-                                        selected = selectedCategories.contains(category),
-                                        modifier = Modifier.weight(1f),
-                                        colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = Color.Gray,
-                                            selectedLabelColor = Color.White
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            availableCategories.forEach { category ->
+                                val isSelected = category == selectedCategory
+                                val backgroundColor = when {
+                                    isSelected && selectedTransactionType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
+                                    isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                                    else -> Color(0xFFF5F5F5) // 연한 회색
+                                }
+                                val borderColor = when {
+                                    isSelected && selectedTransactionType == TransactionType.INCOME -> Color(0xFF2196F3) // 파랑
+                                    isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(0xFFF44336) // 빨강
+                                    else -> Color.Transparent
+                                }
+                                val textColor = when {
+                                    isSelected -> Color.Black
+                                    else -> Color.DarkGray
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .border(
+                                            width = if (isSelected) 2.dp else 0.dp,
+                                            color = borderColor,
+                                            shape = RoundedCornerShape(20.dp)
                                         )
+                                        .background(
+                                            color = backgroundColor,
+                                            shape = RoundedCornerShape(20.dp)
+                                        )
+                                        .clickable {
+                                            // 이미 선택된 카테고리를 다시 클릭하면 선택 해제하지 않음
+                                            if (selectedCategory != category) {
+                                                selectedCategory = category
+                                                // 카테고리 변경 시 결과 영역으로 스크롤
+                                                coroutineScope.launch {
+                                                    kotlinx.coroutines.delay(100) // UI 업데이트 대기
+                                                    scrollState.animateScrollTo(scrollState.maxValue)
+                                                }
+                                            }
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji(category),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        text = category,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = textColor
                                     )
                                 }
-
-                                // 홀수 개일 때 빈 공간 채우기
-                                if (categoryPair.size == 1) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
                             }
-
-                            Spacer(modifier = Modifier.height(4.dp))
                         }
                     } else {
                         Text(
-                            text = "해당 조건에 맞는 카테고리가 없습니다",
+                            text = "거래 내역이 없습니다",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Gray
                         )
@@ -252,38 +300,19 @@ fun CalculatorDialog(
                     // 계산 결과
                     calculatorResult?.let { result ->
                         CalculatorResultCard(result = result)
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 버튼들
-                Row(
+                // 닫기 버튼
+                Button(
+                    onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
                 ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("닫기", color = Color.Black)
-                    }
-
-                    Button(
-                        onClick = {
-                            val request = CalculatorRequest(
-                                startDate = startDate,
-                                endDate = endDate,
-                                transactionType = selectedTransactionType,
-                                categories = selectedCategories.toList()
-                            )
-                            calculatorResult = calculatorUseCase.calculate(transactions, request)
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
-                    ) {
-                        Text("계산", color = Color.White)
-                    }
+                    Text("닫기", color = Color.White)
                 }
             }
         }
@@ -292,8 +321,14 @@ fun CalculatorDialog(
         if (showStartDatePicker) {
             CalendarDatePickerDialog(
                 currentDate = startDate,
+                maxDate = today, // 오늘 이후 날짜 선택 불가
+                minDate = null,
                 onDateSelected = { newDate ->
                     startDate = newDate
+                    // 시작일이 종료일보다 이후면 종료일을 시작일로 맞춤
+                    if (newDate > endDate) {
+                        endDate = newDate
+                    }
                     showStartDatePicker = false
                 },
                 onDismiss = { showStartDatePicker = false }
@@ -303,6 +338,8 @@ fun CalculatorDialog(
         if (showEndDatePicker) {
             CalendarDatePickerDialog(
                 currentDate = endDate,
+                maxDate = today, // 오늘 이후 날짜 선택 불가
+                minDate = startDate, // 시작일 이전 날짜 선택 불가
                 onDateSelected = { newDate ->
                     endDate = newDate
                     showEndDatePicker = false
@@ -318,60 +355,75 @@ private fun CalculatorResultCard(result: CalculatorResult) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.LightGray)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFFF8FBFF), // 매우 연한 파랑
+                            Color(0xFFFFFEF7), // 매우 연한 노랑
+                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                        )
+                    )
+                )
         ) {
-            Text(
-                text = "계산 결과",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 요약 정보
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                ResultSummaryItem(
-                    label = "총액",
-                    value = "${Utils.formatAmount(result.totalAmount)}원",
-                    color = Color.Blue
-                )
-
-                ResultSummaryItem(
-                    label = "거래 건수",
-                    value = "${result.transactionCount}건",
-                    color = Color.Black
-                )
-
-                ResultSummaryItem(
-                    label = "평균 금액",
-                    value = "${Utils.formatAmount(result.averageAmount)}원",
-                    color = Color.Gray
-                )
-            }
-
-            // 카테고리별 세부 내용
-            if (result.categories.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-
                 Text(
-                    text = "카테고리별 상세",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "📊 계산 결과",
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                result.categories.take(5).forEach { category ->
-                    CategoryResultItem(category = category)
-                    Spacer(modifier = Modifier.height(4.dp))
+                // 요약 정보
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    ResultSummaryItem(
+                        label = "총액",
+                        value = "${Utils.formatAmount(result.totalAmount)}원",
+                        color = Color.Blue
+                    )
+
+                    ResultSummaryItem(
+                        label = "거래 건수",
+                        value = "${result.transactionCount}건",
+                        color = Color.Black
+                    )
+
+                    ResultSummaryItem(
+                        label = "평균 금액",
+                        value = "${Utils.formatAmount(result.averageAmount)}원",
+                        color = Color.Gray
+                    )
+                }
+
+                // 거래 상세 내역
+                if (result.transactionDetails.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "거래 상세",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    result.transactionDetails.forEach { detail ->
+                        TransactionDetailItem(detail = detail)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             }
         }
@@ -403,51 +455,56 @@ private fun ResultSummaryItem(
 }
 
 @Composable
-private fun CategoryResultItem(category: CategorySummary) {
+private fun TransactionDetailItem(detail: TransactionDetail) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+            .padding(12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
+            // 날짜
             Text(
-                text = category.category,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black
-            )
-            Text(
-                text = "${category.transactionCount}건",
+                text = "${detail.date.year}.${detail.date.monthNumber}.${detail.date.dayOfMonth}",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray
             )
+            // 메모
+            if (detail.memo.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = detail.memo,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black
+                )
+            }
         }
 
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = "${Utils.formatAmount(category.amount)}원",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-            Text(
-                text = "${(category.percentage * 10).toInt() / 10.0}%",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
-        }
+        // 금액
+        Text(
+            text = "${Utils.formatAmount(detail.amount)}원",
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
     }
 }
 
 @Composable
 private fun CalendarDatePickerDialog(
     currentDate: LocalDate,
+    maxDate: LocalDate? = null, // 선택 가능한 최대 날짜
+    minDate: LocalDate? = null, // 선택 가능한 최소 날짜
     onDateSelected: (LocalDate) -> Unit,
     onDismiss: () -> Unit
 ) {
     var displayMonth by remember { mutableStateOf(currentDate.monthNumber) }
     var displayYear by remember { mutableStateOf(currentDate.year) }
     var selectedDate by remember { mutableStateOf(currentDate) }
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -542,13 +599,20 @@ private fun CalendarDatePickerDialog(
                         val day = dayIndex + 1
                         val date = LocalDate(displayYear, displayMonth, day)
                         val isSelected = date == selectedDate
-                        val isToday = date == Clock.System.todayIn(TimeZone.currentSystemDefault())
+                        val isToday = date == today
+
+                        // 날짜 선택 가능 여부 체크
+                        val isDisabled = (maxDate != null && date > maxDate) || (minDate != null && date < minDate)
 
                         Box(
                             modifier = Modifier
                                 .aspectRatio(1f)
                                 .padding(2.dp)
-                                .clickable { selectedDate = date }
+                                .clickable(enabled = !isDisabled) {
+                                    if (!isDisabled) {
+                                        selectedDate = date
+                                    }
+                                }
                                 .background(
                                     when {
                                         isSelected -> Color.Blue
@@ -563,6 +627,7 @@ private fun CalendarDatePickerDialog(
                                 text = day.toString(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = when {
+                                    isDisabled -> Color.LightGray // 선택 불가능한 날짜는 연한 회색
                                     isSelected -> Color.White
                                     isToday -> Color.Black
                                     else -> Color.Black
