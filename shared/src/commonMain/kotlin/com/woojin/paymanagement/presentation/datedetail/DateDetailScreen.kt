@@ -80,6 +80,7 @@ fun DateDetailScreen(
         if (dayTransactions.isNotEmpty()) {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 items(dayTransactions) { transaction ->
