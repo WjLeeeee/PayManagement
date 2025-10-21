@@ -10,12 +10,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.utils.BackHandler
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
@@ -29,6 +28,9 @@ fun DateDetailScreen(
     onDeleteTransaction: (Transaction) -> Unit,
     onAddTransaction: () -> Unit
 ) {
+    // 시스템 뒤로가기 버튼 처리
+    BackHandler(onBack = onBack)
+
     val uiState = viewModel.uiState
     val scope = rememberCoroutineScope()
 
