@@ -48,6 +48,8 @@ fun App(
     databaseDriverFactory: DatabaseDriverFactory,
     preferencesManager: PreferencesManager,
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
+    shouldNavigateToParsedTransactions: Boolean = false,
+    onNavigationHandled: () -> Unit = {},
     onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
@@ -60,7 +62,11 @@ fun App(
 
     MaterialTheme {
         if (isKoinInitialized) {
-            PayManagementApp(onSendTestNotifications = onSendTestNotifications)
+            PayManagementApp(
+                shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
+                onNavigationHandled = onNavigationHandled,
+                onSendTestNotifications = onSendTestNotifications
+            )
         } else {
             // 로딩 화면 또는 빈 화면
         }
@@ -99,6 +105,8 @@ private fun initializeKoin(
 
 @Composable
 fun PayManagementApp(
+    shouldNavigateToParsedTransactions: Boolean = false,
+    onNavigationHandled: () -> Unit = {},
     onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null
 ) {
     // DI로 의존성 주입받기
@@ -120,6 +128,17 @@ fun PayManagementApp(
     var selectedParsedTransaction by remember { mutableStateOf<com.woojin.paymanagement.data.ParsedTransaction?>(null) }
     var showListenerPermissionDialog by remember { mutableStateOf(false) }
     var showPostPermissionDialog by remember { mutableStateOf(false) }
+
+    // Deep link 처리: 푸시 알림에서 카드 결제 내역 화면으로 이동
+    LaunchedEffect(shouldNavigateToParsedTransactions) {
+        if (shouldNavigateToParsedTransactions) {
+            // Payday가 설정되어 있을 때만 네비게이션 수행
+            if (preferencesManager.isPaydaySet()) {
+                currentScreen = Screen.ParsedTransactionList
+            }
+            onNavigationHandled()
+        }
+    }
     
     // 데이터베이스 초기화를 지연시켜 크래시 방지
     var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
