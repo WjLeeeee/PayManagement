@@ -190,25 +190,12 @@ fun StatisticsScreen(
         }
 
         if (statisticsData.chartData?.let { it.incomeItems.isEmpty() && it.expenseItems.isEmpty() } == true) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.LightGray)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(40.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "이 기간에 거래 내역이 없습니다",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
+            Text(
+                text = "이 기간에 거래 내역이 없습니다",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Black,
+                textAlign = TextAlign.Center
+            )
         }
         
             Spacer(modifier = Modifier.height(24.dp))
@@ -253,12 +240,12 @@ private fun PayPeriodNavigationCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onPreviousPeriod) {
-                    Text("◀", fontSize = 16.sp, color = Color.Black)
+                    Text("◀", fontSize = 24.sp, color = Color.Black)
                 }
 
                 Text(
@@ -271,7 +258,7 @@ private fun PayPeriodNavigationCard(
                 )
 
                 TextButton(onClick = onNextPeriod) {
-                    Text("▶", fontSize = 16.sp, color = Color.Black)
+                    Text("▶", fontSize = 24.sp, color = Color.Black)
                 }
             }
         }
