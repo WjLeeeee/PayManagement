@@ -46,9 +46,10 @@ object TransactionNotificationHelper {
      */
     fun sendTransactionNotification(context: Context, transaction: ParsedTransaction) {
         try {
-            // 알림 클릭 시 앱 실행 Intent
+            // 알림 클릭 시 카드 결제 내역 화면으로 이동하는 Intent
             val intent = Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                putExtra(MainActivity.EXTRA_NAVIGATE_TO_PARSED_TRANSACTIONS, true)
             }
 
             val pendingIntent = PendingIntent.getActivity(
