@@ -7,6 +7,7 @@ import com.woojin.paymanagement.data.IncomeType
 
 class GetAvailableGiftCardsUseCase {
     operator fun invoke(transactions: List<Transaction>): List<GiftCard> {
+        // 카드 이름으로 그룹화 (같은 이름의 카드는 하나로 통합)
         val giftCardMap = mutableMapOf<String, GiftCard>()
 
         // 상품권 수입 거래에서 상품권 생성
@@ -16,12 +17,12 @@ class GetAvailableGiftCardsUseCase {
             !it.giftCardId.isNullOrBlank() &&
             !it.cardName.isNullOrBlank()
         }.forEach { transaction ->
-            val cardId = transaction.giftCardId!!
             val cardName = transaction.cardName!!
+            val cardId = transaction.giftCardId!!
 
-            if (!giftCardMap.containsKey(cardId)) {
-                giftCardMap[cardId] = GiftCard(
-                    id = cardId,
+            if (!giftCardMap.containsKey(cardName)) {
+                giftCardMap[cardName] = GiftCard(
+                    id = cardId, // 첫 번째로 발견된 ID 사용
                     name = cardName,
                     totalAmount = 0.0,
                     usedAmount = 0.0,
@@ -30,8 +31,8 @@ class GetAvailableGiftCardsUseCase {
                 )
             }
 
-            val currentCard = giftCardMap[cardId]!!
-            giftCardMap[cardId] = currentCard.copy(
+            val currentCard = giftCardMap[cardName]!!
+            giftCardMap[cardName] = currentCard.copy(
                 totalAmount = currentCard.totalAmount + transaction.amount
             )
         }
@@ -41,9 +42,10 @@ class GetAvailableGiftCardsUseCase {
             it.giftCardId != null &&
             it.type == TransactionType.EXPENSE
         }.forEach { transaction ->
-            val cardId = transaction.giftCardId!!
-            giftCardMap[cardId]?.let { card ->
-                giftCardMap[cardId] = card.copy(
+            val cardName = transaction.cardName
+            if (cardName != null && giftCardMap.containsKey(cardName)) {
+                val card = giftCardMap[cardName]!!
+                giftCardMap[cardName] = card.copy(
                     usedAmount = card.usedAmount + transaction.amount
                 )
             }

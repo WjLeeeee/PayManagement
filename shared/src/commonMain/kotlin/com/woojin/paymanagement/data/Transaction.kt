@@ -347,14 +347,14 @@ object PaymentMethodAnalyzer {
             .filter { it.type == TransactionType.EXPENSE && it.isSettlement && it.settlementAmount != null }
             .sumOf { it.settlementAmount!! }
 
-        // 잔액권 분석
-        val balanceCardIds = transactions
-            .mapNotNull { it.balanceCardId }
+        // 잔액권 분석 (카드 이름으로 그룹화)
+        val balanceCardNames = transactions
+            .filter { it.balanceCardId != null && it.cardName != null }
+            .map { it.cardName!! }
             .distinct()
 
-        val balanceCardSummaries = balanceCardIds.map { cardId ->
-            val cardTransactions = transactions.filter { it.balanceCardId == cardId }
-            val cardName = cardTransactions.firstOrNull()?.cardName ?: "알 수 없는 잔액권"
+        val balanceCardSummaries = balanceCardNames.map { cardName ->
+            val cardTransactions = transactions.filter { it.cardName == cardName && it.balanceCardId != null }
 
             val income = cardTransactions
                 .filter { it.type == TransactionType.INCOME }
@@ -364,11 +364,11 @@ object PaymentMethodAnalyzer {
                 .filter { it.type == TransactionType.EXPENSE }
                 .sumOf { it.amount }
 
-            val currentCard = availableBalanceCards.find { it.id == cardId }
+            val currentCard = availableBalanceCards.find { it.name == cardName }
             val currentBalance = currentCard?.currentBalance ?: 0.0
 
             BalanceCardSummary(
-                id = cardId,
+                id = currentCard?.id ?: cardTransactions.firstOrNull()?.balanceCardId ?: "",
                 name = cardName,
                 income = income,
                 expense = expense,
@@ -376,14 +376,14 @@ object PaymentMethodAnalyzer {
             )
         }
 
-        // 상품권 분석
-        val giftCardIds = transactions
-            .mapNotNull { it.giftCardId }
+        // 상품권 분석 (카드 이름으로 그룹화)
+        val giftCardNames = transactions
+            .filter { it.giftCardId != null && it.cardName != null }
+            .map { it.cardName!! }
             .distinct()
 
-        val giftCardSummaries = giftCardIds.map { cardId ->
-            val cardTransactions = transactions.filter { it.giftCardId == cardId }
-            val cardName = cardTransactions.firstOrNull()?.cardName ?: "알 수 없는 상품권"
+        val giftCardSummaries = giftCardNames.map { cardName ->
+            val cardTransactions = transactions.filter { it.cardName == cardName && it.giftCardId != null }
 
             val income = cardTransactions
                 .filter { it.type == TransactionType.INCOME }
@@ -393,11 +393,11 @@ object PaymentMethodAnalyzer {
                 .filter { it.type == TransactionType.EXPENSE }
                 .sumOf { it.amount }
 
-            val currentCard = availableGiftCards.find { it.id == cardId }
+            val currentCard = availableGiftCards.find { it.name == cardName }
             val currentBalance = currentCard?.remainingAmount ?: 0.0
 
             GiftCardSummary(
-                id = cardId,
+                id = currentCard?.id ?: cardTransactions.firstOrNull()?.giftCardId ?: "",
                 name = cardName,
                 income = income,
                 expense = expense,
