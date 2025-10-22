@@ -3,7 +3,6 @@ package com.woojin.paymanagement.presentation.calculator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -276,7 +275,6 @@ fun CalculatorDialog(
 
                     // 카테고리 목록
                     if (availableCategories.isNotEmpty()) {
-                        val isDarkMode = isSystemInDarkTheme()
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -300,7 +298,7 @@ fun CalculatorDialog(
                                 }
                                 val textColor = when {
                                     isSelected -> Color.Black
-                                    else -> if (isDarkMode) Color.White else Color.DarkGray
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 }
 
                                 Row(

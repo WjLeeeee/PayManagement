@@ -601,7 +601,6 @@ fun CategoryChipGrid(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        val isDarkMode = isSystemInDarkTheme()
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
