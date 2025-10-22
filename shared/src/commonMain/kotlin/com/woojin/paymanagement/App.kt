@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.database.DatabaseHelper
@@ -359,6 +360,18 @@ fun PayManagementApp(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             // Light/Dark 토글 스위치
+                            val isSystemInDarkTheme = isSystemInDarkTheme()
+                            val isLightSelected = when (currentThemeMode) {
+                                ThemeMode.LIGHT -> true
+                                ThemeMode.DARK -> false
+                                ThemeMode.SYSTEM -> !isSystemInDarkTheme
+                            }
+                            val isDarkSelected = when (currentThemeMode) {
+                                ThemeMode.DARK -> true
+                                ThemeMode.LIGHT -> false
+                                ThemeMode.SYSTEM -> isSystemInDarkTheme
+                            }
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -375,7 +388,7 @@ fun PayManagementApp(
                                         .weight(1f)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(
-                                            color = if (currentThemeMode == ThemeMode.LIGHT)
+                                            color = if (isLightSelected)
                                                 MaterialTheme.colorScheme.primaryContainer
                                             else
                                                 MaterialTheme.colorScheme.surfaceVariant
@@ -399,11 +412,11 @@ fun PayManagementApp(
                                     Text(
                                         text = "Light",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = if (currentThemeMode == ThemeMode.LIGHT)
+                                        color = if (isLightSelected)
                                             MaterialTheme.colorScheme.onPrimaryContainer
                                         else
                                             MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontWeight = if (currentThemeMode == ThemeMode.LIGHT)
+                                        fontWeight = if (isLightSelected)
                                             FontWeight.Bold
                                         else
                                             FontWeight.Normal
@@ -416,7 +429,7 @@ fun PayManagementApp(
                                         .weight(1f)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(
-                                            color = if (currentThemeMode == ThemeMode.DARK)
+                                            color = if (isDarkSelected)
                                                 MaterialTheme.colorScheme.primaryContainer
                                             else
                                                 MaterialTheme.colorScheme.surfaceVariant
@@ -440,11 +453,11 @@ fun PayManagementApp(
                                     Text(
                                         text = "Dark",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = if (currentThemeMode == ThemeMode.DARK)
+                                        color = if (isDarkSelected)
                                             MaterialTheme.colorScheme.onPrimaryContainer
                                         else
                                             MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontWeight = if (currentThemeMode == ThemeMode.DARK)
+                                        fontWeight = if (isDarkSelected)
                                             FontWeight.Bold
                                         else
                                             FontWeight.Normal
