@@ -51,4 +51,17 @@ actual class PreferencesManager {
     actual fun setMoneyVisible(visible: Boolean) {
         userDefaults.setBool(visible, forKey = "money_visible")
     }
+
+    actual fun getThemeMode(): ThemeMode {
+        val mode = userDefaults.stringForKey("theme_mode") ?: ThemeMode.SYSTEM.name
+        return try {
+            ThemeMode.valueOf(mode)
+        } catch (e: IllegalArgumentException) {
+            ThemeMode.SYSTEM
+        }
+    }
+
+    actual fun setThemeMode(mode: ThemeMode) {
+        userDefaults.setObject(mode.name, forKey = "theme_mode")
+    }
 }

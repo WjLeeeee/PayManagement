@@ -1,8 +1,8 @@
 package com.woojin.paymanagement.presentation.calendar
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,22 +29,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
@@ -73,6 +75,7 @@ import kotlinx.datetime.todayIn
 fun CalendarScreen(
     viewModel: CalendarViewModel,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel,
+    onOpenDrawer: () -> Unit = {},
     onDateDetailClick: (LocalDate) -> Unit = {},
     onStatisticsClick: (PayPeriod) -> Unit = {},
     onAddTransactionClick: () -> Unit = {},
@@ -107,13 +110,44 @@ fun CalendarScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Pay Period Navigation
+            // Drawer Menu Button & Pay Period Navigation
             if (uiState.currentPayPeriod != null) {
-                PayPeriodHeader(
-                    currentPayPeriod = uiState.currentPayPeriod,
-                    onPreviousPeriod = { viewModel.navigateToPreviousPeriod() },
-                    onNextPeriod = { viewModel.navigateToNextPeriod() }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onOpenDrawer) {
+                        Icon(
+                            Icons.Default.Menu,
+                            contentDescription = "메뉴",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    PayPeriodHeader(
+                        currentPayPeriod = uiState.currentPayPeriod,
+                        onPreviousPeriod = { viewModel.navigateToPreviousPeriod() },
+                        onNextPeriod = { viewModel.navigateToNextPeriod() },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            } else {
+                // Pay Period가 null인 경우에도 메뉴 버튼 표시
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = onOpenDrawer) {
+                        Icon(
+                            Icons.Default.Menu,
+                            contentDescription = "메뉴",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+
+            if (uiState.currentPayPeriod != null) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -230,10 +264,11 @@ fun CalendarScreen(
 private fun PayPeriodHeader(
     currentPayPeriod: PayPeriod,
     onPreviousPeriod: () -> Unit,
-    onNextPeriod: () -> Unit
+    onNextPeriod: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -42,4 +42,13 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setMoneyVisible(visible: Boolean) {
         prefs.edit().putBoolean("money_visible", visible).apply()
     }
+
+    actual fun getThemeMode(): ThemeMode {
+        val mode = prefs.getString("theme_mode", ThemeMode.SYSTEM.name)
+        return ThemeMode.valueOf(mode ?: ThemeMode.SYSTEM.name)
+    }
+
+    actual fun setThemeMode(mode: ThemeMode) {
+        prefs.edit().putString("theme_mode", mode.name).apply()
+    }
 }

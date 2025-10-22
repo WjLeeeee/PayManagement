@@ -34,8 +34,17 @@ class MainActivity : ComponentActivity() {
         // Intent로부터 네비게이션 플래그 확인
         handleIntent(intent)
 
-        // 다크 모드 감지
-        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        // PreferencesManager에서 테마 설정 읽기
+        val preferencesManager = PreferencesManager(context = this)
+        val themeMode = preferencesManager.getThemeMode()
+
+        // 다크 모드 결정 (설정에 따라)
+        val systemDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val isDarkMode = when (themeMode) {
+            com.woojin.paymanagement.utils.ThemeMode.SYSTEM -> systemDarkMode
+            com.woojin.paymanagement.utils.ThemeMode.LIGHT -> false
+            com.woojin.paymanagement.utils.ThemeMode.DARK -> true
+        }
 
         // 상태바 스타일을 다크모드에 따라 설정
         enableEdgeToEdge(
@@ -62,10 +71,11 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            MyApplicationTheme {
+            MyApplicationTheme(darkTheme = isDarkMode) {
                 StatusBarOverlayScreen(
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
-                    onNavigationHandled = { shouldNavigateToParsedTransactions = false }
+                    onNavigationHandled = { shouldNavigateToParsedTransactions = false },
+                    onThemeChanged = { recreate() }
                 )
             }
         }
@@ -91,7 +101,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun StatusBarOverlayScreen(
     shouldNavigateToParsedTransactions: Boolean = false,
-    onNavigationHandled: () -> Unit = {}
+    onNavigationHandled: () -> Unit = {},
+    onThemeChanged: () -> Unit,
 ) {
     val context = LocalContext.current
     Box(modifier = Modifier.fillMaxSize()) {
@@ -116,7 +127,8 @@ fun StatusBarOverlayScreen(
                         transactions.forEach { transaction ->
                             TransactionNotificationHelper.sendTransactionNotification(context, transaction)
                         }
-                    }
+                    },
+                    onThemeChanged = { onThemeChanged() }
                 )
             }
         }
