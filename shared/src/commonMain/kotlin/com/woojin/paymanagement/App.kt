@@ -265,6 +265,7 @@ fun PayManagementApp(
 
         ModalNavigationDrawer(
             drawerState = drawerState,
+            gesturesEnabled = drawerState.isOpen, // Drawer 열렸을 때만 제스처 활성화 (닫기 위해)
             drawerContent = {
                 ModalDrawerSheet(
                     modifier = Modifier.width(screenWidth * 0.6f) // 화면 너비의 60%
