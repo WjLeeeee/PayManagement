@@ -1,6 +1,15 @@
 package com.woojin.paymanagement
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,6 +17,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.database.DatabaseHelper
@@ -23,8 +42,10 @@ import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionListScreen
+import com.woojin.paymanagement.presentation.settings.ThemeSettingsDialog
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
 import com.woojin.paymanagement.utils.PreferencesManager
+import com.woojin.paymanagement.utils.ThemeMode
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
@@ -50,7 +71,8 @@ fun App(
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
-    onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null
+    onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
+    onThemeChanged: (() -> Unit)? = null
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -65,7 +87,8 @@ fun App(
             PayManagementApp(
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                 onNavigationHandled = onNavigationHandled,
-                onSendTestNotifications = onSendTestNotifications
+                onSendTestNotifications = onSendTestNotifications,
+                onThemeChanged = onThemeChanged
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -107,7 +130,8 @@ private fun initializeKoin(
 fun PayManagementApp(
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
-    onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null
+    onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
+    onThemeChanged: (() -> Unit)? = null
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -218,8 +242,71 @@ fun PayManagementApp(
         )
     }
 
+    // 드로어 상태 및 테마 설정 다이얼로그 상태
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var currentThemeMode by remember { mutableStateOf(preferencesManager.getThemeMode()) }
 
-    when (currentScreen) {
+    // 테마 설정 다이얼로그
+    if (showThemeDialog) {
+        ThemeSettingsDialog(
+            currentThemeMode = currentThemeMode,
+            onThemeModeSelected = { mode ->
+                currentThemeMode = mode
+                preferencesManager.setThemeMode(mode)
+                onThemeChanged?.invoke() // 테마 변경 콜백 호출
+            },
+            onDismiss = { showThemeDialog = false }
+        )
+    }
+
+    // 화면 너비 가져오기
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(screenWidth * 0.6f) // 화면 너비의 60%
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "설정",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    androidx.compose.material3.HorizontalDivider()
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = "🎨 테마 설정",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                            }
+                            showThemeDialog = true
+                        }
+                    )
+                }
+            }
+        }
+    ) {
+        when (currentScreen) {
         Screen.PaydaySetup -> {
             // Koin에서 ViewModel 주입 (remember로 상태 유지)
             val paydaySetupViewModel = remember { koinInject<com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupViewModel>() }
@@ -263,6 +350,11 @@ fun PayManagementApp(
             CalendarScreen(
                 viewModel = calendarViewModel,
                 tutorialViewModel = tutorialViewModel,
+                onOpenDrawer = {
+                    scope.launch {
+                        drawerState.open()
+                    }
+                },
                 onDateDetailClick = { date ->
                     selectedDate = date
                     currentScreen = Screen.DateDetail
@@ -557,6 +649,7 @@ fun PayManagementApp(
                 }
             )
         }
+    }
     }
 }
 
