@@ -45,6 +45,20 @@ class AddTransactionViewModel(
         return "${timestamp}_$random"
     }
 
+    // 같은 이름의 기존 카드가 있으면 그 ID를 재사용, 없으면 새 ID 생성
+    private fun getOrCreateBalanceCardId(cardName: String): String {
+        return uiState.availableBalanceCards
+            .find { it.name == cardName }?.id
+            ?: generateUniqueId()
+    }
+
+    // 같은 이름의 기존 상품권이 있으면 그 ID를 재사용, 없으면 새 ID 생성
+    private fun getOrCreateGiftCardId(cardName: String): String {
+        return uiState.availableGiftCards
+            .find { it.name == cardName }?.id
+            ?: generateUniqueId()
+    }
+
     fun reset() {
         uiState = AddTransactionUiState()
     }
@@ -389,12 +403,12 @@ class AddTransactionViewModel(
                         incomeType = if (uiState.selectedType == TransactionType.INCOME) uiState.selectedIncomeType else null,
                         paymentMethod = if (uiState.selectedType == TransactionType.EXPENSE) uiState.selectedPaymentMethod else null,
                         balanceCardId = when {
-                            uiState.selectedType == TransactionType.INCOME && uiState.selectedIncomeType == IncomeType.BALANCE_CARD -> generateUniqueId()
+                            uiState.selectedType == TransactionType.INCOME && uiState.selectedIncomeType == IncomeType.BALANCE_CARD -> getOrCreateBalanceCardId(uiState.cardName)
                             uiState.selectedType == TransactionType.EXPENSE && uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.id
                             else -> null
                         },
                         giftCardId = when {
-                            uiState.selectedType == TransactionType.INCOME && uiState.selectedIncomeType == IncomeType.GIFT_CARD -> generateUniqueId()
+                            uiState.selectedType == TransactionType.INCOME && uiState.selectedIncomeType == IncomeType.GIFT_CARD -> getOrCreateGiftCardId(uiState.cardName)
                             else -> null
                         },
                         cardName = when {
