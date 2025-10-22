@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -571,7 +570,8 @@ private fun CalendarDay(
     dayOfWeek: Int, // 0=Monday, 5=Saturday, 6=Sunday
     onClick: () -> Unit
 ) {
-    val isDarkMode = isSystemInDarkTheme()
+    // 다크모드 확인: onSurface 색상이 밝으면 다크모드
+    val isDarkMode = MaterialTheme.colorScheme.onSurface.red > 0.5f
 
     // 주말 배경색 계산 (토요일: 파랑, 일요일: 빨강)
     val weekendBackground = when (dayOfWeek) {
