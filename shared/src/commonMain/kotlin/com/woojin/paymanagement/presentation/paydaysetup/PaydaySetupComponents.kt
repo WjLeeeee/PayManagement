@@ -154,7 +154,7 @@ fun ErrorMessage(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.Red.copy(alpha = 0.1f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)),
         shape = RoundedCornerShape(8.dp)
     ) {
         Row(
@@ -166,13 +166,13 @@ fun ErrorMessage(
         ) {
             Text(
                 text = error,
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f)
             )
 
             TextButton(onClick = onDismiss) {
-                Text("닫기", color = Color.Red)
+                Text("닫기", color = MaterialTheme.colorScheme.error)
             }
         }
     }
