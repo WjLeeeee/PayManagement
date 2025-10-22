@@ -8,6 +8,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -63,7 +64,8 @@ fun TransactionTypeSelector(
         Text(
             text = "거래 유형",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -89,13 +91,13 @@ fun TransactionTypeSelector(
                         selected = (type == selectedType),
                         onClick = null,
                         colors = RadioButtonDefaults.colors(
-                            selectedColor = Color.Gray
+                            selectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                     Text(
                         text = if (type == TransactionType.INCOME) "수입" else "지출",
                         modifier = Modifier.padding(start = 8.dp),
-                        color = if (type == TransactionType.INCOME) Color.Blue else Color.Red,
+                        color = if (type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -116,7 +118,8 @@ fun IncomeTypeSelector(
         Text(
             text = "수입 유형",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -138,7 +141,7 @@ fun IncomeTypeSelector(
                         selected = (incomeType == selectedIncomeType),
                         onClick = null,
                         colors = RadioButtonDefaults.colors(
-                            selectedColor = Color.Gray
+                            selectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                     Text(
@@ -148,7 +151,7 @@ fun IncomeTypeSelector(
                             IncomeType.GIFT_CARD -> "상품권"
                         },
                         modifier = Modifier.padding(start = 8.dp),
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -168,15 +171,13 @@ fun IncomeTypeSelector(
                             IncomeType.GIFT_CARD -> "상품권 이름 (예: 신세계 상품권)"
                             else -> ""
                         },
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Gray,
-                    focusedLabelColor = Color.Gray,
-                    unfocusedTextColor = Color.Black,
-                    focusedTextColor = Color.Black
+                    focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
@@ -200,7 +201,8 @@ fun PaymentMethodSelector(
         Text(
             text = "결제 수단",
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -230,7 +232,7 @@ fun PaymentMethodSelector(
                             selected = (paymentMethod == selectedPaymentMethod),
                             onClick = null,
                             colors = RadioButtonDefaults.colors(
-                                selectedColor = Color.Gray
+                                selectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         )
                         Text(
@@ -241,7 +243,7 @@ fun PaymentMethodSelector(
                                 PaymentMethod.GIFT_CARD -> "상품권"
                             },
                             modifier = Modifier.padding(start = 8.dp),
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -310,7 +312,7 @@ fun CategoryDropdown(
             value = selectedCategory,
             onValueChange = { },
             readOnly = true,
-            label = { Text("카테고리", color = Color.Black) },
+            label = { Text("카테고리", color = MaterialTheme.colorScheme.onSurface) },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
@@ -321,10 +323,8 @@ fun CategoryDropdown(
                     focusRequester?.let { modifier.focusRequester(it) } ?: modifier
                 },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = if (transactionType == TransactionType.INCOME) Color.Blue else Color.Red,
-                focusedLabelColor = if (transactionType == TransactionType.INCOME) Color.Blue else Color.Red,
-                unfocusedTextColor = Color.Black,
-                focusedTextColor = Color.Black
+                focusedBorderColor = if (transactionType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                focusedLabelColor = if (transactionType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         )
 
@@ -335,7 +335,7 @@ fun CategoryDropdown(
         ) {
             categories.forEach { category ->
                 DropdownMenuItem(
-                    text = { Text(category, color = Color.Black) },
+                    text = { Text(category, color = MaterialTheme.colorScheme.onSurface) },
                     onClick = {
                         onCategorySelected(category)
                         expanded = false
@@ -368,7 +368,7 @@ private fun <T> CardSelectionDropdown(
             },
             onValueChange = { },
             readOnly = true,
-            label = { Text(label, color = Color.Black) },
+            label = { Text(label, color = MaterialTheme.colorScheme.onSurface) },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
@@ -376,10 +376,8 @@ private fun <T> CardSelectionDropdown(
                 .menuAnchor()
                 .fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.Gray,
-                focusedLabelColor = Color.Gray,
-                unfocusedTextColor = Color.Black,
-                focusedTextColor = Color.Black
+                focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         )
 
@@ -397,7 +395,7 @@ private fun <T> CardSelectionDropdown(
                                 is GiftCard -> "${card.name} (${card.remainingAmount.toInt()}원)"
                                 else -> card.toString()
                             },
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     },
                     onClick = {
@@ -436,7 +434,7 @@ private fun BalanceCardUsageInfo(
         Text(
             text = "💡 $infoText",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = modifier.padding(horizontal = 4.dp)
         )
     }
@@ -471,7 +469,7 @@ private fun GiftCardUsageInfo(
         Text(
             text = "💡 $infoText",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = modifier.padding(horizontal = 4.dp)
         )
     }
@@ -499,7 +497,8 @@ fun SettlementSection(
             Text(
                 text = "더치페이/정산",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Switch(
@@ -507,9 +506,9 @@ fun SettlementSection(
                 onCheckedChange = onSettlementChange,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
-                    checkedTrackColor = Color.Gray,
+                    checkedTrackColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = Color.LightGray
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             )
         }
@@ -525,15 +524,13 @@ fun SettlementSection(
                 OutlinedTextField(
                     value = actualAmount,
                     onValueChange = onActualAmountChange,
-                    label = { Text("실제 결제 금액", color = Color.Black) },
-                    suffix = { Text("원", color = Color.Black) },
+                    label = { Text("실제 결제 금액", color = MaterialTheme.colorScheme.onSurface) },
+                    suffix = { Text("원", color = MaterialTheme.colorScheme.onSurface) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Gray,
-                        focusedLabelColor = Color.Gray,
-                        unfocusedTextColor = Color.Black,
-                        focusedTextColor = Color.Black
+                        focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
 
@@ -546,30 +543,26 @@ fun SettlementSection(
                     OutlinedTextField(
                         value = splitCount,
                         onValueChange = onSplitCountChange,
-                        label = { Text("분할 인원", color = Color.Black) },
-                        suffix = { Text("명", color = Color.Black) },
+                        label = { Text("분할 인원", color = MaterialTheme.colorScheme.onSurface) },
+                        suffix = { Text("명", color = MaterialTheme.colorScheme.onSurface) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Gray,
-                            focusedLabelColor = Color.Gray,
-                            unfocusedTextColor = Color.Black,
-                            focusedTextColor = Color.Black
+                            focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
 
                     OutlinedTextField(
                         value = settlementAmount,
                         onValueChange = onSettlementAmountChange,
-                        label = { Text("정산받을 금액", color = Color.Black) },
-                        suffix = { Text("원", color = Color.Black) },
+                        label = { Text("정산받을 금액", color = MaterialTheme.colorScheme.onSurface) },
+                        suffix = { Text("원", color = MaterialTheme.colorScheme.onSurface) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Gray,
-                            focusedLabelColor = Color.Gray,
-                            unfocusedTextColor = Color.Black,
-                            focusedTextColor = Color.Black
+                            focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -580,7 +573,7 @@ fun SettlementSection(
                     Text(
                         text = "💡 내 부담액: ${myAmount}원",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
                 }
@@ -603,11 +596,12 @@ fun CategoryChipGrid(
             text = "카테고리",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        val isDarkMode = isSystemInDarkTheme()
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -618,16 +612,16 @@ fun CategoryChipGrid(
                 val backgroundColor = when {
                     isSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                     isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
-                    else -> Color(0xFFF5F5F5) // 연한 회색
+                    else -> MaterialTheme.colorScheme.surfaceVariant
                 }
                 val borderColor = when {
-                    isSelected && transactionType == TransactionType.INCOME -> Color(0xFF2196F3) // 파랑
-                    isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFF44336) // 빨강
+                    isSelected && transactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary // 파랑
+                    isSelected && transactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error // 빨강
                     else -> Color.Transparent
                 }
                 val textColor = when {
-                    isSelected -> Color.Black
-                    else -> Color.DarkGray
+                    isSelected -> Color.Black  // 선택된 경우 항상 검은색 (배경이 밝은 색이므로)
+                    else -> MaterialTheme.colorScheme.onSurface  // 선택되지 않은 경우 테마 색상
                 }
 
                 Row(

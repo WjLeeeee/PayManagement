@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.android
 
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -33,16 +34,31 @@ class MainActivity : ComponentActivity() {
         // Intent로부터 네비게이션 플래그 확인
         handleIntent(intent)
 
-        // 상태바 스타일을 light로 설정 (아이콘 어둡게, 배경 흰색)
+        // 다크 모드 감지
+        val isDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+        // 상태바 스타일을 다크모드에 따라 설정
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(
-                scrim = Color.White.toArgb(),
-                darkScrim = Color.White.toArgb()
-            ),
-            navigationBarStyle = SystemBarStyle.light(
-                scrim = Color.White.toArgb(),
-                darkScrim = Color.White.toArgb()
-            )
+            statusBarStyle = if (isDarkMode) {
+                SystemBarStyle.dark(
+                    scrim = Color(0xFF121212).toArgb()
+                )
+            } else {
+                SystemBarStyle.light(
+                    scrim = Color.White.toArgb(),
+                    darkScrim = Color.White.toArgb()
+                )
+            },
+            navigationBarStyle = if (isDarkMode) {
+                SystemBarStyle.dark(
+                    scrim = Color(0xFF121212).toArgb()
+                )
+            } else {
+                SystemBarStyle.light(
+                    scrim = Color.White.toArgb(),
+                    darkScrim = Color.White.toArgb()
+                )
+            }
         )
 
         setContent {

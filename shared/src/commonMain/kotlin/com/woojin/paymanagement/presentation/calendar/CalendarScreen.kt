@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -237,19 +238,20 @@ private fun PayPeriodHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         TextButton(onClick = onPreviousPeriod) {
-            Text("◀", fontSize = 16.sp, color = Color.Black)
+            Text("◀", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
         }
 
         Text(
             text = currentPayPeriod.displayText,
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             modifier = Modifier.weight(1f)
         )
 
         TextButton(onClick = onNextPeriod) {
-            Text("▶", fontSize = 16.sp, color = Color.Black)
+            Text("▶", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -285,7 +287,7 @@ private fun PayPeriodSummaryCard(
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp
@@ -297,9 +299,9 @@ private fun PayPeriodSummaryCard(
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -317,7 +319,7 @@ private fun PayPeriodSummaryCard(
                         text = "급여 기간 요약",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     androidx.compose.material3.IconButton(
@@ -327,7 +329,7 @@ private fun PayPeriodSummaryCard(
                         Icon(
                             imageVector = Icons.Default.Lock,
                             contentDescription = if (isMoneyVisible) "금액 숨기기" else "금액 보기",
-                            tint = if (isMoneyVisible) Color.Black.copy(alpha = 0.3f) else Color.Black,
+                            tint = if (isMoneyVisible) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f) else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -353,14 +355,14 @@ private fun PayPeriodSummaryCard(
                             Text(
                                 text = "수입",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Blue
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Text(
                             text = "+${Utils.formatAmount(income)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Blue,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
                         )
                     }
@@ -378,14 +380,14 @@ private fun PayPeriodSummaryCard(
                             Text(
                                 text = "지출",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Red
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                         Text(
                             text = "-${Utils.formatAmount(expense)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Red,
+                            color = MaterialTheme.colorScheme.error,
                             modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
                         )
                     }
@@ -403,7 +405,7 @@ private fun PayPeriodSummaryCard(
                             Text(
                                 text = "잔액",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Text(
@@ -417,9 +419,9 @@ private fun PayPeriodSummaryCard(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = when {
-                                balance > 0 -> Color.Blue
-                                balance < 0 -> Color.Red
-                                else -> Color.Black
+                                balance > 0 -> MaterialTheme.colorScheme.primary
+                                balance < 0 -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurface
                             },
                             modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
                         )
@@ -534,10 +536,20 @@ private fun CalendarDay(
     dayOfWeek: Int, // 0=Monday, 5=Saturday, 6=Sunday
     onClick: () -> Unit
 ) {
+    val isDarkMode = isSystemInDarkTheme()
+
     // 주말 배경색 계산 (토요일: 파랑, 일요일: 빨강)
     val weekendBackground = when (dayOfWeek) {
-        5 -> Color(0xFFE3F2FD).copy(alpha = 0.5f) // 토요일 - 연한 파랑
-        6 -> Color(0xFFFFEBEE).copy(alpha = 0.5f) // 일요일 - 연한 빨강
+        5 -> if (isDarkMode) {
+            Color(0xFF1565C0).copy(alpha = 0.2f) // 토요일 - 다크모드에서는 어두운 파랑 + 낮은 투명도
+        } else {
+            Color(0xFFE3F2FD).copy(alpha = 0.5f) // 토요일 - 라이트모드: 연한 파랑
+        }
+        6 -> if (isDarkMode) {
+            Color(0xFFC62828).copy(alpha = 0.2f) // 일요일 - 다크모드에서는 어두운 빨강 + 낮은 투명도
+        } else {
+            Color(0xFFFFEBEE).copy(alpha = 0.5f) // 일요일 - 라이트모드: 연한 빨강
+        }
         else -> Color.Transparent
     }
 
@@ -549,8 +561,8 @@ private fun CalendarDay(
             .background(weekendBackground)
             .then(
                 when {
-                    isToday -> Modifier.border(2.dp, Color.Black, CircleShape)
-                    isSelected -> Modifier.border(2.dp, Color.Gray, CircleShape)
+                    isToday -> Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                    isSelected -> Modifier.border(2.dp, MaterialTheme.colorScheme.onSurfaceVariant, CircleShape)
                     else -> Modifier
                 }
             ),
@@ -564,7 +576,7 @@ private fun CalendarDay(
                 text = day.toString(),
                 fontSize = 14.sp,
                 fontWeight = if (hasIncome || hasExpense) FontWeight.Bold else FontWeight.Normal,
-                color = if (isInCurrentPeriod) Color.Black else Color.Gray
+                color = if (isInCurrentPeriod) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // 인디케이터 점
@@ -578,7 +590,7 @@ private fun CalendarDay(
                             modifier = Modifier
                                 .size(4.dp)
                                 .clip(CircleShape)
-                                .background(Color.Blue)
+                                .background(MaterialTheme.colorScheme.primary)
                         )
                     }
                     if (hasExpense) {
@@ -586,7 +598,7 @@ private fun CalendarDay(
                             modifier = Modifier
                                 .size(4.dp)
                                 .clip(CircleShape)
-                                .background(Color.Red)
+                                .background(MaterialTheme.colorScheme.error)
                         )
                     }
                 }
@@ -625,7 +637,7 @@ private fun DailyTransactionCard(
             },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp
@@ -637,9 +649,9 @@ private fun DailyTransactionCard(
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -659,12 +671,12 @@ private fun DailyTransactionCard(
                             text = "📍 이동할 날짜를 선택하세요",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2196F3),
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         )
                         Text(
                             text = "취소",
-                            color = Color.Red,
+                            color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier
@@ -685,7 +697,7 @@ private fun DailyTransactionCard(
                             },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -710,13 +722,13 @@ private fun DailyTransactionCard(
                     Text(
                         text = "이 날짜에 거래 내역이 없습니다",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     Text(
                         text = "캘린더에서 날짜를 클릭하여 해당 날짜의 메모를 확인하세요",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -742,7 +754,7 @@ private fun TransactionItem(
                 if (isSelected) {
                     Modifier
                         .background(
-                            color = Color(0xFF2196F3).copy(alpha = 0.1f),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                             shape = RoundedCornerShape(8.dp)
                         )
                         .padding(8.dp)
@@ -759,7 +771,7 @@ private fun TransactionItem(
                 .offset(y = 8.dp)
                 .clip(CircleShape)
                 .background(
-                    if (transaction.type == TransactionType.INCOME) Color.Blue else Color.Red
+                    if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
                 .align(Alignment.Top)
         )
@@ -784,7 +796,7 @@ private fun TransactionItem(
                         text = transaction.category,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -795,7 +807,7 @@ private fun TransactionItem(
                         )
                     }원",
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (transaction.type == TransactionType.INCOME) Color.Blue else Color.Red,
+                    color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -826,7 +838,7 @@ private fun TransactionItem(
             Text(
                 text = paymentMethodText,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             if (transaction.memo.isNotBlank()) {
@@ -834,7 +846,7 @@ private fun TransactionItem(
                 Text(
                     text = transaction.memo,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.DarkGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
             }
         }

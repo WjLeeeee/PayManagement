@@ -22,19 +22,35 @@ fun MyApplicationTheme(
 ) {
     val colors = if (darkTheme) {
         darkColorScheme(
-            primary = Color(0xFFBB86FC),
+            primary = Color(0xFF64B5F6), // 수입 색상 (밝은 파란색 - 다크 모드 시인성 향상)
             secondary = Color(0xFF03DAC5),
             tertiary = Color(0xFF3700B3),
-            background = Color.White,
-            surface = Color.White,
+            error = Color(0xFFEF5350), // 지출 색상 (밝은 빨간색)
+            background = Color(0xFF121212),
+            surface = Color(0xFF1E1E1E),
+            surfaceVariant = Color(0xFF2C2C2C),
+            onSurface = Color.White,
+            onSurfaceVariant = Color(0xFFB0B0B0),
+            secondaryContainer = Color(0xFF1A2530),
+            tertiaryContainer = Color(0xFF2D1A30),
+            onSecondaryContainer = Color.White,
+            onTertiaryContainer = Color.White
         )
     } else {
         lightColorScheme(
-            primary = Color(0xFF6200EE),
+            primary = Color(0xFF2196F3), // 수입 색상 (파란색)
             secondary = Color(0xFF03DAC5),
             tertiary = Color(0xFF3700B3),
+            error = Color(0xFFF44336), // 지출 색상 (빨간색)
             background = Color.White,
             surface = Color.White,
+            surfaceVariant = Color(0xFFF5F5F5),
+            onSurface = Color.Black,
+            onSurfaceVariant = Color(0xFF666666),
+            secondaryContainer = Color(0xFFFFFEF7),
+            tertiaryContainer = Color(0xFFFFFAFA),
+            onSecondaryContainer = Color.Black,
+            onTertiaryContainer = Color.Black
         )
     }
     val typography = Typography(

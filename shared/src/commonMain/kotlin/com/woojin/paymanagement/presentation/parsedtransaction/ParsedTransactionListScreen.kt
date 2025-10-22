@@ -133,14 +133,19 @@ fun ParsedTransactionListScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "뒤로가기",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
             }
 
             Text(
                 text = "카드 결제 내역",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             // 알림 버튼
@@ -159,7 +164,7 @@ fun ParsedTransactionListScreen(
                     }
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = if (isEnabled) Color(0xFF4CAF50) else Color.Gray
+                    contentColor = if (isEnabled) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             ) {
                 Text(
@@ -180,7 +185,7 @@ fun ParsedTransactionListScreen(
                     }
                 }
             ) {
-                Text("테스트", color = Color.Blue)
+                Text("테스트", color = MaterialTheme.colorScheme.primary)
             }
         }
 
@@ -189,7 +194,7 @@ fun ParsedTransactionListScreen(
         Text(
             text = "알림에서 파싱된 거래 내역입니다. 항목을 클릭하여 거래를 추가하세요.",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -210,7 +215,7 @@ fun ParsedTransactionListScreen(
                 ) {
                     Text(
                         text = "오류: ${uiState.error}",
-                        color = Color.Red
+                        color = MaterialTheme.colorScheme.error
                     )
                 }
             }
@@ -223,13 +228,13 @@ fun ParsedTransactionListScreen(
                         Text(
                             text = "파싱된 거래 내역이 없습니다",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "카드 결제 알림이 오면 자동으로 표시됩니다",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -268,7 +273,7 @@ private fun ParsedTransactionItem(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF5F5F5)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -284,7 +289,8 @@ private fun ParsedTransactionItem(
                 Text(
                     text = transaction.merchantName,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -293,7 +299,7 @@ private fun ParsedTransactionItem(
                 Text(
                     text = "${transaction.amount.toInt()}원",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Red,
+                    color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.SemiBold
                 )
 
@@ -303,13 +309,13 @@ private fun ParsedTransactionItem(
                 Text(
                     text = "${transaction.date.monthNumber}월 ${transaction.date.dayOfMonth}일",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             // Delete button
             TextButton(onClick = onDelete) {
-                Text("삭제", color = Color.Red)
+                Text("삭제", color = MaterialTheme.colorScheme.error)
             }
         }
     }

@@ -3,6 +3,7 @@ package com.woojin.paymanagement.presentation.calculator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -123,7 +124,7 @@ fun CalculatorDialog(
                 .fillMaxWidth()
                 .fillMaxHeight(0.9f),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier
@@ -135,7 +136,7 @@ fun CalculatorDialog(
                     text = "기간별 계산기",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
@@ -152,7 +153,7 @@ fun CalculatorDialog(
                         text = "기간 설정",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -166,45 +167,45 @@ fun CalculatorDialog(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { showStartDatePicker = true }
-                                .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                                 .padding(12.dp)
                         ) {
                             Text(
                                 "시작일",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 "${startDate.year}.${startDate.monthNumber}.${startDate.dayOfMonth}",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
                         Text(
                             "~",
                             modifier = Modifier.padding(horizontal = 8.dp),
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { showEndDatePicker = true }
-                                .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                                 .padding(12.dp)
                         ) {
                             Text(
                                 "종료일",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 "${endDate.year}.${endDate.monthNumber}.${endDate.dayOfMonth}",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -216,7 +217,7 @@ fun CalculatorDialog(
                         text = "거래 타입",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -232,12 +233,12 @@ fun CalculatorDialog(
                             label = {
                                 Text(
                                     "수입",
-                                    color = if (selectedTransactionType == TransactionType.INCOME) Color.White else Color.Black
+                                    color = if (selectedTransactionType == TransactionType.INCOME) Color.White else MaterialTheme.colorScheme.onSurface
                                 )
                             },
                             selected = selectedTransactionType == TransactionType.INCOME,
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.Blue,
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
                                 selectedLabelColor = Color.White
                             )
                         )
@@ -250,12 +251,12 @@ fun CalculatorDialog(
                             label = {
                                 Text(
                                     "지출",
-                                    color = if (selectedTransactionType == TransactionType.EXPENSE) Color.White else Color.Black
+                                    color = if (selectedTransactionType == TransactionType.EXPENSE) Color.White else MaterialTheme.colorScheme.onSurface
                                 )
                             },
                             selected = selectedTransactionType == TransactionType.EXPENSE,
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.Red,
+                                selectedContainerColor = MaterialTheme.colorScheme.error,
                                 selectedLabelColor = Color.White
                             )
                         )
@@ -268,13 +269,14 @@ fun CalculatorDialog(
                         text = "카테고리",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // 카테고리 목록
                     if (availableCategories.isNotEmpty()) {
+                        val isDarkMode = isSystemInDarkTheme()
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -289,20 +291,16 @@ fun CalculatorDialog(
                                     isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(
                                         0xFFFFEBEE
                                     ) // 연한 빨강
-                                    else -> Color(0xFFF5F5F5) // 연한 회색
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
                                 }
                                 val borderColor = when {
-                                    isSelected && selectedTransactionType == TransactionType.INCOME -> Color(
-                                        0xFF2196F3
-                                    ) // 파랑
-                                    isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(
-                                        0xFFF44336
-                                    ) // 빨강
+                                    isSelected && selectedTransactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary // 파랑
+                                    isSelected && selectedTransactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error // 빨강
                                     else -> Color.Transparent
                                 }
                                 val textColor = when {
                                     isSelected -> Color.Black
-                                    else -> Color.DarkGray
+                                    else -> if (isDarkMode) Color.White else Color.DarkGray
                                 }
 
                                 Row(
@@ -345,7 +343,7 @@ fun CalculatorDialog(
                         Text(
                             text = "거래 내역이 없습니다",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -364,7 +362,7 @@ fun CalculatorDialog(
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("닫기", color = Color.White)
                 }
@@ -409,7 +407,7 @@ private fun CalculatorResultCard(result: CalculatorResult) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
@@ -418,9 +416,9 @@ private fun CalculatorResultCard(result: CalculatorResult) {
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -432,7 +430,7 @@ private fun CalculatorResultCard(result: CalculatorResult) {
                     text = "📊 계산 결과",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -445,19 +443,19 @@ private fun CalculatorResultCard(result: CalculatorResult) {
                     ResultSummaryItem(
                         label = "총액",
                         value = "${Utils.formatAmount(result.totalAmount)}원",
-                        color = Color.Blue
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     ResultSummaryItem(
                         label = "거래 건수",
                         value = "${result.transactionCount}건",
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     ResultSummaryItem(
                         label = "평균 금액",
                         value = "${Utils.formatAmount(result.averageAmount)}원",
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -469,7 +467,7 @@ private fun CalculatorResultCard(result: CalculatorResult) {
                         text = "거래 상세",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -496,7 +494,7 @@ private fun ResultSummaryItem(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Text(
@@ -513,7 +511,7 @@ private fun TransactionDetailItem(detail: TransactionDetail) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
             .padding(12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -523,7 +521,7 @@ private fun TransactionDetailItem(detail: TransactionDetail) {
             Text(
                 text = "${detail.date.year}.${detail.date.monthNumber}.${detail.date.dayOfMonth}",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             // 메모
             if (detail.memo.isNotEmpty()) {
@@ -532,7 +530,7 @@ private fun TransactionDetailItem(detail: TransactionDetail) {
                     text = detail.memo,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -542,7 +540,7 @@ private fun TransactionDetailItem(detail: TransactionDetail) {
             text = "${Utils.formatAmount(detail.amount)}원",
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -566,7 +564,7 @@ private fun CalendarDatePickerDialog(
                 .fillMaxWidth()
                 .padding(16.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp)
@@ -587,7 +585,7 @@ private fun CalendarDatePickerDialog(
                     }) {
                         Text(
                             "◀",
-                            color = Color.Blue,
+                            color = MaterialTheme.colorScheme.primary,
                             fontSize = MaterialTheme.typography.titleLarge.fontSize
                         )
                     }
@@ -596,7 +594,7 @@ private fun CalendarDatePickerDialog(
                         text = "${displayYear}년 ${displayMonth}월",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     TextButton(onClick = {
@@ -609,7 +607,7 @@ private fun CalendarDatePickerDialog(
                     }) {
                         Text(
                             "▶",
-                            color = Color.Blue,
+                            color = MaterialTheme.colorScheme.primary,
                             fontSize = MaterialTheme.typography.titleLarge.fontSize
                         )
                     }
@@ -635,7 +633,7 @@ private fun CalendarDatePickerDialog(
                                 text = day,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -678,8 +676,8 @@ private fun CalendarDatePickerDialog(
                                 }
                                 .background(
                                     when {
-                                        isSelected -> Color.Blue
-                                        isToday -> Color.LightGray
+                                        isSelected -> MaterialTheme.colorScheme.primary
+                                        isToday -> MaterialTheme.colorScheme.surfaceVariant
                                         else -> Color.Transparent
                                     },
                                     RoundedCornerShape(8.dp)
@@ -690,10 +688,10 @@ private fun CalendarDatePickerDialog(
                                 text = day.toString(),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = when {
-                                    isDisabled -> Color.LightGray // 선택 불가능한 날짜는 연한 회색
+                                    isDisabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                                     isSelected -> Color.White
-                                    isToday -> Color.Black
-                                    else -> Color.Black
+                                    isToday -> MaterialTheme.colorScheme.onSurface
+                                    else -> MaterialTheme.colorScheme.onSurface
                                 },
                                 fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
                             )
@@ -712,13 +710,13 @@ private fun CalendarDatePickerDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("취소", color = Color.Black)
+                        Text("취소", color = MaterialTheme.colorScheme.onSurface)
                     }
 
                     Button(
                         onClick = { onDateSelected(selectedDate) },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Text("확인", color = Color.White)
                     }

@@ -103,20 +103,25 @@ fun StatisticsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "뒤로가기",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
             }
 
             Text(
                 text = "통계",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
 
             TextButton(onClick = { viewModel.showCalculatorDialog() }) {
                 Text(
                     text = "계산기",
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -180,7 +185,7 @@ fun StatisticsScreen(
                     text = "결제 수단별 분석",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -193,7 +198,7 @@ fun StatisticsScreen(
             Text(
                 text = "이 기간에 거래 내역이 없습니다",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }
@@ -221,7 +226,7 @@ private fun PayPeriodNavigationCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
@@ -230,9 +235,9 @@ private fun PayPeriodNavigationCard(
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -245,12 +250,12 @@ private fun PayPeriodNavigationCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextButton(onClick = onPreviousPeriod) {
-                    Text("◀", fontSize = 24.sp, color = Color.Black)
+                    Text("◀", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
 
                 Text(
                     text = currentPayPeriod.displayText,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -258,7 +263,7 @@ private fun PayPeriodNavigationCard(
                 )
 
                 TextButton(onClick = onNextPeriod) {
-                    Text("▶", fontSize = 24.sp, color = Color.Black)
+                    Text("▶", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -275,7 +280,7 @@ private fun SummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
@@ -284,9 +289,9 @@ private fun SummaryCard(
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -298,7 +303,7 @@ private fun SummaryCard(
                     text = "📊 급여 기간 요약",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -320,14 +325,14 @@ private fun SummaryCard(
                             Text(
                                 text = "수입",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Blue
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Text(
                             text = "+${Utils.formatAmount(totalIncome)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Blue
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -344,14 +349,14 @@ private fun SummaryCard(
                             Text(
                                 text = "지출",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Red
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                         Text(
                             text = "-${Utils.formatAmount(totalExpense)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Red
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
 
@@ -368,7 +373,7 @@ private fun SummaryCard(
                             Text(
                                 text = "잔액",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Black
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Text(
@@ -382,9 +387,9 @@ private fun SummaryCard(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = when {
-                                balance > 0 -> Color.Blue
-                                balance < 0 -> Color.Red
-                                else -> Color.Black
+                                balance > 0 -> MaterialTheme.colorScheme.primary
+                                balance < 0 -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurface
                             }
                         )
                     }
@@ -406,7 +411,7 @@ private fun SummaryItem(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Spacer(modifier = Modifier.height(4.dp))
@@ -438,8 +443,11 @@ private fun ChartSection(
     // 선택된 카테고리 상태
     var selectedCategory by remember { mutableStateOf<String?>(null) }
 
+    // "기타" 색상을 먼저 가져오기
+    val etcColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     // 4% 미만 항목들을 "기타"로 묶기
-    val (processedItems, mainItems, smallItems) = remember(items, total) {
+    val (processedItems, mainItems, smallItems) = remember(items, total, etcColor) {
         val threshold = 4.0f
         val mainItems = items.filter { it.percentage >= threshold }
         val smallItems = items.filter { it.percentage < threshold }
@@ -454,7 +462,7 @@ private fun ChartSection(
                 category = "기타",
                 amount = etcAmount,
                 percentage = etcPercentage,
-                color = Color.Gray
+                color = etcColor
             )
 
             Triple(mainItems + etcItem, mainItems, smallItems)
@@ -466,7 +474,7 @@ private fun ChartSection(
             text = title,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -474,7 +482,7 @@ private fun ChartSection(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -516,7 +524,7 @@ private fun ChartSection(
                                 category = "기타",
                                 amount = etcTotal,
                                 percentage = etcPercentage,
-                                color = Color.Gray
+                                color = etcColor
                             ),
                             isSubItem = false,
                             isSelected = selectedCategory == "기타"
@@ -567,7 +575,7 @@ private fun ChartLegendItem(
                 Text(
                     text = "ㄴ",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
@@ -594,14 +602,14 @@ private fun ChartLegendItem(
                         text = item.category,
                         style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else if (isSubItem) FontWeight.Normal else FontWeight.Medium,
-                        color = if (isSubItem) Color.DarkGray else Color.Black
+                        color = if (isSubItem) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Text(
                     text = "${Utils.formatAmount(item.amount)}원",
                     style = if (isSelected) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (isSelected) Color.Black else Color.Gray
+                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -610,7 +618,7 @@ private fun ChartLegendItem(
             text = "${(item.percentage * 10).toInt() / 10.0}%",
             style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
             fontWeight = if (isSelected) FontWeight.ExtraBold else if (isSubItem) FontWeight.Normal else FontWeight.Bold,
-            color = if (isSubItem) Color.DarkGray else Color.Black
+            color = if (isSubItem) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -663,7 +671,7 @@ private fun CashSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
@@ -672,9 +680,9 @@ private fun CashSummaryCard(
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -686,7 +694,7 @@ private fun CashSummaryCard(
                     text = "💰 현금",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -699,13 +707,13 @@ private fun CashSummaryCard(
                         Text(
                             text = "수입",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "+${Utils.formatAmount(income)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Blue
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -713,13 +721,13 @@ private fun CashSummaryCard(
                         Text(
                             text = "지출",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "-${Utils.formatAmount(expense)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Red
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
 
@@ -727,7 +735,7 @@ private fun CashSummaryCard(
                         Text(
                             text = "차액",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val balance = income - expense
                         Text(
@@ -739,9 +747,9 @@ private fun CashSummaryCard(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = when {
-                                balance > 0 -> Color.Blue
-                                balance < 0 -> Color.Red
-                                else -> Color.Black
+                                balance > 0 -> MaterialTheme.colorScheme.primary
+                                balance < 0 -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurface
                             }
                         )
                     }
@@ -760,7 +768,7 @@ private fun CardSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
@@ -769,9 +777,9 @@ private fun CardSummaryCard(
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -783,7 +791,7 @@ private fun CardSummaryCard(
                     text = "💳 카드",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -797,13 +805,13 @@ private fun CardSummaryCard(
                         Text(
                             text = "지출 (본인 부담)",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "-${Utils.formatAmount(expense)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Red
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
 
@@ -813,13 +821,13 @@ private fun CardSummaryCard(
                             Text(
                                 text = "실제 사용",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = "-${Utils.formatAmount(actualExpense)}원",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF757575)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else {
                             // 빈 공간으로 레이아웃 유지
@@ -840,13 +848,13 @@ private fun CardSummaryCard(
                             Text(
                                 text = "정산수입",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = "+${Utils.formatAmount(settlementIncome)}원",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.Blue
+                                color = MaterialTheme.colorScheme.primary
                             )
                         } else {
                             // 빈 공간으로 레이아웃 유지
@@ -873,7 +881,7 @@ private fun BalanceCardSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
@@ -882,9 +890,9 @@ private fun BalanceCardSummaryCard(
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -896,7 +904,7 @@ private fun BalanceCardSummaryCard(
                     text = "🎫 ${balanceCard.name}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -909,13 +917,13 @@ private fun BalanceCardSummaryCard(
                         Text(
                             text = "충전",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "+${Utils.formatAmount(balanceCard.income)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Blue
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -923,13 +931,13 @@ private fun BalanceCardSummaryCard(
                         Text(
                             text = "사용",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "-${Utils.formatAmount(balanceCard.expense)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Red
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
 
@@ -937,13 +945,13 @@ private fun BalanceCardSummaryCard(
                         Text(
                             text = "잔액",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "${Utils.formatAmount(balanceCard.currentBalance)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -959,7 +967,7 @@ private fun GiftCardSummaryCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Box(
@@ -968,9 +976,9 @@ private fun GiftCardSummaryCard(
                 .background(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
                         )
                     )
                 )
@@ -982,7 +990,7 @@ private fun GiftCardSummaryCard(
                     text = "🎁 ${giftCard.name}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -995,13 +1003,13 @@ private fun GiftCardSummaryCard(
                         Text(
                             text = "구매",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "+${Utils.formatAmount(giftCard.income)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Blue
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -1009,13 +1017,13 @@ private fun GiftCardSummaryCard(
                         Text(
                             text = "사용",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "-${Utils.formatAmount(giftCard.expense)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Red
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
 
@@ -1023,13 +1031,13 @@ private fun GiftCardSummaryCard(
                         Text(
                             text = "잔액",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "${Utils.formatAmount(giftCard.currentBalance)}원",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Black
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }

@@ -70,7 +70,8 @@ fun AddTransactionScreen(
         Text(
             text = if (uiState.isEditMode) "거래 편집" else "거래 추가",
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -116,8 +117,8 @@ fun AddTransactionScreen(
         OutlinedTextField(
             value = uiState.amount,
             onValueChange = viewModel::updateAmount,
-            label = { Text("금액", color = Color.Black) },
-            suffix = { Text("원", color = Color.Black) },
+            label = { Text("금액") },
+            suffix = { Text("원") },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Next
@@ -131,10 +132,8 @@ fun AddTransactionScreen(
             ),
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = if (uiState.selectedType == TransactionType.INCOME) Color.Blue else Color.Red,
-                focusedLabelColor = if (uiState.selectedType == TransactionType.INCOME) Color.Blue else Color.Red,
-                unfocusedTextColor = Color.Black,
-                focusedTextColor = Color.Black
+                focusedBorderColor = if (uiState.selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                focusedLabelColor = if (uiState.selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
             )
         )
 
@@ -173,13 +172,9 @@ fun AddTransactionScreen(
                 "${it.year}-${it.monthNumber.toString().padStart(2, '0')}-${it.dayOfMonth.toString().padStart(2, '0')}"
             } ?: "",
             onValueChange = { },
-            label = { Text("날짜", color = Color.Black) },
+            label = { Text("날짜") },
             readOnly = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedTextColor = Color.Black,
-                focusedTextColor = Color.Black
-            )
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -188,13 +183,9 @@ fun AddTransactionScreen(
         OutlinedTextField(
             value = uiState.memo,
             onValueChange = viewModel::updateMemo,
-            label = { Text("메모 (선택사항)", color = Color.Black) },
+            label = { Text("메모 (선택사항)") },
             modifier = Modifier.fillMaxWidth(),
-            maxLines = 3,
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedTextColor = Color.Black,
-                focusedTextColor = Color.Black
-            )
+            maxLines = 3
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -210,7 +201,7 @@ fun AddTransactionScreen(
                     .weight(1f)
                     .height(40.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.Gray
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
                 Text(
@@ -234,8 +225,8 @@ fun AddTransactionScreen(
                     .height(40.dp),
                 enabled = uiState.saveEnabled && !uiState.isLoading,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (uiState.selectedType == TransactionType.INCOME) Color(0xFF4CAF50) else Color(0xFFF44336),
-                    disabledContainerColor = Color.LightGray
+                    containerColor = if (uiState.selectedType == TransactionType.INCOME) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Text(
@@ -252,7 +243,7 @@ fun AddTransactionScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = error,
-                color = Color.Red,
+                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
         }

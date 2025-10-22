@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,7 +50,11 @@ fun DateDetailHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "뒤로가기",
+                tint = MaterialTheme.colorScheme.onSurface
+            )
         }
 
         Text(
@@ -62,7 +65,8 @@ fun DateDetailHeader(
             },
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -75,122 +79,108 @@ fun DailySummaryCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp
         )
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
-                        )
-                    )
-                )
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
+            Text(
+                text = "📊 일일 요약",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "📊 일일 요약",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // 수입
-                    Column(horizontalAlignment = Alignment.Start) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💰",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "수입",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Blue
-                            )
-                        }
+                // 수입
+                Column(horizontalAlignment = Alignment.Start) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
-                            text = "+${Utils.formatAmount(summary.totalIncome)}원",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Blue
+                            text = "💰",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "수입",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
+                    Text(
+                        text = "+${Utils.formatAmount(summary.totalIncome)}원",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
-                    // 지출
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💸",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "지출",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Red
-                            )
-                        }
+                // 지출
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
-                            text = "-${Utils.formatAmount(summary.totalExpense)}원",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Red
+                            text = "💸",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "지출",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
+                    Text(
+                        text = "-${Utils.formatAmount(summary.totalExpense)}원",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
 
-                    // 잔액
-                    Column(horizontalAlignment = Alignment.End) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💵",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "잔액",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Black
-                            )
-                        }
+                // 잔액
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
-                            text = "${
-                                when {
-                                    summary.dailyBalance > 0 -> "+"
-                                    summary.dailyBalance < 0 -> "-"
-                                    else -> ""
-                                }
-                            }${Utils.formatAmount(kotlin.math.abs(summary.dailyBalance))}원",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                summary.dailyBalance > 0 -> Color.Blue
-                                summary.dailyBalance < 0 -> Color.Red
-                                else -> Color.Black
+                            text = "💵",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "잔액",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Text(
+                        text = "${
+                            when {
+                                summary.dailyBalance > 0 -> "+"
+                                summary.dailyBalance < 0 -> "-"
+                                else -> ""
                             }
-                        )
-                    }
+                        }${Utils.formatAmount(kotlin.math.abs(summary.dailyBalance))}원",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = when {
+                            summary.dailyBalance > 0 -> MaterialTheme.colorScheme.primary
+                            summary.dailyBalance < 0 -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.onSurface
+                        }
+                    )
                 }
             }
         }
@@ -211,12 +201,12 @@ fun TransactionListHeader(
             text = "📝 거래 내역 (${transactionCount}건)",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Button(
             onClick = onAddTransaction,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Blue),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(8.dp)
         ) {
             Text("➕ 추가", color = Color.White)
@@ -234,112 +224,102 @@ fun TransactionDetailItem(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp
         )
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
-                        )
-                    )
-                )
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.Top,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        // 거래 유형 표시
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .offset(y = 8.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (transaction.type == TransactionType.INCOME) Color.Blue else Color.Red
+                    // 거래 유형 표시
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .offset(y = 8.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            )
+                    )
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = getCategoryEmoji(transaction.category),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = transaction.category,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
+                                Utils.formatAmount(
+                                    transaction.amount
                                 )
+                            }원",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold
                         )
 
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Text(
-                                    text = getCategoryEmoji(transaction.category),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = transaction.category,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color.Black
-                                )
-                            }
-
+                        if (transaction.memo.isNotBlank()) {
                             Spacer(modifier = Modifier.height(4.dp))
-
                             Text(
-                                text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${Utils.formatAmount(transaction.amount)}원",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (transaction.type == TransactionType.INCOME) Color.Blue else Color.Red,
-                                fontWeight = FontWeight.Bold
+                                text = transaction.memo,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-
-                            if (transaction.memo.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = transaction.memo,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray
-                                )
-                            }
                         }
                     }
+                }
 
-                    // Action buttons
-                    Row {
-                        IconButton(
-                            onClick = onEdit,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = "편집",
-                                tint = Color.Blue,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                // Action buttons
+                Row {
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "편집",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
 
-                        IconButton(
-                            onClick = onDelete,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "삭제",
-                                tint = Color.Red,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "삭제",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
             }
@@ -353,7 +333,7 @@ fun EmptyTransactionMessage() {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp
@@ -362,22 +342,13 @@ fun EmptyTransactionMessage() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFFF8FBFF), // 매우 연한 파랑
-                            Color(0xFFFFFEF7), // 매우 연한 노랑
-                            Color(0xFFFFFAFA)  // 매우 연한 빨강
-                        )
-                    )
-                )
                 .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = "📭 이 날짜에 거래 내역이 없습니다",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

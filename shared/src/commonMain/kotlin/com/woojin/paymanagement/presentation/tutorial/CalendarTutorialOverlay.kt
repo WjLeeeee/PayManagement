@@ -255,7 +255,7 @@ private fun TutorialTooltip(
                     Button(
                         onClick = if (isLastStep) onComplete else onNext,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2196F3)
+                            containerColor = MaterialTheme.colorScheme.primary
                         ),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.height(40.dp)
