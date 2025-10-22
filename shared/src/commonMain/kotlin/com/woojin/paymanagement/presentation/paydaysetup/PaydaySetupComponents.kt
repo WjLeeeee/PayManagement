@@ -38,7 +38,7 @@ fun PaydaySetupHeader(
             text = title,
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -47,7 +47,7 @@ fun PaydaySetupHeader(
             text = description,
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -63,7 +63,7 @@ fun PaydaySelector(
             text = "월급날을 선택해주세요",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Medium,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -96,7 +96,7 @@ fun PaydayAdjustmentSelector(
             text = "월급날이 주말/공휴일인 경우",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Medium,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -126,19 +126,19 @@ fun PaydaySetupButton(
             .fillMaxWidth()
             .height(56.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.LightGray
+            containerColor = MaterialTheme.colorScheme.primary
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
         if (isLoading) {
             CircularProgressIndicator(
-                color = Color.Black,
+                color = Color.White,
                 modifier = Modifier.size(24.dp)
             )
         } else {
             Text(
                 text = "설정 완료",
-                color = Color.Black,
+                color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -190,11 +190,11 @@ private fun PaydaySelectionItem(
             .clickable { onClick() }
             .clip(CircleShape)
             .background(
-                if (isSelected) Color.Gray else Color.Transparent
+                if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
             )
             .border(
                 width = 1.dp,
-                color = if (isSelected) Color.Gray else Color.LightGray,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 shape = CircleShape
             ),
         contentAlignment = Alignment.Center
@@ -203,7 +203,7 @@ private fun PaydaySelectionItem(
             text = day.toString(),
             fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected) Color.White else Color.Black
+            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -229,7 +229,7 @@ private fun AdjustmentOption(
             selected = isSelected,
             onClick = null,
             colors = RadioButtonDefaults.colors(
-                selectedColor = Color.Gray
+                selectedColor = MaterialTheme.colorScheme.primary
             )
         )
         Text(
@@ -239,7 +239,7 @@ private fun AdjustmentOption(
             },
             modifier = Modifier.padding(start = 16.dp),
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.Black
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
