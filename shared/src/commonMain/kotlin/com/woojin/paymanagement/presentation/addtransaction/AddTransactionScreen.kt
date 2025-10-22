@@ -24,8 +24,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -51,7 +51,7 @@ fun AddTransactionScreen(
 
     val uiState = viewModel.uiState
     val scope = rememberCoroutineScope()
-    val categoryFocusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(transactions, selectedDate, editTransaction, parsedTransaction) {
         if (parsedTransaction != null) {
@@ -121,13 +121,11 @@ fun AddTransactionScreen(
             suffix = { Text("원") },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Next
+                imeAction = ImeAction.Done
             ),
             keyboardActions = KeyboardActions(
-                onNext = {
-                    scope.launch {
-                        categoryFocusRequester.requestFocus()
-                    }
+                onDone = {
+                    focusManager.clearFocus()
                 }
             ),
             modifier = Modifier.fillMaxWidth(),
