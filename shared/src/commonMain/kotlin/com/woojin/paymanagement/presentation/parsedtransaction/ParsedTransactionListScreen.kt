@@ -15,8 +15,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.utils.BackHandler
+import com.woojin.paymanagement.utils.LifecycleObserverHelper
 import kotlinx.coroutines.launch
 
 @Composable
@@ -51,75 +50,27 @@ fun ParsedTransactionListScreen(
     onBack: () -> Unit,
     onSendTestNotifications: ((List<ParsedTransaction>) -> Unit)? = null,
     hasNotificationPermission: Boolean = true,
-    onRequestNotificationPermission: () -> Unit = {},
+    onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
+    onOpenNotificationSettings: () -> Unit = {},
     onCheckPermission: () -> Boolean = { true }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
-    var showPermissionDialog by remember { mutableStateOf(false) }
-    var showDisableDialog by remember { mutableStateOf(false) }
-    var isNotificationEnabled by remember { mutableStateOf(true) }
     var hasPermission by remember { mutableStateOf(hasNotificationPermission) }
 
     // 시스템 뒤로가기 버튼 처리 (Android에서만 동작, iOS에서는 자동으로 무시됨)
     BackHandler(onBack = onBack)
 
+    // 앱이 다시 포커스를 받았을 때 권한 상태 갱신 (설정에서 돌아올 때)
+    val lifecycleObserver = remember { LifecycleObserverHelper() }
+    lifecycleObserver.ObserveLifecycle {
+        hasPermission = onCheckPermission()
+    }
+
     // 화면이 보일 때마다 권한 상태 체크 (DisposableEffect 사용)
     DisposableEffect(Unit) {
         hasPermission = onCheckPermission()
         onDispose { }
-    }
-
-    // 주기적으로 권한 상태 체크 (1초마다)
-    LaunchedEffect(Unit) {
-        while (true) {
-            kotlinx.coroutines.delay(1000)
-            hasPermission = onCheckPermission()
-        }
-    }
-
-    // 권한 안내 다이얼로그
-    if (showPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
-            title = { Text("알림 전송 권한 필요") },
-            text = { Text("푸시 알림 기능을 사용하려면 알림 전송 권한이 필요합니다.\n\n설정 화면으로 이동하시겠습니까?") },
-            confirmButton = {
-                Button(onClick = {
-                    showPermissionDialog = false
-                    onRequestNotificationPermission()
-                }) {
-                    Text("설정하기")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
-                    Text("취소")
-                }
-            }
-        )
-    }
-
-    // 알림 비활성화 확인 다이얼로그
-    if (showDisableDialog) {
-        AlertDialog(
-            onDismissRequest = { showDisableDialog = false },
-            title = { Text("알림 끄기") },
-            text = { Text("푸시 알림 기능을 끄시겠습니까?") },
-            confirmButton = {
-                Button(onClick = {
-                    isNotificationEnabled = false
-                    showDisableDialog = false
-                }) {
-                    Text("끄기")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDisableDialog = false }) {
-                    Text("취소")
-                }
-            }
-        )
     }
 
     Column(
@@ -148,28 +99,30 @@ fun ParsedTransactionListScreen(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // 알림 버튼
-            val isEnabled = hasPermission && isNotificationEnabled
+            // 알림 버튼 - 클릭 시 바로 설정 화면으로 이동
             TextButton(
                 onClick = {
                     if (!hasPermission) {
-                        // 권한이 없으면 권한 요청 다이얼로그
-                        showPermissionDialog = true
-                    } else if (isNotificationEnabled) {
-                        // 알림이 켜져 있으면 끄기 다이얼로그
-                        showDisableDialog = true
+                        // 권한이 없으면 권한 요청 시도
+                        onRequestPostNotificationPermission?.invoke { isGranted ->
+                            hasPermission = isGranted
+                            // 권한이 거부되었으면 설정 화면으로 이동
+                            if (!isGranted) {
+                                onOpenNotificationSettings()
+                            }
+                        }
                     } else {
-                        // 알림이 꺼져 있으면 다시 켜기
-                        isNotificationEnabled = true
+                        // 권한이 있으면 바로 설정 화면으로 이동 (알림 끄기)
+                        onOpenNotificationSettings()
                     }
                 },
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = if (isEnabled) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+                    contentColor = if (hasPermission) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             ) {
                 Text(
-                    text = if (isEnabled) "🔔 알림" else "🔕 알림",
-                    fontWeight = if (isEnabled) FontWeight.Bold else FontWeight.Normal
+                    text = if (hasPermission) "🔔 알림" else "🔕 알림",
+                    fontWeight = if (hasPermission) FontWeight.Bold else FontWeight.Normal
                 )
             }
 
@@ -178,8 +131,8 @@ fun ParsedTransactionListScreen(
                 onClick = {
                     scope.launch {
                         val testTransactions = viewModel.addTestData()
-                        // 권한과 알림 활성화 상태 모두 확인
-                        if (hasPermission && isNotificationEnabled) {
+                        // 권한이 있으면 테스트 알림 전송
+                        if (hasPermission) {
                             onSendTestNotifications?.invoke(testTransactions)
                         }
                     }

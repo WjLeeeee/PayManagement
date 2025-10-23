@@ -15,16 +15,12 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,6 +62,7 @@ import com.woojin.paymanagement.presentation.settings.ThemeSettingsDialog
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.ThemeMode
+import com.woojin.paymanagement.utils.LifecycleObserverHelper
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
@@ -414,17 +411,11 @@ fun PayManagementApp(
                             }
 
                             // 앱이 다시 포커스를 받았을 때 권한 상태 갱신 (설정에서 돌아올 때)
-                            val lifecycleOwner = LocalLifecycleOwner.current
-                            DisposableEffect(lifecycleOwner) {
-                                val observer = LifecycleEventObserver { _, event ->
-                                    if (event == Lifecycle.Event.ON_RESUME && drawerState.isOpen) {
-                                        hasListenerPermission = notificationPermissionChecker.hasListenerPermission()
-                                        hasPostPermission = notificationPermissionChecker.hasPostNotificationPermission()
-                                    }
-                                }
-                                lifecycleOwner.lifecycle.addObserver(observer)
-                                onDispose {
-                                    lifecycleOwner.lifecycle.removeObserver(observer)
+                            val lifecycleObserver = remember { LifecycleObserverHelper() }
+                            lifecycleObserver.ObserveLifecycle {
+                                if (drawerState.isOpen) {
+                                    hasListenerPermission = notificationPermissionChecker.hasListenerPermission()
+                                    hasPostPermission = notificationPermissionChecker.hasPostNotificationPermission()
                                 }
                             }
 
@@ -1043,7 +1034,8 @@ fun PayManagementApp(
                 },
                 onSendTestNotifications = onSendTestNotifications,
                 hasNotificationPermission = notificationPermissionChecker.hasPostNotificationPermission(),
-                onRequestNotificationPermission = {
+                onRequestPostNotificationPermission = onRequestPostNotificationPermission,
+                onOpenNotificationSettings = {
                     notificationPermissionChecker.openAppNotificationSettings()
                 },
                 onCheckPermission = {
