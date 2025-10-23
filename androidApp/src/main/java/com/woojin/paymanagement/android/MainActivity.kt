@@ -30,6 +30,7 @@ import com.woojin.paymanagement.android.util.TransactionNotificationHelper
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.NotificationPermissionChecker
+import com.woojin.paymanagement.utils.AppInfo
 
 class MainActivity : ComponentActivity() {
 
@@ -135,10 +136,14 @@ fun StatusBarOverlayScreen(
                 Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
                 // 실제 앱 콘텐츠
+                val appInfo = AppInfo().apply {
+                    initialize(context)
+                }
                 App(
                     databaseDriverFactory = DatabaseDriverFactory(context = context),
                     preferencesManager = PreferencesManager(context = context),
                     notificationPermissionChecker = NotificationPermissionChecker(context = context),
+                    appInfo = appInfo,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     onNavigationHandled = onNavigationHandled,
                     onSendTestNotifications = { transactions ->

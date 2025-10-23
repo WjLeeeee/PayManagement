@@ -86,6 +86,7 @@ fun App(
     databaseDriverFactory: DatabaseDriverFactory,
     preferencesManager: PreferencesManager,
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
+    appInfo: com.woojin.paymanagement.utils.AppInfo,
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
     onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
@@ -96,7 +97,7 @@ fun App(
 
     // Koin 초기화
     LaunchedEffect(Unit) {
-        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker)
+        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo)
         isKoinInitialized = true
     }
 
@@ -119,7 +120,8 @@ fun App(
 private fun initializeKoin(
     databaseDriverFactory: DatabaseDriverFactory,
     preferencesManager: PreferencesManager,
-    notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker
+    notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
+    appInfo: com.woojin.paymanagement.utils.AppInfo
 ) {
     try {
         val koin = startKoin {
@@ -129,6 +131,7 @@ private fun initializeKoin(
                     single<DatabaseDriverFactory> { databaseDriverFactory }
                     single<PreferencesManager> { preferencesManager }
                     single<com.woojin.paymanagement.utils.NotificationPermissionChecker> { notificationPermissionChecker }
+                    single<com.woojin.paymanagement.utils.AppInfo> { appInfo }
                     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
                 },
                 // 공통 의존성들
@@ -550,6 +553,34 @@ fun PayManagementApp(
                                     }
                                 }
                             }
+                            val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
+                            NavigationDrawerItem(
+                                label = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "앱 정보",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "버전 ${appInfo.getVersionName()}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = { /* 추후 앱 정보 상세 화면으로 이동 가능 */ },
+                                icon = {
+                                    Text(
+                                        text = "ℹ️",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            )
                         }
 
                         // 하단: Color Scheme 설정 (고정)
