@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -13,12 +15,16 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +39,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Switch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,7 +92,8 @@ fun App(
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
     onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
-    onThemeChanged: (() -> Unit)? = null
+    onThemeChanged: (() -> Unit)? = null,
+    onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -101,7 +109,8 @@ fun App(
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                 onNavigationHandled = onNavigationHandled,
                 onSendTestNotifications = onSendTestNotifications,
-                onThemeChanged = onThemeChanged
+                onThemeChanged = onThemeChanged,
+                onRequestPostNotificationPermission = onRequestPostNotificationPermission
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -144,7 +153,8 @@ fun PayManagementApp(
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
     onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
-    onThemeChanged: (() -> Unit)? = null
+    onThemeChanged: (() -> Unit)? = null,
+    onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -307,7 +317,7 @@ fun PayManagementApp(
             drawerContent = {
                 ModalDrawerSheet(
                     modifier = Modifier
-                        .width(screenWidth * 0.6f) // 화면 너비의 60%
+                        .width(screenWidth * 0.7f) // 화면 너비의 70%
                         .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)), // 우측 상하단 둥글게
                     drawerContainerColor = MaterialTheme.colorScheme.surface
                 ) {
@@ -320,7 +330,7 @@ fun PayManagementApp(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 8.dp),
+                                .padding(start = 16.dp, end = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -352,7 +362,7 @@ fun PayManagementApp(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .padding(horizontal = 8.dp)
                         ) {
                             // 월급날 변경 버튼
                             NavigationDrawerItem(
@@ -388,6 +398,167 @@ fun PayManagementApp(
                                     )
                                 }
                             )
+
+                            // 푸시 알림 설정 섹션 (확장 가능)
+                            val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
+                            var isNotificationExpanded by remember { mutableStateOf(false) }
+                            var hasListenerPermission by remember { mutableStateOf(notificationPermissionChecker.hasListenerPermission()) }
+                            var hasPostPermission by remember { mutableStateOf(notificationPermissionChecker.hasPostNotificationPermission()) }
+
+                            // Drawer가 열릴 때마다 권한 상태 갱신
+                            LaunchedEffect(drawerState.isOpen) {
+                                if (drawerState.isOpen) {
+                                    hasListenerPermission = notificationPermissionChecker.hasListenerPermission()
+                                    hasPostPermission = notificationPermissionChecker.hasPostNotificationPermission()
+                                }
+                            }
+
+                            // 앱이 다시 포커스를 받았을 때 권한 상태 갱신 (설정에서 돌아올 때)
+                            val lifecycleOwner = LocalLifecycleOwner.current
+                            DisposableEffect(lifecycleOwner) {
+                                val observer = LifecycleEventObserver { _, event ->
+                                    if (event == Lifecycle.Event.ON_RESUME && drawerState.isOpen) {
+                                        hasListenerPermission = notificationPermissionChecker.hasListenerPermission()
+                                        hasPostPermission = notificationPermissionChecker.hasPostNotificationPermission()
+                                    }
+                                }
+                                lifecycleOwner.lifecycle.addObserver(observer)
+                                onDispose {
+                                    lifecycleOwner.lifecycle.removeObserver(observer)
+                                }
+                            }
+
+                            // 푸시 알림 메인 항목
+                            NavigationDrawerItem(
+                                label = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "푸시 알림",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Icon(
+                                            imageVector = if (isNotificationExpanded)
+                                                Icons.Default.KeyboardArrowUp
+                                            else
+                                                Icons.Default.KeyboardArrowDown,
+                                            contentDescription = if (isNotificationExpanded) "접기" else "펼치기",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    isNotificationExpanded = !isNotificationExpanded
+                                },
+                                icon = {
+                                    Text(
+                                        text = "🔔",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            )
+
+                            // 확장된 알림 설정 항목들
+                            if (isNotificationExpanded) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                ) {
+                                    // 카드 알림 감지
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                notificationPermissionChecker.openListenerSettings()
+                                            },
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "카드 알림 감지",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "다른 앱의 카드 알림을 파싱",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Switch(
+                                            checked = hasListenerPermission,
+                                            onCheckedChange = {
+                                                notificationPermissionChecker.openListenerSettings()
+                                            }
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // 앱 알림
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                if (hasPostPermission) {
+                                                    // ON → OFF: 설정 화면으로
+                                                    notificationPermissionChecker.openAppNotificationSettings()
+                                                } else {
+                                                    // OFF → ON: 권한 요청
+                                                    onRequestPostNotificationPermission?.invoke { isGranted ->
+                                                        hasPostPermission = isGranted
+                                                        // 권한이 거부되었으면 설정 화면으로 안내
+                                                        if (!isGranted) {
+                                                            notificationPermissionChecker.openAppNotificationSettings()
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "앱 알림",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "앱에서 알림 받기",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Switch(
+                                            checked = hasPostPermission,
+                                            onCheckedChange = { isChecked ->
+                                                if (isChecked) {
+                                                    // OFF → ON: 권한 요청
+                                                    onRequestPostNotificationPermission?.invoke { isGranted ->
+                                                        hasPostPermission = isGranted
+                                                        // 권한이 거부되었으면 설정 화면으로 안내
+                                                        if (!isGranted) {
+                                                            notificationPermissionChecker.openAppNotificationSettings()
+                                                        }
+                                                    }
+                                                } else {
+                                                    // ON → OFF: 설정 화면으로
+                                                    notificationPermissionChecker.openAppNotificationSettings()
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         // 하단: Color Scheme 설정 (고정)
