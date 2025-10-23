@@ -1,18 +1,25 @@
 package com.woojin.paymanagement.android
 
+import android.Manifest
 import android.content.Intent
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalView
+import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -105,6 +112,18 @@ fun StatusBarOverlayScreen(
     onThemeChanged: () -> Unit,
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
+    var permissionResultCallback by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
+
+    // 알림 권한 요청 런처
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        // 권한 요청 결과를 콜백으로 전달
+        permissionResultCallback?.invoke(isGranted)
+        permissionResultCallback = null
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -128,7 +147,46 @@ fun StatusBarOverlayScreen(
                             TransactionNotificationHelper.sendTransactionNotification(context, transaction)
                         }
                     },
-                    onThemeChanged = { onThemeChanged() }
+                    onThemeChanged = { onThemeChanged() },
+                    onRequestPostNotificationPermission = { callback ->
+                        // 콜백 저장
+                        permissionResultCallback = callback
+
+                        // Android 13 이상에서만 권한 요청
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            val activity = context as? ComponentActivity
+
+                            // shouldShowRequestPermissionRationale 확인
+                            val shouldShowRationale = activity?.let {
+                                ActivityCompat.shouldShowRequestPermissionRationale(
+                                    it,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            } ?: false
+
+                            // 권한이 이미 영구적으로 거부되었는지 확인
+                            val notificationPermissionChecker = NotificationPermissionChecker(context)
+                            val hasPermission = notificationPermissionChecker.hasPostNotificationPermission()
+
+                            if (hasPermission) {
+                                // 이미 권한이 있음
+                                callback(true)
+                                permissionResultCallback = null
+                            } else if (shouldShowRationale) {
+                                // 권한을 거부한 적이 있지만 다시 물어볼 수 있는 상태
+                                // 바로 다이얼로그 표시
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                // 처음 요청하거나, 영구적으로 거부된 상태
+                                // 일단 요청해보고, 거부되면 설정으로
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        } else {
+                            // Android 13 미만에서는 항상 허용된 것으로 처리
+                            callback(true)
+                            permissionResultCallback = null
+                        }
+                    }
                 )
             }
         }
