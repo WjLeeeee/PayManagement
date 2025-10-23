@@ -259,6 +259,7 @@ fun PayManagementApp(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var showThemeDialog by remember { mutableStateOf(false) }
     var currentThemeMode by remember { mutableStateOf(preferencesManager.getThemeMode()) }
+    var showPaydayChangeDialog by remember { mutableStateOf(false) }
 
     // 테마 설정 다이얼로그
     if (showThemeDialog) {
@@ -270,6 +271,30 @@ fun PayManagementApp(
                 onThemeChanged?.invoke() // 테마 변경 콜백 호출
             },
             onDismiss = { showThemeDialog = false }
+        )
+    }
+
+    // 월급날 변경 다이얼로그
+    if (showPaydayChangeDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaydayChangeDialog = false },
+            title = { Text("월급날 변경") },
+            text = {
+                Text("월급날을 변경하시겠습니까?\n월급날 설정 화면으로 이동합니다.")
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showPaydayChangeDialog = false
+                    currentScreen = Screen.PaydaySetup
+                }) {
+                    Text("변경하기")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPaydayChangeDialog = false }) {
+                    Text("취소")
+                }
+            }
         )
     }
 
@@ -329,7 +354,40 @@ fun PayManagementApp(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            // TODO: 여기에 다른 메뉴 아이템 추가 가능
+                            // 월급날 변경 버튼
+                            NavigationDrawerItem(
+                                label = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "월급날 변경",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "${preferencesManager.getPayday()}일",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    showPaydayChangeDialog = true
+                                    scope.launch {
+                                        drawerState.close()
+                                    }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "📅",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            )
                         }
 
                         // 하단: Color Scheme 설정 (고정)
@@ -481,7 +539,15 @@ fun PayManagementApp(
                 onSetupComplete = { payday, adjustment ->
                     preferencesManager.setPayday(payday)
                     preferencesManager.setPaydayAdjustment(adjustment)
-                    currentScreen = Screen.Calendar
+
+                    // 월급날 변경 후 액티비티 재시작 (초기 설정인지 변경인지 확인)
+                    if (currentScreen == Screen.PaydaySetup && initialScreen != Screen.PaydaySetup) {
+                        // 월급날 변경인 경우 액티비티 재시작
+                        onThemeChanged?.invoke()
+                    } else {
+                        // 초기 설정인 경우 캘린더로 이동
+                        currentScreen = Screen.Calendar
+                    }
                 }
             )
         }
