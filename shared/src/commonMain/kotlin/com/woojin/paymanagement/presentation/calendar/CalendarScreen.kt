@@ -5,7 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +39,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -101,6 +105,15 @@ fun CalendarScreen(
 
     var fabExpanded by remember { mutableStateOf(false) }
 
+    // 스와이프 애니메이션을 위한 offset 상태
+    var targetOffsetX by remember { mutableStateOf(0f) }
+    val animatedOffsetX by animateFloatAsState(
+        targetValue = targetOffsetX,
+        animationSpec = tween(durationMillis = 200),
+        label = "swipe_animation"
+    )
+    var totalDragAmount by remember { mutableStateOf(0f) }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -108,14 +121,48 @@ fun CalendarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
+                .offset(x = with(density) { animatedOffsetX.toDp() })
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            totalDragAmount = 0f
+                        },
+                        onDragEnd = {
+                            // 드래그가 끝났을 때 한 번만 판단
+                            if (totalDragAmount > 100f) {
+                                // 오른쪽으로 스와이프 -> 이전 기간
+                                viewModel.navigateToPreviousPeriod()
+                            } else if (totalDragAmount < -100f) {
+                                // 왼쪽으로 스와이프 -> 다음 기간
+                                viewModel.navigateToNextPeriod()
+                            }
+                            // 애니메이션으로 원위치
+                            targetOffsetX = 0f
+                            totalDragAmount = 0f
+                        },
+                        onDragCancel = {
+                            // 드래그 취소 시 원위치
+                            targetOffsetX = 0f
+                            totalDragAmount = 0f
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            totalDragAmount += dragAmount
+                            // 스와이프하는 동안 시각적 피드백 제공 (최대 50dp까지만)
+                            targetOffsetX = (totalDragAmount * 0.3f).coerceIn(-50f, 50f)
+                        }
+                    )
+                }
         ) {
-            // Drawer Menu Button & Pay Period Navigation
+            // Drawer Menu Button & Year/Month Header
             if (uiState.currentPayPeriod != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                Box(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    IconButton(onClick = onOpenDrawer) {
+                    IconButton(
+                        onClick = onOpenDrawer,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    ) {
                         Icon(
                             Icons.Default.Menu,
                             contentDescription = "메뉴",
@@ -123,12 +170,12 @@ fun CalendarScreen(
                         )
                     }
 
-                    PayPeriodHeader(
-                        currentPayPeriod = uiState.currentPayPeriod,
-                        onPreviousPeriod = { viewModel.navigateToPreviousPeriod() },
-                        onNextPeriod = { viewModel.navigateToNextPeriod() },
-                        modifier = Modifier.weight(1f)
-                    )
+                    uiState.selectedDate?.let { selectedDate ->
+                        PayPeriodHeader(
+                            selectedDate = selectedDate,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
                 }
             } else {
                 // Pay Period가 null인 경우에도 메뉴 버튼 표시
@@ -261,33 +308,20 @@ fun CalendarScreen(
 
 @Composable
 private fun PayPeriodHeader(
-    currentPayPeriod: PayPeriod,
-    onPreviousPeriod: () -> Unit,
-    onNextPeriod: () -> Unit,
+    selectedDate: LocalDate,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        TextButton(onClick = onPreviousPeriod) {
-            Text("◀", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-        }
+    val year = selectedDate.year
+    val month = selectedDate.monthNumber
 
-        Text(
-            text = currentPayPeriod.displayText,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.weight(1f)
-        )
-
-        TextButton(onClick = onNextPeriod) {
-            Text("▶", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-        }
-    }
+    Text(
+        text = "${year}년 ${month}월",
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+    )
 }
 
 @Composable
