@@ -24,6 +24,8 @@ import com.woojin.paymanagement.domain.usecase.GetUnprocessedParsedTransactionsU
 import com.woojin.paymanagement.domain.usecase.InsertParsedTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.MarkParsedTransactionProcessedUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteParsedTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.ExportDataUseCase
+import com.woojin.paymanagement.domain.usecase.ImportDataUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -72,4 +74,8 @@ val domainModule = module {
     factoryOf(::InsertParsedTransactionUseCase)
     factoryOf(::MarkParsedTransactionProcessedUseCase)
     factoryOf(::DeleteParsedTransactionUseCase)
+
+    // Data Backup/Restore Use Cases
+    factoryOf(::ExportDataUseCase)
+    factoryOf(::ImportDataUseCase)
 }

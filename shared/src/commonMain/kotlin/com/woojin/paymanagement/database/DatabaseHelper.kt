@@ -252,6 +252,16 @@ class DatabaseHelper(
         queries.deleteAllParsedTransactions()
     }
 
+    /**
+     * 모든 데이터를 삭제합니다 (백업 복원 시 사용)
+     */
+    suspend fun deleteAllData() {
+        queries.deleteAllTransactions()
+        queries.deleteAllBalanceCards()
+        queries.deleteAllGiftCards()
+        // 파싱된 거래 내역은 유지 (백업 대상이 아님)
+    }
+
     private fun TransactionEntity.toTransaction(): Transaction {
         return Transaction(
             id = this.id,
