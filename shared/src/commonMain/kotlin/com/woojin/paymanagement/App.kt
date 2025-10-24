@@ -68,6 +68,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -87,17 +88,20 @@ fun App(
     preferencesManager: PreferencesManager,
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
     appInfo: com.woojin.paymanagement.utils.AppInfo,
+    fileHandler: com.woojin.paymanagement.utils.FileHandler,
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
     onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
     onThemeChanged: (() -> Unit)? = null,
-    onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null
+    onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
+    onLaunchSaveFile: (String) -> Unit = {},
+    onLaunchLoadFile: () -> Unit = {}
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
     // Koin 초기화
     LaunchedEffect(Unit) {
-        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo)
+        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo, fileHandler)
         isKoinInitialized = true
     }
 
@@ -108,7 +112,9 @@ fun App(
                 onNavigationHandled = onNavigationHandled,
                 onSendTestNotifications = onSendTestNotifications,
                 onThemeChanged = onThemeChanged,
-                onRequestPostNotificationPermission = onRequestPostNotificationPermission
+                onRequestPostNotificationPermission = onRequestPostNotificationPermission,
+                onLaunchSaveFile = onLaunchSaveFile,
+                onLaunchLoadFile = onLaunchLoadFile
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -121,7 +127,8 @@ private fun initializeKoin(
     databaseDriverFactory: DatabaseDriverFactory,
     preferencesManager: PreferencesManager,
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
-    appInfo: com.woojin.paymanagement.utils.AppInfo
+    appInfo: com.woojin.paymanagement.utils.AppInfo,
+    fileHandler: com.woojin.paymanagement.utils.FileHandler
 ) {
     try {
         val koin = startKoin {
@@ -132,6 +139,7 @@ private fun initializeKoin(
                     single<PreferencesManager> { preferencesManager }
                     single<com.woojin.paymanagement.utils.NotificationPermissionChecker> { notificationPermissionChecker }
                     single<com.woojin.paymanagement.utils.AppInfo> { appInfo }
+                    single<com.woojin.paymanagement.utils.FileHandler> { fileHandler }
                     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
                 },
                 // 공통 의존성들
@@ -154,7 +162,9 @@ fun PayManagementApp(
     onNavigationHandled: () -> Unit = {},
     onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
     onThemeChanged: (() -> Unit)? = null,
-    onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null
+    onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
+    onLaunchSaveFile: (String) -> Unit = {},
+    onLaunchLoadFile: () -> Unit = {}
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -553,6 +563,210 @@ fun PayManagementApp(
                                     }
                                 }
                             }
+
+                            var isDataManagementExpanded by remember { mutableStateOf(false) }
+
+                            NavigationDrawerItem(
+                                label = {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "데이터 관리",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Icon(
+                                            imageVector = if (isDataManagementExpanded)
+                                                Icons.Default.KeyboardArrowUp
+                                            else
+                                                Icons.Default.KeyboardArrowDown,
+                                            contentDescription = if (isDataManagementExpanded) "접기" else "펼치기",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    isDataManagementExpanded = !isDataManagementExpanded
+                                },
+                                icon = {
+                                    Text(
+                                        text = "💾",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            )
+
+                            // 확장된 데이터 관리 항목들
+                            if (isDataManagementExpanded) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                ) {
+                                    // 데이터 내보내기
+                                    val exportDataUseCase = koinInject<com.woojin.paymanagement.domain.usecase.ExportDataUseCase>()
+                                    val fileHandler = koinInject<com.woojin.paymanagement.utils.FileHandler>()
+                                    var showExportMessage by remember { mutableStateOf<String?>(null) }
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                scope.launch {
+                                                    val result = exportDataUseCase()
+                                                    result.onSuccess { jsonString ->
+                                                        val fileName = "paymanagement_backup_${Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date}.json"
+                                                        fileHandler.setSaveData(
+                                                            fileName = fileName,
+                                                            jsonContent = jsonString,
+                                                            onSuccess = {
+                                                                showExportMessage = "데이터를 성공적으로 내보냈습니다"
+                                                                scope.launch { drawerState.close() }
+                                                            },
+                                                            onError = { error ->
+                                                                showExportMessage = "내보내기 실패: $error"
+                                                            }
+                                                        )
+                                                        onLaunchSaveFile(fileName)
+                                                    }.onFailure { error ->
+                                                        showExportMessage = "내보내기 실패: ${error.message}"
+                                                    }
+                                                }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "📤",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "내보내기",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "데이터를 JSON 파일로 저장",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // 데이터 가져오기
+                                    val importDataUseCase = koinInject<com.woojin.paymanagement.domain.usecase.ImportDataUseCase>()
+                                    var showImportMessage by remember { mutableStateOf<String?>(null) }
+                                    var showReplaceConfirmDialog by remember { mutableStateOf(false) }
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showReplaceConfirmDialog = true
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "📥",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "가져오기",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "JSON 파일에서 데이터 복원",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    // 가져오기 확인 다이얼로그
+                                    if (showReplaceConfirmDialog) {
+                                        AlertDialog(
+                                            onDismissRequest = { showReplaceConfirmDialog = false },
+                                            title = { Text("데이터 가져오기") },
+                                            text = { Text("⚠️ 기존 데이터를 모두 삭제하고 파일에서 데이터를 가져옵니다.\n\n계속하시겠습니까?") },
+                                            confirmButton = {
+                                                Button(onClick = {
+                                                    showReplaceConfirmDialog = false
+                                                    fileHandler.setLoadCallbacks(
+                                                        onSuccess = { jsonString ->
+                                                            scope.launch {
+                                                                val result = importDataUseCase(jsonString, replaceExisting = true)
+                                                                result.onSuccess { importResult ->
+                                                                    showImportMessage = "데이터 가져오기 완료\n성공: ${importResult.successCount}, 실패: ${importResult.failureCount}"
+                                                                    scope.launch { drawerState.close() }
+                                                                }.onFailure { error ->
+                                                                    showImportMessage = "가져오기 실패: ${error.message}"
+                                                                }
+                                                            }
+                                                        },
+                                                        onError = { error ->
+                                                            showImportMessage = "파일 불러오기 실패: $error"
+                                                        }
+                                                    )
+                                                    onLaunchLoadFile()
+                                                }) {
+                                                    Text("가져오기")
+                                                }
+                                            },
+                                            dismissButton = {
+                                                TextButton(onClick = { showReplaceConfirmDialog = false }) {
+                                                    Text("취소")
+                                                }
+                                            }
+                                        )
+                                    }
+
+                                    // 내보내기/가져오기 메시지 표시
+                                    showExportMessage?.let { message ->
+                                        AlertDialog(
+                                            onDismissRequest = { showExportMessage = null },
+                                            title = { Text("알림") },
+                                            text = { Text(message) },
+                                            confirmButton = {
+                                                Button(onClick = { showExportMessage = null }) {
+                                                    Text("확인")
+                                                }
+                                            }
+                                        )
+                                    }
+
+                                    showImportMessage?.let { message ->
+                                        AlertDialog(
+                                            onDismissRequest = { showImportMessage = null },
+                                            title = { Text("알림") },
+                                            text = { Text(message) },
+                                            confirmButton = {
+                                                Button(onClick = { showImportMessage = null }) {
+                                                    Text("확인")
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
                             NavigationDrawerItem(
                                 label = {

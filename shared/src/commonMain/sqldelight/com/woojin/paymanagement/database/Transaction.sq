@@ -109,6 +109,9 @@ deleteBalanceCard:
 DELETE FROM BalanceCardEntity
 WHERE id = ?;
 
+deleteAllBalanceCards:
+DELETE FROM BalanceCardEntity;
+
 -- GiftCard 관련 쿼리들
 insertGiftCard:
 INSERT INTO GiftCardEntity(id, name, totalAmount, usedAmount, createdDate, isActive, minimumUsageRate)
@@ -140,6 +143,9 @@ WHERE id = ?;
 deleteGiftCard:
 DELETE FROM GiftCardEntity
 WHERE id = ?;
+
+deleteAllGiftCards:
+DELETE FROM GiftCardEntity;
 
 -- ParsedTransaction 관련 쿼리들
 insertParsedTransaction:

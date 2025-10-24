@@ -31,6 +31,7 @@ import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.NotificationPermissionChecker
 import com.woojin.paymanagement.utils.AppInfo
+import com.woojin.paymanagement.utils.FileHandler
 
 class MainActivity : ComponentActivity() {
 
@@ -116,6 +117,52 @@ fun StatusBarOverlayScreen(
     val view = LocalView.current
     var permissionResultCallback by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
 
+    // FileHandler 초기화
+    val fileHandler = remember { FileHandler() }
+
+    // 파일 저장 런처
+    val saveFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == ComponentActivity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                try {
+                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        val data = fileHandler.getPendingSaveData()
+                        if (data != null) {
+                            outputStream.write(data.second.toByteArray())
+                            fileHandler.onSaveSuccess()
+                        }
+                    }
+                } catch (e: Exception) {
+                    fileHandler.onSaveError(e.message ?: "파일 저장 실패")
+                }
+            } ?: fileHandler.onSaveError("파일을 선택하지 않았습니다")
+        } else {
+            fileHandler.onSaveError("취소되었습니다")
+        }
+    }
+
+    // 파일 불러오기 런처
+    val loadFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == ComponentActivity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                try {
+                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                        val jsonContent = inputStream.bufferedReader().use { it.readText() }
+                        fileHandler.onLoadSuccess(jsonContent)
+                    }
+                } catch (e: Exception) {
+                    fileHandler.onLoadError(e.message ?: "파일 불러오기 실패")
+                }
+            } ?: fileHandler.onLoadError("파일을 선택하지 않았습니다")
+        } else {
+            fileHandler.onLoadError("취소되었습니다")
+        }
+    }
+
     // 알림 권한 요청 런처
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -144,6 +191,7 @@ fun StatusBarOverlayScreen(
                     preferencesManager = PreferencesManager(context = context),
                     notificationPermissionChecker = NotificationPermissionChecker(context = context),
                     appInfo = appInfo,
+                    fileHandler = fileHandler,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     onNavigationHandled = onNavigationHandled,
                     onSendTestNotifications = { transactions ->
@@ -191,6 +239,21 @@ fun StatusBarOverlayScreen(
                             callback(true)
                             permissionResultCallback = null
                         }
+                    },
+                    onLaunchSaveFile = { fileName ->
+                        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "application/json"
+                            putExtra(Intent.EXTRA_TITLE, fileName)
+                        }
+                        saveFileLauncher.launch(intent)
+                    },
+                    onLaunchLoadFile = {
+                        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "application/json"
+                        }
+                        loadFileLauncher.launch(intent)
                     }
                 )
             }
