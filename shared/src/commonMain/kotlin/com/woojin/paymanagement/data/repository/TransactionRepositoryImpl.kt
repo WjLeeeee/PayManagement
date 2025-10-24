@@ -4,6 +4,7 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDate
 
@@ -27,6 +28,13 @@ class TransactionRepositoryImpl(
         return getAllTransactions().map { transactions ->
             transactions.filter { it.date >= startDate && it.date <= endDate }
         }
+    }
+
+    override suspend fun getTransactionById(transactionId: String): Transaction? {
+        // getAllTransactions에서 ID로 찾기
+        return databaseHelper.getAllTransactions().map { transactions ->
+            transactions.find { it.id == transactionId }
+        }.first()
     }
 
     override suspend fun insertTransaction(transaction: Transaction) {

@@ -347,13 +347,20 @@ object PaymentMethodAnalyzer {
             .filter { it.type == TransactionType.EXPENSE && it.isSettlement && it.settlementAmount != null }
             .sumOf { it.settlementAmount!! }
 
-        // 잔액권 분석 (카드 이름으로 그룹화)
-        val balanceCardNames = transactions
+        // 잔액권 분석 (해당 기간 거래 + 잔액이 남아있는 모든 잔액권)
+        val balanceCardNamesFromTransactions = transactions
             .filter { it.balanceCardId != null && it.cardName != null }
             .map { it.cardName!! }
-            .distinct()
+            .toSet()
 
-        val balanceCardSummaries = balanceCardNames.map { cardName ->
+        val balanceCardNamesFromAvailable = availableBalanceCards
+            .filter { it.isActive && it.currentBalance > 0 }
+            .map { it.name }
+            .toSet()
+
+        val allBalanceCardNames = (balanceCardNamesFromTransactions + balanceCardNamesFromAvailable).distinct()
+
+        val balanceCardSummaries = allBalanceCardNames.map { cardName ->
             val cardTransactions = transactions.filter { it.cardName == cardName && it.balanceCardId != null }
 
             val income = cardTransactions
@@ -374,15 +381,22 @@ object PaymentMethodAnalyzer {
                 expense = expense,
                 currentBalance = currentBalance
             )
-        }
+        }.filter { it.currentBalance > 0 } // 잔액이 0인 것은 제외
 
-        // 상품권 분석 (카드 이름으로 그룹화)
-        val giftCardNames = transactions
+        // 상품권 분석 (해당 기간 거래 + 잔액이 남아있는 모든 상품권)
+        val giftCardNamesFromTransactions = transactions
             .filter { it.giftCardId != null && it.cardName != null }
             .map { it.cardName!! }
-            .distinct()
+            .toSet()
 
-        val giftCardSummaries = giftCardNames.map { cardName ->
+        val giftCardNamesFromAvailable = availableGiftCards
+            .filter { it.isActive && it.remainingAmount > 0 }
+            .map { it.name }
+            .toSet()
+
+        val allGiftCardNames = (giftCardNamesFromTransactions + giftCardNamesFromAvailable).distinct()
+
+        val giftCardSummaries = allGiftCardNames.map { cardName ->
             val cardTransactions = transactions.filter { it.cardName == cardName && it.giftCardId != null }
 
             val income = cardTransactions
@@ -403,7 +417,7 @@ object PaymentMethodAnalyzer {
                 expense = expense,
                 currentBalance = currentBalance
             )
-        }
+        }.filter { it.currentBalance > 0 } // 잔액이 0인 것은 제외
 
         return PaymentMethodSummary(
             cashIncome = cashIncome,
