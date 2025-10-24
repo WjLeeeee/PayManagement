@@ -107,12 +107,22 @@ fun CalendarScreen(
 
     // 스와이프 애니메이션을 위한 offset 상태
     var targetOffsetX by remember { mutableStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
     val animatedOffsetX by animateFloatAsState(
         targetValue = targetOffsetX,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = if (isDragging) {
+            // 드래그 중에는 애니메이션 없이 즉시 반영
+            tween(durationMillis = 0)
+        } else {
+            // 드래그 끝난 후에는 부드럽게 애니메이션
+            tween(durationMillis = 300)
+        },
         label = "swipe_animation"
     )
     var totalDragAmount by remember { mutableStateOf(0f) }
+
+    // 화면 너비 가져오기
+    var screenWidth by remember { mutableStateOf(0f) }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -121,18 +131,24 @@ fun CalendarScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
+                .onGloballyPositioned { coordinates ->
+                    screenWidth = coordinates.size.width.toFloat()
+                }
                 .offset(x = with(density) { animatedOffsetX.toDp() })
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
                         onDragStart = {
                             totalDragAmount = 0f
+                            isDragging = true
                         },
                         onDragEnd = {
-                            // 드래그가 끝났을 때 한 번만 판단
-                            if (totalDragAmount > 100f) {
+                            isDragging = false
+                            // 화면 너비의 30% 이상 드래그했으면 페이지 전환
+                            val threshold = screenWidth * 0.3f
+                            if (totalDragAmount > threshold) {
                                 // 오른쪽으로 스와이프 -> 이전 기간
                                 viewModel.navigateToPreviousPeriod()
-                            } else if (totalDragAmount < -100f) {
+                            } else if (totalDragAmount < -threshold) {
                                 // 왼쪽으로 스와이프 -> 다음 기간
                                 viewModel.navigateToNextPeriod()
                             }
@@ -141,6 +157,7 @@ fun CalendarScreen(
                             totalDragAmount = 0f
                         },
                         onDragCancel = {
+                            isDragging = false
                             // 드래그 취소 시 원위치
                             targetOffsetX = 0f
                             totalDragAmount = 0f
@@ -148,8 +165,9 @@ fun CalendarScreen(
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
                             totalDragAmount += dragAmount
-                            // 스와이프하는 동안 시각적 피드백 제공 (최대 50dp까지만)
-                            targetOffsetX = (totalDragAmount * 0.3f).coerceIn(-50f, 50f)
+                            // 화면 너비의 30%까지만 따라가도록 제한
+                            val maxOffset = screenWidth * 0.3f
+                            targetOffsetX = totalDragAmount.coerceIn(-maxOffset, maxOffset)
                         }
                     )
                 }
