@@ -800,10 +800,10 @@ private fun CardSummaryCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // 지출 (본인 부담) - 항상 표시
+                    // 지출 - 항상 표시
                     Column {
                         Text(
-                            text = "지출 (본인 부담)",
+                            text = "지출",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
