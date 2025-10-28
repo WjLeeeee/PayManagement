@@ -34,20 +34,44 @@ class DateDetailViewModel(
         }
     }
 
-    suspend fun deleteTransaction(transaction: Transaction) {
+    suspend fun deleteTransaction(transaction: Transaction): Boolean {
         try {
             uiState = uiState.copy(isLoading = true, error = null)
+
+            // 1. 삭제 가능 여부 먼저 검증
+            val validationResult = deleteTransactionUseCase.validateDeletion(transaction.id)
+
+            if (!validationResult.canDelete) {
+                // 삭제 불가능 - 에러 메시지만 표시하고 삭제 안 함
+                uiState = uiState.copy(
+                    isLoading = false,
+                    error = validationResult.errorMessage ?: "거래를 삭제할 수 없습니다."
+                )
+                return false
+            }
+
+            // 2. 검증 통과 - 실제 삭제 실행
             deleteTransactionUseCase(transaction.id)
             uiState = uiState.copy(isLoading = false)
+            return true // 삭제 성공
         } catch (e: Exception) {
             uiState = uiState.copy(
                 isLoading = false,
                 error = e.message ?: "거래 삭제 중 오류가 발생했습니다."
             )
+            return false // 삭제 실패
         }
     }
 
     fun clearError() {
         uiState = uiState.copy(error = null)
+    }
+
+    fun showDeleteConfirmation(transaction: Transaction) {
+        uiState = uiState.copy(transactionToDelete = transaction)
+    }
+
+    fun dismissDeleteConfirmation() {
+        uiState = uiState.copy(transactionToDelete = null)
     }
 }

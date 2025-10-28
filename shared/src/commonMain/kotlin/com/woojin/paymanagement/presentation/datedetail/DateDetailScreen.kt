@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -94,10 +97,8 @@ fun DateDetailScreen(
                         transaction = transaction,
                         onEdit = { onEditTransaction(transaction) },
                         onDelete = {
-                            scope.launch {
-                                viewModel.deleteTransaction(transaction)
-                                onDeleteTransaction(transaction)
-                            }
+                            // 삭제 확인 다이얼로그 표시
+                            viewModel.showDeleteConfirmation(transaction)
                         }
                     )
                 }
@@ -106,5 +107,50 @@ fun DateDetailScreen(
             EmptyTransactionMessage()
             Spacer(modifier = Modifier.weight(1f))
         }
+    }
+
+    // 삭제 확인 다이얼로그
+    if (uiState.transactionToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDeleteConfirmation() },
+            title = { Text("거래 삭제") },
+            text = { Text("이 거래를 삭제하시겠습니까?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val transaction = uiState.transactionToDelete!!
+                            viewModel.dismissDeleteConfirmation()
+                            val success = viewModel.deleteTransaction(transaction)
+                            // 삭제 성공 시에만 콜백 호출
+                            if (success) {
+                                onDeleteTransaction(transaction)
+                            }
+                        }
+                    }
+                ) {
+                    Text("확인")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDeleteConfirmation() }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
+
+    // 삭제 불가 다이얼로그
+    if (uiState.error != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("거래 삭제 불가") },
+            text = { Text(uiState.error) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearError() }) {
+                    Text("확인")
+                }
+            }
+        )
     }
 }

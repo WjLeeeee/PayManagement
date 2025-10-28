@@ -122,6 +122,11 @@ WHERE id = ?;
 deleteAllBalanceCards:
 DELETE FROM BalanceCardEntity;
 
+getTotalExpenseByBalanceCard:
+SELECT COALESCE(SUM(amount), 0.0) AS totalExpense
+FROM TransactionEntity
+WHERE balanceCardId = ? AND type = 'EXPENSE';
+
 -- GiftCard 관련 쿼리들
 insertGiftCard:
 INSERT INTO GiftCardEntity(id, name, totalAmount, usedAmount, createdDate, isActive, minimumUsageRate)

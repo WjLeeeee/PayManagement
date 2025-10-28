@@ -73,19 +73,6 @@ class AddTransactionViewModel(
         return "${timestamp}_$random"
     }
 
-    // 같은 이름의 기존 카드가 있으면 그 ID를 재사용, 없으면 새 ID 생성
-    private fun getOrCreateBalanceCardId(cardName: String): String {
-        return uiState.availableBalanceCards
-            .find { it.name == cardName }?.id
-            ?: generateUniqueId()
-    }
-
-    // 같은 이름의 기존 상품권이 있으면 그 ID를 재사용, 없으면 새 ID 생성
-    private fun getOrCreateGiftCardId(cardName: String): String {
-        return uiState.availableGiftCards
-            .find { it.name == cardName }?.id
-            ?: generateUniqueId()
-    }
 
     fun reset() {
         uiState = AddTransactionUiState()
@@ -251,6 +238,21 @@ class AddTransactionViewModel(
         validateInput()
     }
 
+    fun updateChargingMode(isCharging: Boolean) {
+        uiState = uiState.copy(
+            isChargingExistingBalanceCard = isCharging,
+            // 모드 변경 시 선택/입력 초기화
+            selectedBalanceCardForCharge = null,
+            cardName = ""
+        )
+        validateInput()
+    }
+
+    fun updateSelectedBalanceCardForCharge(card: BalanceCard?) {
+        uiState = uiState.copy(selectedBalanceCardForCharge = card)
+        validateInput()
+    }
+
     fun updateCategory(category: String) {
         uiState = uiState.copy(category = category)
         validateInput()
@@ -347,10 +349,12 @@ class AddTransactionViewModel(
     private fun validateInput() {
         val isValidInput = uiState.amount.text.isNotBlank() &&
                           uiState.category.isNotBlank() &&
-                          // 수입일 때: 현금이거나 카드 이름이 입력됨
+                          // 수입일 때 검증
                           (uiState.selectedType == TransactionType.EXPENSE ||
                            uiState.selectedIncomeType == IncomeType.CASH ||
-                           uiState.cardName.isNotBlank()) &&
+                           (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && !uiState.isChargingExistingBalanceCard && uiState.cardName.isNotBlank()) ||
+                           (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && uiState.isChargingExistingBalanceCard && uiState.selectedBalanceCardForCharge != null) ||
+                           (uiState.selectedIncomeType == IncomeType.GIFT_CARD && uiState.cardName.isNotBlank())) &&
                           // 지출일 때: 현금이거나 카드가 선택됨
                           (uiState.selectedType == TransactionType.INCOME ||
                            uiState.selectedPaymentMethod == PaymentMethod.CASH ||
@@ -438,17 +442,40 @@ class AddTransactionViewModel(
                         incomeType = if (uiState.selectedType == TransactionType.INCOME) uiState.selectedIncomeType else null,
                         paymentMethod = if (uiState.selectedType == TransactionType.EXPENSE) uiState.selectedPaymentMethod else null,
                         balanceCardId = when {
-                            uiState.selectedType == TransactionType.INCOME && uiState.selectedIncomeType == IncomeType.BALANCE_CARD -> getOrCreateBalanceCardId(uiState.cardName)
-                            uiState.selectedType == TransactionType.EXPENSE && uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.id
+                            // 수입 - 잔액권 새로 추가
+                            uiState.selectedType == TransactionType.INCOME &&
+                            uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
+                            !uiState.isChargingExistingBalanceCard -> generateUniqueId()
+                            // 수입 - 기존 잔액권 충전
+                            uiState.selectedType == TransactionType.INCOME &&
+                            uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
+                            uiState.isChargingExistingBalanceCard -> uiState.selectedBalanceCardForCharge?.id
+                            // 지출 - 잔액권 사용
+                            uiState.selectedType == TransactionType.EXPENSE &&
+                            uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.id
                             else -> null
                         },
                         giftCardId = when {
-                            uiState.selectedType == TransactionType.INCOME && uiState.selectedIncomeType == IncomeType.GIFT_CARD -> getOrCreateGiftCardId(uiState.cardName)
+                            // 상품권은 항상 새로 추가
+                            uiState.selectedType == TransactionType.INCOME &&
+                            uiState.selectedIncomeType == IncomeType.GIFT_CARD -> generateUniqueId()
                             else -> null
                         },
                         cardName = when {
-                            uiState.selectedType == TransactionType.INCOME && (uiState.selectedIncomeType == IncomeType.BALANCE_CARD || uiState.selectedIncomeType == IncomeType.GIFT_CARD) -> uiState.cardName
-                            uiState.selectedType == TransactionType.EXPENSE && uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.name
+                            // 수입 - 잔액권 새로 추가
+                            uiState.selectedType == TransactionType.INCOME &&
+                            uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
+                            !uiState.isChargingExistingBalanceCard -> uiState.cardName
+                            // 수입 - 기존 잔액권 충전
+                            uiState.selectedType == TransactionType.INCOME &&
+                            uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
+                            uiState.isChargingExistingBalanceCard -> uiState.selectedBalanceCardForCharge?.name
+                            // 수입 - 상품권
+                            uiState.selectedType == TransactionType.INCOME &&
+                            uiState.selectedIncomeType == IncomeType.GIFT_CARD -> uiState.cardName
+                            // 지출 - 잔액권 사용
+                            uiState.selectedType == TransactionType.EXPENSE &&
+                            uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.name
                             else -> null
                         },
                         actualAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.actualAmount) else null,
