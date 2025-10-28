@@ -372,7 +372,9 @@ fun PayManagementApp(
                             }
                         }
 
-                        HorizontalDivider()
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
 
                         Column(
                             modifier = Modifier
