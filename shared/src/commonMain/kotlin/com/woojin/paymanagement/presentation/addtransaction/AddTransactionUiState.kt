@@ -35,6 +35,10 @@ data class AddTransactionUiState(
     // 카테고리 목록 (동적으로 로드)
     val availableCategories: List<Category> = emptyList(),
 
+    // 잔액권 충전 관련 (수입 시)
+    val isChargingExistingBalanceCard: Boolean = false,
+    val selectedBalanceCardForCharge: BalanceCard? = null,
+
     // 편집 모드
     val isEditMode: Boolean = false,
     val editTransaction: Transaction? = null,

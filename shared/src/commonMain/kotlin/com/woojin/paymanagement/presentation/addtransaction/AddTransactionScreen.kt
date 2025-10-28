@@ -94,7 +94,12 @@ fun AddTransactionScreen(
                 selectedIncomeType = uiState.selectedIncomeType,
                 onIncomeTypeSelected = viewModel::updateIncomeType,
                 cardName = uiState.cardName,
-                onCardNameChanged = viewModel::updateCardName
+                onCardNameChanged = viewModel::updateCardName,
+                isChargingExistingBalanceCard = uiState.isChargingExistingBalanceCard,
+                onChargingModeChanged = viewModel::updateChargingMode,
+                availableBalanceCards = uiState.availableBalanceCards,
+                selectedBalanceCardForCharge = uiState.selectedBalanceCardForCharge,
+                onBalanceCardForChargeSelected = viewModel::updateSelectedBalanceCardForCharge
             )
         }
 

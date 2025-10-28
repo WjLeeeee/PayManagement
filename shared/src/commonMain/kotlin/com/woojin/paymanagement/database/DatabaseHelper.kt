@@ -139,6 +139,10 @@ class DatabaseHelper(
         return queries.selectBalanceCardById(id).executeAsOneOrNull()?.toBalanceCard()
     }
 
+    suspend fun getTotalExpenseByBalanceCard(balanceCardId: String): Double {
+        return queries.getTotalExpenseByBalanceCard(balanceCardId).executeAsOne().totalExpense ?: 0.0
+    }
+
     suspend fun updateBalanceCardBalance(id: String, currentBalance: Double, isActive: Boolean) {
         queries.updateBalanceCardBalance(
             currentBalance = currentBalance,

@@ -112,6 +112,11 @@ fun IncomeTypeSelector(
     onIncomeTypeSelected: (IncomeType) -> Unit,
     cardName: String,
     onCardNameChanged: (String) -> Unit,
+    isChargingExistingBalanceCard: Boolean,
+    onChargingModeChanged: (Boolean) -> Unit,
+    availableBalanceCards: List<BalanceCard>,
+    selectedBalanceCardForCharge: BalanceCard?,
+    onBalanceCardForChargeSelected: (BalanceCard?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -158,7 +163,100 @@ fun IncomeTypeSelector(
             }
         }
 
-        if (selectedIncomeType == IncomeType.BALANCE_CARD || selectedIncomeType == IncomeType.GIFT_CARD) {
+        // 잔액권 선택 시
+        if (selectedIncomeType == IncomeType.BALANCE_CARD) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 기존 잔액권이 있을 때만 선택 옵션 표시
+            if (availableBalanceCards.isNotEmpty()) {
+                Column(modifier = Modifier.selectableGroup()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = !isChargingExistingBalanceCard,
+                                onClick = { onChargingModeChanged(false) },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = !isChargingExistingBalanceCard,
+                            onClick = null,
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Text(
+                            text = "새 잔액권 추가",
+                            modifier = Modifier.padding(start = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = isChargingExistingBalanceCard,
+                                onClick = { onChargingModeChanged(true) },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = isChargingExistingBalanceCard,
+                            onClick = null,
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Text(
+                            text = "기존 잔액권 충전",
+                            modifier = Modifier.padding(start = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // 입력 필드 또는 드롭다운
+            if (availableBalanceCards.isEmpty() || !isChargingExistingBalanceCard) {
+                // 잔액권이 없거나 새로 추가 선택 시 - 이름 입력
+                OutlinedTextField(
+                    value = cardName,
+                    onValueChange = onCardNameChanged,
+                    label = {
+                        Text(
+                            text = "잔액권 이름 (예: 편의점 상품권)",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            } else {
+                // 기존 잔액권 충전 선택 시 - 드롭다운
+                CardSelectionDropdown(
+                    cards = availableBalanceCards,
+                    selectedCard = selectedBalanceCardForCharge,
+                    onCardSelected = onBalanceCardForChargeSelected,
+                    label = "충전할 잔액권 선택"
+                )
+            }
+        }
+
+        // 상품권 선택 시 - 기존 로직 유지
+        if (selectedIncomeType == IncomeType.GIFT_CARD) {
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
@@ -166,11 +264,7 @@ fun IncomeTypeSelector(
                 onValueChange = onCardNameChanged,
                 label = {
                     Text(
-                        text = when (selectedIncomeType) {
-                            IncomeType.BALANCE_CARD -> "잔액권 이름 (예: 편의점 상품권)"
-                            IncomeType.GIFT_CARD -> "상품권 이름 (예: 신세계 상품권)"
-                            else -> ""
-                        },
+                        text = "상품권 이름 (예: 신세계 상품권)",
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 },

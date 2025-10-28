@@ -1096,19 +1096,32 @@ fun PayManagementApp(
                         } else {
                             // 추가 모드: 새 거래들 추가 (복수 거래 가능)
                             newTransactions.forEach { transaction ->
-                                // 잔액권 수입인 경우 잔액권 생성
+                                // 잔액권 수입인 경우 잔액권 생성 또는 충전
                                 if (transaction.type == com.woojin.paymanagement.data.TransactionType.INCOME &&
                                     transaction.incomeType == com.woojin.paymanagement.data.IncomeType.BALANCE_CARD &&
                                     transaction.balanceCardId != null && transaction.cardName != null) {
-                                    val balanceCard = com.woojin.paymanagement.data.BalanceCard(
-                                        id = transaction.balanceCardId,
-                                        name = transaction.cardName,
-                                        initialAmount = transaction.amount,
-                                        currentBalance = transaction.amount,
-                                        createdDate = transaction.date,
-                                        isActive = true
-                                    )
-                                    databaseHelper.insertBalanceCard(balanceCard)
+
+                                    // 기존 잔액권 확인
+                                    val existingCard = databaseHelper.getBalanceCardById(transaction.balanceCardId)
+
+                                    if (existingCard != null) {
+                                        // 기존 잔액권 충전 - 금액 추가
+                                        val updatedCard = existingCard.copy(
+                                            currentBalance = existingCard.currentBalance + transaction.amount
+                                        )
+                                        databaseHelper.updateBalanceCard(updatedCard)
+                                    } else {
+                                        // 새 잔액권 추가
+                                        val balanceCard = com.woojin.paymanagement.data.BalanceCard(
+                                            id = transaction.balanceCardId,
+                                            name = transaction.cardName,
+                                            initialAmount = transaction.amount,
+                                            currentBalance = transaction.amount,
+                                            createdDate = transaction.date,
+                                            isActive = true
+                                        )
+                                        databaseHelper.insertBalanceCard(balanceCard)
+                                    }
                                 }
 
                                 // 상품권 수입인 경우 상품권 생성
@@ -1225,19 +1238,32 @@ fun PayManagementApp(
                             // 편집 모드: 거래 업데이트는 이미 UseCase에서 처리됨
                         } else {
                             newTransactions.forEach { transaction ->
-                                // 잔액권 수입인 경우 잔액권 생성
+                                // 잔액권 수입인 경우 잔액권 생성 또는 충전
                                 if (transaction.type == com.woojin.paymanagement.data.TransactionType.INCOME &&
                                     transaction.incomeType == com.woojin.paymanagement.data.IncomeType.BALANCE_CARD &&
                                     transaction.balanceCardId != null && transaction.cardName != null) {
-                                    val balanceCard = com.woojin.paymanagement.data.BalanceCard(
-                                        id = transaction.balanceCardId,
-                                        name = transaction.cardName,
-                                        initialAmount = transaction.amount,
-                                        currentBalance = transaction.amount,
-                                        createdDate = transaction.date,
-                                        isActive = true
-                                    )
-                                    databaseHelper.insertBalanceCard(balanceCard)
+
+                                    // 기존 잔액권 확인
+                                    val existingCard = databaseHelper.getBalanceCardById(transaction.balanceCardId)
+
+                                    if (existingCard != null) {
+                                        // 기존 잔액권 충전 - 금액 추가
+                                        val updatedCard = existingCard.copy(
+                                            currentBalance = existingCard.currentBalance + transaction.amount
+                                        )
+                                        databaseHelper.updateBalanceCard(updatedCard)
+                                    } else {
+                                        // 새 잔액권 추가
+                                        val balanceCard = com.woojin.paymanagement.data.BalanceCard(
+                                            id = transaction.balanceCardId,
+                                            name = transaction.cardName,
+                                            initialAmount = transaction.amount,
+                                            currentBalance = transaction.amount,
+                                            createdDate = transaction.date,
+                                            isActive = true
+                                        )
+                                        databaseHelper.insertBalanceCard(balanceCard)
+                                    }
                                 }
 
                                 // 상품권 수입인 경우 상품권 생성
