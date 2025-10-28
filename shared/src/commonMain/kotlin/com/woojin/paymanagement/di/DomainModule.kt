@@ -1,7 +1,9 @@
 package com.woojin.paymanagement.di
 
 import com.woojin.paymanagement.data.repository.TransactionRepositoryImpl
+import com.woojin.paymanagement.data.repository.CategoryRepositoryImpl
 import com.woojin.paymanagement.domain.repository.TransactionRepository
+import com.woojin.paymanagement.domain.repository.CategoryRepository
 import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
@@ -26,6 +28,9 @@ import com.woojin.paymanagement.domain.usecase.MarkParsedTransactionProcessedUse
 import com.woojin.paymanagement.domain.usecase.DeleteParsedTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.ExportDataUseCase
 import com.woojin.paymanagement.domain.usecase.ImportDataUseCase
+import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import com.woojin.paymanagement.domain.usecase.AddCategoryUseCase
+import com.woojin.paymanagement.domain.usecase.DeleteCategoryUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -35,6 +40,7 @@ val domainModule = module {
 
     // Repository
     singleOf(::TransactionRepositoryImpl) bind TransactionRepository::class
+    singleOf(::CategoryRepositoryImpl) bind CategoryRepository::class
     single<com.woojin.paymanagement.domain.repository.PreferencesRepository> {
         com.woojin.paymanagement.data.repository.PreferencesRepositoryImpl(get())
     }
@@ -78,4 +84,9 @@ val domainModule = module {
     // Data Backup/Restore Use Cases
     factoryOf(::ExportDataUseCase)
     factoryOf(::ImportDataUseCase)
+
+    // Category Use Cases
+    factoryOf(::GetCategoriesUseCase)
+    factoryOf(::AddCategoryUseCase)
+    factoryOf(::DeleteCategoryUseCase)
 }

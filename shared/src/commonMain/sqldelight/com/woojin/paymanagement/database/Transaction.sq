@@ -1,4 +1,14 @@
--- Schema version 6
+-- Schema version 7
+
+-- Category 관련 테이블
+CREATE TABLE CategoryEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    emoji TEXT NOT NULL,
+    type TEXT NOT NULL,
+    isActive INTEGER NOT NULL DEFAULT 1,
+    sortOrder INTEGER NOT NULL DEFAULT 0
+);
 
 -- ParsedTransaction 관련 테이블 및 쿼리들
 CREATE TABLE ParsedTransactionEntity (
@@ -172,3 +182,39 @@ WHERE id = ?;
 
 deleteAllParsedTransactions:
 DELETE FROM ParsedTransactionEntity;
+
+-- Category 관련 쿼리들
+insertCategory:
+INSERT INTO CategoryEntity(id, name, emoji, type, isActive, sortOrder)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectAllCategories:
+SELECT * FROM CategoryEntity
+WHERE isActive = 1
+ORDER BY sortOrder ASC, name ASC;
+
+selectCategoriesByType:
+SELECT * FROM CategoryEntity
+WHERE type = ? AND isActive = 1
+ORDER BY sortOrder ASC, name ASC;
+
+selectCategoryById:
+SELECT * FROM CategoryEntity
+WHERE id = ?;
+
+updateCategory:
+UPDATE CategoryEntity
+SET name = ?, emoji = ?, type = ?, isActive = ?, sortOrder = ?
+WHERE id = ?;
+
+deleteCategory:
+UPDATE CategoryEntity
+SET isActive = 0
+WHERE id = ?;
+
+deleteCategoryPermanently:
+DELETE FROM CategoryEntity
+WHERE id = ?;
+
+deleteAllCategories:
+DELETE FROM CategoryEntity;

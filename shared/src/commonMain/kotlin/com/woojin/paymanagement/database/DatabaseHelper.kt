@@ -9,6 +9,7 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.ParsedTransaction
+import com.woojin.paymanagement.data.Category
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
@@ -252,6 +253,59 @@ class DatabaseHelper(
         queries.deleteAllParsedTransactions()
     }
 
+    // Category 관련 메서드들
+    fun getAllCategories(): Flow<List<Category>> {
+        return queries.selectAllCategories()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toCategory() }
+            }
+    }
+
+    fun getCategoriesByType(type: TransactionType): Flow<List<Category>> {
+        return queries.selectCategoriesByType(type.name)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toCategory() }
+            }
+    }
+
+    suspend fun getCategoryById(id: String): Category? {
+        return queries.selectCategoryById(id).executeAsOneOrNull()?.toCategory()
+    }
+
+    suspend fun insertCategory(category: Category) {
+        queries.insertCategory(
+            id = category.id,
+            name = category.name,
+            emoji = category.emoji,
+            type = category.type.name,
+            isActive = if (category.isActive) 1L else 0L,
+            sortOrder = category.sortOrder.toLong()
+        )
+    }
+
+    suspend fun updateCategory(category: Category) {
+        queries.updateCategory(
+            name = category.name,
+            emoji = category.emoji,
+            type = category.type.name,
+            isActive = if (category.isActive) 1L else 0L,
+            sortOrder = category.sortOrder.toLong(),
+            id = category.id
+        )
+    }
+
+    suspend fun deleteCategory(id: String) {
+        queries.deleteCategory(id)
+    }
+
+    suspend fun deleteAllCategories() {
+        queries.deleteAllCategories()
+    }
+
     /**
      * 모든 데이터를 삭제합니다 (백업 복원 시 사용)
      */
@@ -313,6 +367,17 @@ class DatabaseHelper(
             rawNotification = this.rawNotification,
             isProcessed = this.isProcessed == 1L,
             createdAt = this.createdAt
+        )
+    }
+
+    private fun CategoryEntity.toCategory(): Category {
+        return Category(
+            id = this.id,
+            name = this.name,
+            emoji = this.emoji,
+            type = TransactionType.valueOf(this.type),
+            isActive = this.isActive == 1L,
+            sortOrder = this.sortOrder.toInt()
         )
     }
 }
