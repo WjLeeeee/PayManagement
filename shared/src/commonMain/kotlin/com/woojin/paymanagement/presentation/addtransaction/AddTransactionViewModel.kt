@@ -19,6 +19,12 @@ import com.woojin.paymanagement.domain.usecase.GetAvailableGiftCardsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import com.woojin.paymanagement.utils.formatWithCommas
 import com.woojin.paymanagement.utils.parseAmountToDouble
 import com.woojin.paymanagement.utils.removeCommas
@@ -33,10 +39,32 @@ class AddTransactionViewModel(
     private val saveMultipleTransactionsUseCase: SaveMultipleTransactionsUseCase,
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getAvailableBalanceCardsUseCase: GetAvailableBalanceCardsUseCase,
-    private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase
-) {
+    private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase,
+    private val getCategoriesUseCase: GetCategoriesUseCase
+) : ViewModel() {
     var uiState by mutableStateOf(AddTransactionUiState())
         private set
+
+    private var categoriesJob: Job? = null
+
+    init {
+        // 타입 변경 시 카테고리 로드
+        loadCategories()
+    }
+
+    private fun loadCategories() {
+        // 이전 collect Job 취소
+        categoriesJob?.cancel()
+
+        // 새로운 collect Job 시작
+        categoriesJob = viewModelScope.launch {
+            getCategoriesUseCase(uiState.selectedType).collectLatest { categories ->
+                uiState = uiState.copy(
+                    availableCategories = categories
+                )
+            }
+        }
+    }
 
 
     private fun generateUniqueId(): String {
@@ -114,6 +142,9 @@ class AddTransactionViewModel(
             )
         }
 
+        // 최신 카테고리 로드
+        loadCategories()
+
         validateInput()
     }
 
@@ -142,6 +173,9 @@ class AddTransactionViewModel(
             isEditMode = false,
             editTransaction = null
         )
+
+        // 최신 카테고리 로드
+        loadCategories()
 
         validateInput()
     }
@@ -187,6 +221,7 @@ class AddTransactionViewModel(
                 selectedType = type,
                 category = ""
             )
+            loadCategories() // 타입 변경 시 카테고리 다시 로드
             validateInput()
         }
     }

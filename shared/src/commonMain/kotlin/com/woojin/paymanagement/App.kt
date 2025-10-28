@@ -169,7 +169,13 @@ fun PayManagementApp(
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
     val databaseHelper: DatabaseHelper = koinInject()
+    val categoryRepository: com.woojin.paymanagement.domain.repository.CategoryRepository = koinInject()
     val scope = rememberCoroutineScope()
+
+    // 초기 카테고리 설정
+    LaunchedEffect(Unit) {
+        categoryRepository.initializeDefaultCategories()
+    }
 
     // 초기 화면 결정 로직
     val initialScreen = when {
@@ -767,6 +773,37 @@ fun PayManagementApp(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
+                            // 카테고리 관리
+                            NavigationDrawerItem(
+                                label = {
+                                    Column {
+                                        Text(
+                                            text = "카테고리 관리",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "수입/지출 카테고리 추가 및 삭제",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    currentScreen = Screen.CategoryManagement
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "📂",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
                             NavigationDrawerItem(
                                 label = {
@@ -1288,6 +1325,17 @@ fun PayManagementApp(
                 }
             )
         }
+
+        Screen.CategoryManagement -> {
+            val categoryManagementViewModel = remember { koinInject<com.woojin.paymanagement.presentation.categorymanagement.CategoryManagementViewModel>() }
+
+            com.woojin.paymanagement.presentation.categorymanagement.CategoryManagementScreen(
+                viewModel = categoryManagementViewModel,
+                onNavigateBack = {
+                    currentScreen = Screen.Calendar
+                }
+            )
+        }
     }
     } // BoxWithConstraints 닫기
     }
@@ -1300,5 +1348,6 @@ enum class Screen {
     AddTransaction,
     DateDetail,
     EditTransaction,
-    ParsedTransactionList
+    ParsedTransactionList,
+    CategoryManagement
 }

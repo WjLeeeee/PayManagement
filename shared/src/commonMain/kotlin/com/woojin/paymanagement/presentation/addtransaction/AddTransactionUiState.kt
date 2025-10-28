@@ -7,6 +7,7 @@ import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.Category
 import kotlinx.datetime.LocalDate
 
 data class AddTransactionUiState(
@@ -31,6 +32,9 @@ data class AddTransactionUiState(
     val availableBalanceCards: List<BalanceCard> = emptyList(),
     val availableGiftCards: List<GiftCard> = emptyList(),
 
+    // 카테고리 목록 (동적으로 로드)
+    val availableCategories: List<Category> = emptyList(),
+
     // 편집 모드
     val isEditMode: Boolean = false,
     val editTransaction: Transaction? = null,
@@ -43,38 +47,52 @@ data class AddTransactionUiState(
 )
 
 val AddTransactionUiState.categories: List<String>
-    get() = when (selectedType) {
-        TransactionType.INCOME -> listOf("급여", "식비", "당근", "K-패스 환급", "투자수익", "기타수입")
-        TransactionType.EXPENSE -> listOf("식비", "데이트", "생활비", "생활용품", "쇼핑", "문화생활", "경조사", "자기계발", "공과금", "대출이자", "모임통장", "교통비", "적금", "투자", "손절", "정기결제", "기타지출")
+    get() = if (availableCategories.isNotEmpty()) {
+        // 데이터베이스에서 로드된 카테고리 사용
+        availableCategories.map { it.name }
+    } else {
+        // 기본값 (데이터베이스가 아직 로드되지 않았을 때)
+        when (selectedType) {
+            TransactionType.INCOME -> listOf("급여", "식비", "당근", "K-패스 환급", "투자수익", "기타수입")
+            TransactionType.EXPENSE -> listOf("식비", "데이트", "생활비", "생활용품", "쇼핑", "문화생활", "경조사", "자기계발", "공과금", "대출이자", "모임통장", "교통비", "적금", "투자", "손절", "정기결제", "기타지출")
+        }
     }
 
-// 카테고리별 이모지 매핑
-fun getCategoryEmoji(category: String): String = when (category) {
-    // 수입 카테고리
-    "급여" -> "💰"
-    "식비" -> "🍔"
-    "당근" -> "🥕"
-    "K-패스 환급" -> "🚌"
-    "투자수익" -> "📈"
-    "기타수입" -> "💵"
+// 카테고리별 이모지 매핑 (UiState에서 찾거나 기본값 사용)
+fun getCategoryEmoji(category: String, uiState: AddTransactionUiState? = null): String {
+    // UiState에서 카테고리를 찾아서 이모지 반환
+    uiState?.availableCategories?.find { it.name == category }?.let {
+        return it.emoji
+    }
 
-    // 지출 카테고리
-    "데이트" -> "💑"
-    "생활비" -> "🏠"
-    "생활용품" -> "🧴"
-    "쇼핑" -> "🛍️"
-    "문화생활" -> "🎬"
-    "경조사" -> "🎁"
-    "자기계발" -> "📚"
-    "공과금" -> "💡"
-    "대출이자" -> "🏦"
-    "모임통장" -> "👥"
-    "교통비" -> "🚗"
-    "적금" -> "🐷"
-    "투자" -> "💹"
-    "손절" -> "📉"
-    "정기결제" -> "📅"
-    "기타지출" -> "💸"
+    // 기본값 (하드코딩)
+    return when (category) {
+        // 수입 카테고리
+        "급여" -> "💰"
+        "식비" -> "🍔"
+        "당근" -> "🥕"
+        "K-패스 환급" -> "🚌"
+        "투자수익" -> "📈"
+        "기타수입" -> "💵"
 
-    else -> "📌"
+        // 지출 카테고리
+        "데이트" -> "💑"
+        "생활비" -> "🏠"
+        "생활용품" -> "🧴"
+        "쇼핑" -> "🛍️"
+        "문화생활" -> "🎬"
+        "경조사" -> "🎁"
+        "자기계발" -> "📚"
+        "공과금" -> "💡"
+        "대출이자" -> "🏦"
+        "모임통장" -> "👥"
+        "교통비" -> "🚗"
+        "적금" -> "🐷"
+        "투자" -> "💹"
+        "손절" -> "📉"
+        "정기결제" -> "📅"
+        "기타지출" -> "💸"
+
+        else -> "📌"
+    }
 }

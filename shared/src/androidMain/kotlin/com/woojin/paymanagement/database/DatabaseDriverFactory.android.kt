@@ -29,6 +29,22 @@ actual class DatabaseDriverFactory(private val context: Context) {
             0
         )
 
+        // CategoryEntity 테이블이 없으면 생성
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS CategoryEntity (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                emoji TEXT NOT NULL,
+                type TEXT NOT NULL,
+                isActive INTEGER NOT NULL DEFAULT 1,
+                sortOrder INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent(),
+            0
+        )
+
         return driver
     }
 }

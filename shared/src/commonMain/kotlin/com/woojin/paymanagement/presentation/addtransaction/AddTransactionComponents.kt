@@ -589,6 +589,7 @@ fun CategoryChipGrid(
     selectedCategory: String,
     onCategorySelected: (String) -> Unit,
     transactionType: TransactionType,
+    uiState: AddTransactionUiState,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -640,7 +641,7 @@ fun CategoryChipGrid(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = getCategoryEmoji(category),
+                        text = getCategoryEmoji(category, uiState),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
