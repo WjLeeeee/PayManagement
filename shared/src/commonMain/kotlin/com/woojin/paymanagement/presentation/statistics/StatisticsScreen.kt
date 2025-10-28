@@ -649,16 +649,17 @@ private fun PaymentMethodSection(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Balance Cards Summary
-        paymentSummary.balanceCards.forEach { balanceCard ->
-            BalanceCardSummaryCard(balanceCard = balanceCard)
-            Spacer(modifier = Modifier.height(16.dp))
-        }
+        // 기타 (잔액권 + 상품권) Summary
+        val otherIncome = paymentSummary.balanceCards.sumOf { it.income } +
+                          paymentSummary.giftCards.sumOf { it.income }
+        val otherExpense = paymentSummary.balanceCards.sumOf { it.expense } +
+                           paymentSummary.giftCards.sumOf { it.expense }
 
-        // Gift Cards Summary
-        paymentSummary.giftCards.forEach { giftCard ->
-            GiftCardSummaryCard(giftCard = giftCard)
-            Spacer(modifier = Modifier.height(16.dp))
+        if (otherIncome > 0 || otherExpense > 0) {
+            OtherPaymentSummaryCard(
+                income = otherIncome,
+                expense = otherExpense
+            )
         }
     }
 }
@@ -1038,6 +1039,79 @@ private fun GiftCardSummaryCard(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OtherPaymentSummaryCard(
+    income: Double,
+    expense: Double
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "📦 기타",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = "수입",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(income)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "지출",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "-${Utils.formatAmount(expense)}원",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
                 }
