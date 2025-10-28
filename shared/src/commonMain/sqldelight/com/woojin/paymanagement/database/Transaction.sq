@@ -127,6 +127,11 @@ SELECT COALESCE(SUM(amount), 0.0) AS totalExpense
 FROM TransactionEntity
 WHERE balanceCardId = ? AND type = 'EXPENSE';
 
+selectTransactionsByBalanceCard:
+SELECT * FROM TransactionEntity
+WHERE balanceCardId = ?
+ORDER BY date DESC;
+
 -- GiftCard 관련 쿼리들
 insertGiftCard:
 INSERT INTO GiftCardEntity(id, name, totalAmount, usedAmount, createdDate, isActive, minimumUsageRate)
@@ -161,6 +166,11 @@ WHERE id = ?;
 
 deleteAllGiftCards:
 DELETE FROM GiftCardEntity;
+
+selectTransactionsByGiftCard:
+SELECT * FROM TransactionEntity
+WHERE giftCardId = ?
+ORDER BY date DESC;
 
 -- ParsedTransaction 관련 쿼리들
 insertParsedTransaction:

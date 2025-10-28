@@ -804,6 +804,37 @@ fun PayManagementApp(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
+                            // 잔액권/상품권 관리
+                            NavigationDrawerItem(
+                                label = {
+                                    Column {
+                                        Text(
+                                            text = "잔액권/상품권 관리",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "잔액권 및 상품권 조회 및 삭제",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    currentScreen = Screen.CardManagement
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "💳",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
                             NavigationDrawerItem(
                                 label = {
@@ -1362,6 +1393,17 @@ fun PayManagementApp(
                 }
             )
         }
+
+        Screen.CardManagement -> {
+            val cardManagementViewModel = remember { koinInject<com.woojin.paymanagement.presentation.cardmanagement.CardManagementViewModel>() }
+
+            com.woojin.paymanagement.presentation.cardmanagement.CardManagementScreen(
+                viewModel = cardManagementViewModel,
+                onNavigateBack = {
+                    currentScreen = Screen.Calendar
+                }
+            )
+        }
     }
     } // BoxWithConstraints 닫기
     }
@@ -1375,5 +1417,6 @@ enum class Screen {
     DateDetail,
     EditTransaction,
     ParsedTransactionList,
-    CategoryManagement
+    CategoryManagement,
+    CardManagement
 }

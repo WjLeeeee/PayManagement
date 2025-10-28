@@ -155,6 +155,15 @@ class DatabaseHelper(
         queries.deleteBalanceCard(id)
     }
 
+    fun getTransactionsByBalanceCard(balanceCardId: String): Flow<List<Transaction>> {
+        return queries.selectTransactionsByBalanceCard(balanceCardId)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toTransaction() }
+            }
+    }
+
     // GiftCard 관련 메서드들
     fun getAllGiftCards(): Flow<List<GiftCard>> {
         return queries.selectAllGiftCards()
@@ -212,6 +221,15 @@ class DatabaseHelper(
 
     suspend fun deleteGiftCard(id: String) {
         queries.deleteGiftCard(id)
+    }
+
+    fun getTransactionsByGiftCard(giftCardId: String): Flow<List<Transaction>> {
+        return queries.selectTransactionsByGiftCard(giftCardId)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toTransaction() }
+            }
     }
 
     // ParsedTransaction 관련 메서드들

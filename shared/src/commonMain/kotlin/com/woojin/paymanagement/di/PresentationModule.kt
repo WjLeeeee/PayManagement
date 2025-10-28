@@ -8,6 +8,7 @@ import com.woojin.paymanagement.presentation.statistics.StatisticsViewModel
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionViewModel
 import com.woojin.paymanagement.presentation.categorymanagement.CategoryManagementViewModel
+import com.woojin.paymanagement.presentation.cardmanagement.CardManagementViewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
 
@@ -31,4 +32,5 @@ val presentationModule = module {
     factory { CalendarTutorialViewModel(get()) }
     factory { ParsedTransactionViewModel(get(), get(), get(), get()) }
     factory { CategoryManagementViewModel(get(), get(), get()) }
+    factory { CardManagementViewModel(get()) }
 }
