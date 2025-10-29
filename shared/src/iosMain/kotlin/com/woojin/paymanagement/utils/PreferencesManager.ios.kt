@@ -64,4 +64,14 @@ actual class PreferencesManager {
     actual fun setThemeMode(mode: ThemeMode) {
         userDefaults.setObject(mode.name, forKey = "theme_mode")
     }
+
+    actual fun getMonthlySalary(): Double {
+        return userDefaults.doubleForKey("monthly_salary").takeIf {
+            userDefaults.objectForKey("monthly_salary") != null
+        } ?: 0.0
+    }
+
+    actual fun setMonthlySalary(salary: Double) {
+        userDefaults.setDouble(salary, forKey = "monthly_salary")
+    }
 }

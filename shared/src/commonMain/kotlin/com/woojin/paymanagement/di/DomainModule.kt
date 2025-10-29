@@ -2,8 +2,10 @@ package com.woojin.paymanagement.di
 
 import com.woojin.paymanagement.data.repository.TransactionRepositoryImpl
 import com.woojin.paymanagement.data.repository.CategoryRepositoryImpl
+import com.woojin.paymanagement.data.repository.BudgetRepositoryImpl
 import com.woojin.paymanagement.domain.repository.TransactionRepository
 import com.woojin.paymanagement.domain.repository.CategoryRepository
+import com.woojin.paymanagement.domain.repository.BudgetRepository
 import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
@@ -31,6 +33,13 @@ import com.woojin.paymanagement.domain.usecase.ImportDataUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
 import com.woojin.paymanagement.domain.usecase.AddCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryUseCase
+import com.woojin.paymanagement.domain.usecase.GetCurrentBudgetPlanUseCase
+import com.woojin.paymanagement.domain.usecase.SaveBudgetPlanUseCase
+import com.woojin.paymanagement.domain.usecase.GetCategoryBudgetsUseCase
+import com.woojin.paymanagement.domain.usecase.SaveCategoryBudgetUseCase
+import com.woojin.paymanagement.domain.usecase.UpdateCategoryBudgetUseCase
+import com.woojin.paymanagement.domain.usecase.DeleteCategoryBudgetUseCase
+import com.woojin.paymanagement.domain.usecase.GetSpentAmountByCategoryUseCase
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -41,6 +50,7 @@ val domainModule = module {
     // Repository
     singleOf(::TransactionRepositoryImpl) bind TransactionRepository::class
     singleOf(::CategoryRepositoryImpl) bind CategoryRepository::class
+    singleOf(::BudgetRepositoryImpl) bind BudgetRepository::class
     single<com.woojin.paymanagement.domain.repository.PreferencesRepository> {
         com.woojin.paymanagement.data.repository.PreferencesRepositoryImpl(get())
     }
@@ -89,4 +99,13 @@ val domainModule = module {
     factoryOf(::GetCategoriesUseCase)
     factoryOf(::AddCategoryUseCase)
     factoryOf(::DeleteCategoryUseCase)
+
+    // Budget Use Cases
+    factoryOf(::GetCurrentBudgetPlanUseCase)
+    factoryOf(::SaveBudgetPlanUseCase)
+    factoryOf(::GetCategoryBudgetsUseCase)
+    factoryOf(::SaveCategoryBudgetUseCase)
+    factoryOf(::UpdateCategoryBudgetUseCase)
+    factoryOf(::DeleteCategoryBudgetUseCase)
+    factoryOf(::GetSpentAmountByCategoryUseCase)
 }

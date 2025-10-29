@@ -51,4 +51,12 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString("theme_mode", mode.name).apply()
     }
+
+    actual fun getMonthlySalary(): Double {
+        return prefs.getFloat("monthly_salary", 0f).toDouble()
+    }
+
+    actual fun setMonthlySalary(salary: Double) {
+        prefs.edit().putFloat("monthly_salary", salary.toFloat()).apply()
+    }
 }

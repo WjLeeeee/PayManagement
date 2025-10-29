@@ -10,16 +10,22 @@ import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.data.Category
+import com.woojin.paymanagement.data.BudgetPlan
+import com.woojin.paymanagement.data.CategoryBudget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 class DatabaseHelper(
     private val database: PayManagementDatabase
 ) {
     private val queries = database.transactionQueries
+    private val json = Json { ignoreUnknownKeys = true }
     
     fun getAllTransactions(): Flow<List<Transaction>> {
         return queries.selectAllTransactions()
@@ -328,6 +334,80 @@ class DatabaseHelper(
         queries.deleteAllCategories()
     }
 
+    // BudgetPlan 관련 메서드들
+    fun getBudgetPlanByPeriod(startDate: LocalDate, endDate: LocalDate): Flow<BudgetPlan?> {
+        return queries.selectBudgetPlanByPeriod(startDate.toString(), endDate.toString())
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.firstOrNull()?.toBudgetPlan()
+            }
+    }
+
+    fun getAllBudgetPlans(): Flow<List<BudgetPlan>> {
+        return queries.selectAllBudgetPlans()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toBudgetPlan() }
+            }
+    }
+
+    suspend fun insertBudgetPlan(budgetPlan: BudgetPlan) {
+        queries.insertBudgetPlan(
+            id = budgetPlan.id,
+            periodStartDate = budgetPlan.periodStartDate.toString(),
+            periodEndDate = budgetPlan.periodEndDate.toString(),
+            createdAt = budgetPlan.createdAt.toString()
+        )
+    }
+
+    suspend fun deleteBudgetPlan(id: String) {
+        queries.deleteBudgetPlan(id)
+    }
+
+    suspend fun deleteAllBudgetPlans() {
+        queries.deleteAllBudgetPlans()
+    }
+
+    // CategoryBudget 관련 메서드들
+    fun getCategoryBudgetsByPlanId(budgetPlanId: String): Flow<List<CategoryBudget>> {
+        return queries.selectCategoryBudgetsByPlanId(budgetPlanId)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toCategoryBudget() }
+            }
+    }
+
+    suspend fun insertCategoryBudget(categoryBudget: CategoryBudget) {
+        queries.insertCategoryBudget(
+            id = categoryBudget.id,
+            budgetPlanId = categoryBudget.budgetPlanId,
+            categoryIds = json.encodeToString(categoryBudget.categoryIds),
+            categoryName = categoryBudget.categoryName,
+            categoryEmoji = categoryBudget.categoryEmoji,
+            allocatedAmount = categoryBudget.allocatedAmount
+        )
+    }
+
+    suspend fun updateCategoryBudget(id: String, allocatedAmount: Double) {
+        queries.updateCategoryBudget(allocatedAmount, id)
+    }
+
+    suspend fun deleteCategoryBudget(id: String) {
+        queries.deleteCategoryBudget(id)
+    }
+
+    suspend fun deleteAllCategoryBudgets() {
+        queries.deleteAllCategoryBudgets()
+    }
+
+    suspend fun getSpentAmountByCategory(categoryName: String, startDate: LocalDate, endDate: LocalDate): Double {
+        return queries.selectSpentAmountByCategory(categoryName, startDate.toString(), endDate.toString())
+            .executeAsOne().spent ?: 0.0
+    }
+
     /**
      * 모든 데이터를 삭제합니다 (백업 복원 시 사용)
      */
@@ -400,6 +480,33 @@ class DatabaseHelper(
             type = TransactionType.valueOf(this.type),
             isActive = this.isActive == 1L,
             sortOrder = this.sortOrder.toInt()
+        )
+    }
+
+    private fun BudgetPlanEntity.toBudgetPlan(): BudgetPlan {
+        return BudgetPlan(
+            id = this.id,
+            periodStartDate = LocalDate.parse(this.periodStartDate),
+            periodEndDate = LocalDate.parse(this.periodEndDate),
+            createdAt = LocalDate.parse(this.createdAt)
+        )
+    }
+
+    private fun CategoryBudgetEntity.toCategoryBudget(): CategoryBudget {
+        val categoryIdsList = try {
+            json.decodeFromString<List<String>>(this.categoryIds)
+        } catch (e: Exception) {
+            // 하위 호환성: 단일 ID가 저장되어 있을 경우 리스트로 변환
+            listOf(this.categoryIds)
+        }
+
+        return CategoryBudget(
+            id = this.id,
+            budgetPlanId = this.budgetPlanId,
+            categoryIds = categoryIdsList,
+            categoryName = this.categoryName,
+            categoryEmoji = this.categoryEmoji,
+            allocatedAmount = this.allocatedAmount
         )
     }
 }

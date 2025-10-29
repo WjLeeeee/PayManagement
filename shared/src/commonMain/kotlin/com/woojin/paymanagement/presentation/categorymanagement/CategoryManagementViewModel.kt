@@ -12,7 +12,7 @@ import com.woojin.paymanagement.domain.usecase.AddCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import java.util.UUID
+import com.benasher44.uuid.uuid4
 
 class CategoryManagementViewModel(
     private val getCategoriesUseCase: GetCategoriesUseCase,
@@ -74,7 +74,7 @@ class CategoryManagementViewModel(
         viewModelScope.launch {
             try {
                 val newCategory = Category(
-                    id = UUID.randomUUID().toString(),
+                    id = uuid4().toString(),
                     name = uiState.newCategoryName.trim(),
                     emoji = uiState.newCategoryEmoji.trim(),
                     type = uiState.selectedType,

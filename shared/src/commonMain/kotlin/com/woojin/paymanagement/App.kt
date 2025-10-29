@@ -182,10 +182,28 @@ fun PayManagementApp(
         !preferencesManager.isPaydaySet() -> Screen.PaydaySetup
         else -> Screen.Calendar
     }
-    var currentScreen by remember { mutableStateOf(initialScreen) }
+
+    // 네비게이션 스택 관리
+    var navigationStack by remember { mutableStateOf(listOf(initialScreen)) }
+    val currentScreen = navigationStack.last()
+
+    // 네비게이션 헬퍼 함수들
+    fun navigateTo(screen: Screen) {
+        navigationStack = navigationStack + screen
+    }
+
+    fun navigateBack() {
+        if (navigationStack.size > 1) {
+            navigationStack = navigationStack.dropLast(1)
+        }
+    }
+
+    fun navigateToRoot(screen: Screen) {
+        navigationStack = listOf(screen)
+    }
+
     var selectedDate by remember { mutableStateOf<LocalDate>(Clock.System.todayIn(TimeZone.currentSystemDefault())) }
     var editTransaction by remember { mutableStateOf<Transaction?>(null) }
-    var previousScreen by remember { mutableStateOf(Screen.Calendar) }
     var selectedPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     var currentCalendarPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     var selectedParsedTransaction by remember { mutableStateOf<com.woojin.paymanagement.data.ParsedTransaction?>(null) }
@@ -197,7 +215,7 @@ fun PayManagementApp(
         if (shouldNavigateToParsedTransactions) {
             // Payday가 설정되어 있을 때만 네비게이션 수행
             if (preferencesManager.isPaydaySet()) {
-                currentScreen = Screen.ParsedTransactionList
+                navigateTo(Screen.ParsedTransactionList)
             }
             onNavigationHandled()
         }
@@ -311,7 +329,7 @@ fun PayManagementApp(
             confirmButton = {
                 Button(onClick = {
                     showPaydayChangeDialog = false
-                    currentScreen = Screen.PaydaySetup
+                    navigateTo(Screen.PaydaySetup)
                 }) {
                     Text("변경하기")
                 }
@@ -793,12 +811,43 @@ fun PayManagementApp(
                                 },
                                 selected = false,
                                 onClick = {
-                                    currentScreen = Screen.CategoryManagement
+                                    navigateTo(Screen.CategoryManagement)
                                     scope.launch { drawerState.close() }
                                 },
                                 icon = {
                                     Text(
                                         text = "📂",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // 예산 관리
+                            NavigationDrawerItem(
+                                label = {
+                                    Column {
+                                        Text(
+                                            text = "예산 설정",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "카테고리별 월간 예산 설정",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    navigateTo(Screen.BudgetSettings)
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "📊",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 }
@@ -824,7 +873,7 @@ fun PayManagementApp(
                                 },
                                 selected = false,
                                 onClick = {
-                                    currentScreen = Screen.CardManagement
+                                    navigateTo(Screen.CardManagement)
                                     scope.launch { drawerState.close() }
                                 },
                                 icon = {
@@ -1023,7 +1072,7 @@ fun PayManagementApp(
                         onThemeChanged?.invoke()
                     } else {
                         // 초기 설정인 경우 캘린더로 이동
-                        currentScreen = Screen.Calendar
+                        navigateToRoot(Screen.Calendar)
                     }
                 }
             )
@@ -1065,16 +1114,15 @@ fun PayManagementApp(
                 },
                 onDateDetailClick = { date ->
                     selectedDate = date
-                    currentScreen = Screen.DateDetail
+                    navigateTo(Screen.DateDetail)
                 },
                 onStatisticsClick = { payPeriod ->
                     selectedPayPeriod = payPeriod
-                    currentScreen = Screen.Statistics
+                    navigateTo(Screen.Statistics)
                 },
                 onAddTransactionClick = {
                     editTransaction = null
-                    previousScreen = Screen.Calendar
-                    currentScreen = Screen.AddTransaction
+                    navigateTo(Screen.AddTransaction)
                 },
                 onPayPeriodChanged = { payPeriod ->
                     currentCalendarPayPeriod = payPeriod
@@ -1087,7 +1135,7 @@ fun PayManagementApp(
 
                     if (hasListener) {
                         // 알림 리스너 권한이 있으면 화면 이동
-                        currentScreen = Screen.ParsedTransactionList
+                        navigateTo(Screen.ParsedTransactionList)
                     } else {
                         // 알림 리스너 권한이 없으면 요청
                         showListenerPermissionDialog = true
@@ -1105,9 +1153,7 @@ fun PayManagementApp(
                 availableBalanceCards = availableBalanceCards,
                 availableGiftCards = availableGiftCards,
                 initialPayPeriod = selectedPayPeriod,
-                onBack = {
-                    currentScreen = Screen.Calendar
-                },
+                onBack = { navigateBack() },
                 viewModel = statisticsViewModel
             )
         }
@@ -1218,11 +1264,11 @@ fun PayManagementApp(
                         // 파싱된 거래 상태 초기화
                         selectedParsedTransaction = null
                     }
-                    currentScreen = previousScreen
+                    navigateBack()
                 },
                 onCancel = {
                     selectedParsedTransaction = null
-                    currentScreen = previousScreen
+                    navigateBack()
                 }
             )
         }
@@ -1235,13 +1281,10 @@ fun PayManagementApp(
                 selectedDate = selectedDate,
                 transactions = transactions,
                 viewModel = dateDetailViewModel,
-                onBack = {
-                    currentScreen = Screen.Calendar
-                },
+                onBack = { navigateBack() },
                 onEditTransaction = { transaction ->
                     editTransaction = transaction
-                    previousScreen = Screen.DateDetail
-                    currentScreen = Screen.AddTransaction
+                    navigateTo(Screen.AddTransaction)
                 },
                 onDeleteTransaction = { transaction ->
                     scope.launch {
@@ -1250,8 +1293,7 @@ fun PayManagementApp(
                 },
                 onAddTransaction = {
                     editTransaction = null
-                    previousScreen = Screen.DateDetail
-                    currentScreen = Screen.AddTransaction
+                    navigateTo(Screen.AddTransaction)
                 }
             )
         }
@@ -1351,11 +1393,9 @@ fun PayManagementApp(
                             }
                         }
                     }
-                    currentScreen = Screen.DateDetail
+                    navigateBack()
                 },
-                onCancel = {
-                    currentScreen = Screen.DateDetail
-                }
+                onCancel = { navigateBack() }
             )
         }
 
@@ -1367,12 +1407,9 @@ fun PayManagementApp(
                 viewModel = parsedTransactionViewModel,
                 onTransactionClick = { parsedTransaction ->
                     selectedParsedTransaction = parsedTransaction
-                    previousScreen = Screen.ParsedTransactionList
-                    currentScreen = Screen.AddTransaction
+                    navigateTo(Screen.AddTransaction)
                 },
-                onBack = {
-                    currentScreen = Screen.Calendar
-                },
+                onBack = { navigateBack() },
                 onSendTestNotifications = onSendTestNotifications,
                 hasNotificationPermission = notificationPermissionChecker.hasPostNotificationPermission(),
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
@@ -1390,9 +1427,7 @@ fun PayManagementApp(
 
             com.woojin.paymanagement.presentation.categorymanagement.CategoryManagementScreen(
                 viewModel = categoryManagementViewModel,
-                onNavigateBack = {
-                    currentScreen = Screen.Calendar
-                }
+                onNavigateBack = { navigateBack() }
             )
         }
 
@@ -1401,8 +1436,18 @@ fun PayManagementApp(
 
             com.woojin.paymanagement.presentation.cardmanagement.CardManagementScreen(
                 viewModel = cardManagementViewModel,
-                onNavigateBack = {
-                    currentScreen = Screen.Calendar
+                onNavigateBack = { navigateBack() }
+            )
+        }
+
+        Screen.BudgetSettings -> {
+            val budgetSettingsViewModel = remember { koinInject<com.woojin.paymanagement.presentation.budgetsettings.BudgetSettingsViewModel>() }
+
+            com.woojin.paymanagement.presentation.budgetsettings.BudgetSettingsScreen(
+                viewModel = budgetSettingsViewModel,
+                onNavigateBack = { navigateBack() },
+                onNavigateToCategoryManagement = {
+                    navigateTo(Screen.CategoryManagement)
                 }
             )
         }
@@ -1420,5 +1465,6 @@ enum class Screen {
     EditTransaction,
     ParsedTransactionList,
     CategoryManagement,
-    CardManagement
+    CardManagement,
+    BudgetSettings
 }

@@ -9,4 +9,6 @@ interface PreferencesRepository {
     fun setPaydayAdjustment(adjustment: PaydayAdjustment)
     fun isMoneyVisible(): Boolean
     fun setMoneyVisible(visible: Boolean)
+    fun getMonthlySalary(): Double
+    fun setMonthlySalary(salary: Double)
 }

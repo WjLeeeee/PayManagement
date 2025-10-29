@@ -41,11 +41,14 @@ kotlin {
             implementation(libs.compose.foundation.multiplatform)
             implementation(libs.compose.material3.multiplatform)
             implementation(libs.compose.ui.multiplatform)
+            implementation(libs.compose.lifecycle.viewmodel)
+            implementation(libs.compose.lifecycle.runtime)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines.extensions)
             implementation(libs.koin.core)
+            implementation(libs.uuid)
         }
         
         androidMain.dependencies {

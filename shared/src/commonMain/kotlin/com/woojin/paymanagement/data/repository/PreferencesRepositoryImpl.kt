@@ -31,4 +31,12 @@ class PreferencesRepositoryImpl(
     override fun setMoneyVisible(visible: Boolean) {
         preferencesManager.setMoneyVisible(visible)
     }
+
+    override fun getMonthlySalary(): Double {
+        return preferencesManager.getMonthlySalary()
+    }
+
+    override fun setMonthlySalary(salary: Double) {
+        preferencesManager.setMonthlySalary(salary)
+    }
 }

@@ -16,6 +16,9 @@ expect class PreferencesManager {
 
     fun getThemeMode(): ThemeMode
     fun setThemeMode(mode: ThemeMode)
+
+    fun getMonthlySalary(): Double
+    fun setMonthlySalary(salary: Double)
 }
 
 enum class PaydayAdjustment {
