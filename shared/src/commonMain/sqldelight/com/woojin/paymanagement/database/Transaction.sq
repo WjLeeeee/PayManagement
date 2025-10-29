@@ -1,4 +1,4 @@
--- Schema version 7
+-- Schema version 8
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -55,6 +55,24 @@ CREATE TABLE GiftCardEntity (
     createdDate TEXT NOT NULL,
     isActive INTEGER NOT NULL DEFAULT 1,
     minimumUsageRate REAL NOT NULL DEFAULT 0.8
+);
+
+CREATE TABLE BudgetPlanEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    periodStartDate TEXT NOT NULL,
+    periodEndDate TEXT NOT NULL,
+    createdAt TEXT NOT NULL,
+    UNIQUE(periodStartDate, periodEndDate)
+);
+
+CREATE TABLE CategoryBudgetEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    budgetPlanId TEXT NOT NULL,
+    categoryIds TEXT NOT NULL,  -- JSON 배열 문자열 (예: ["id1"] 또는 ["id1","id2","id3"])
+    categoryName TEXT NOT NULL,
+    categoryEmoji TEXT NOT NULL,
+    allocatedAmount REAL NOT NULL,
+    FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
 );
 
 insertTransaction:
@@ -233,3 +251,51 @@ WHERE id = ?;
 
 deleteAllCategories:
 DELETE FROM CategoryEntity;
+
+-- BudgetPlan 관련 쿼리들
+insertBudgetPlan:
+INSERT INTO BudgetPlanEntity(id, periodStartDate, periodEndDate, createdAt)
+VALUES (?, ?, ?, ?);
+
+selectBudgetPlanByPeriod:
+SELECT * FROM BudgetPlanEntity
+WHERE periodStartDate = ? AND periodEndDate = ?;
+
+selectAllBudgetPlans:
+SELECT * FROM BudgetPlanEntity
+ORDER BY periodStartDate DESC;
+
+deleteBudgetPlan:
+DELETE FROM BudgetPlanEntity
+WHERE id = ?;
+
+deleteAllBudgetPlans:
+DELETE FROM BudgetPlanEntity;
+
+-- CategoryBudget 관련 쿼리들
+insertCategoryBudget:
+INSERT INTO CategoryBudgetEntity(id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectCategoryBudgetsByPlanId:
+SELECT * FROM CategoryBudgetEntity
+WHERE budgetPlanId = ?
+ORDER BY categoryName ASC;
+
+updateCategoryBudget:
+UPDATE CategoryBudgetEntity
+SET allocatedAmount = ?
+WHERE id = ?;
+
+deleteCategoryBudget:
+DELETE FROM CategoryBudgetEntity
+WHERE id = ?;
+
+deleteAllCategoryBudgets:
+DELETE FROM CategoryBudgetEntity;
+
+-- 특정 기간의 카테고리별 지출 합계 조회
+selectSpentAmountByCategory:
+SELECT COALESCE(SUM(amount), 0.0) AS spent
+FROM TransactionEntity
+WHERE category = ? AND type = 'EXPENSE' AND date >= ? AND date <= ?;
