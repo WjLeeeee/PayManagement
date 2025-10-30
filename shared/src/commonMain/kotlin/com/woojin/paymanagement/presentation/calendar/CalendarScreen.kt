@@ -251,6 +251,7 @@ fun CalendarScreen(
                     transactions = uiState.transactions,
                     isMoveMode = uiState.isMoveMode,
                     transactionToMove = uiState.transactionToMove,
+                    availableCategories = uiState.availableCategories,
                     onTransactionLongClick = { transaction ->
                         viewModel.startMoveMode(transaction)
                     },
@@ -701,6 +702,7 @@ private fun DailyTransactionCard(
     transactions: List<Transaction>,
     isMoveMode: Boolean = false,
     transactionToMove: Transaction? = null,
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
     onTransactionLongClick: (Transaction) -> Unit = {},
     onCancelMoveMode: () -> Unit = {},
     onClick: (LocalDate?) -> Unit = {},
@@ -801,7 +803,8 @@ private fun DailyTransactionCard(
                             TransactionItem(
                                 transaction = transaction,
                                 isSelected = isMoveMode && transaction.id == transactionToMove?.id,
-                                onLongClick = { onTransactionLongClick(transaction) }
+                                onLongClick = { onTransactionLongClick(transaction) },
+                                availableCategories = availableCategories
                             )
                         }
                     }
@@ -828,7 +831,8 @@ private fun DailyTransactionCard(
 private fun TransactionItem(
     transaction: Transaction,
     isSelected: Boolean = false,
-    onLongClick: () -> Unit = {}
+    onLongClick: () -> Unit = {},
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
 ) {
     Row(
         modifier = Modifier
@@ -876,7 +880,7 @@ private fun TransactionItem(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = getCategoryEmoji(transaction.category),
+                        text = getCategoryEmoji(transaction.category, availableCategories),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(

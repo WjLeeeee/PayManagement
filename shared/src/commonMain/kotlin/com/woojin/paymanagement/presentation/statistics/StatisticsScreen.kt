@@ -156,7 +156,8 @@ fun StatisticsScreen(
                 ChartSection(
                     title = "수입 분석",
                     items = chartData.incomeItems,
-                    total = chartData.totalIncome
+                    total = chartData.totalIncome,
+                    availableCategories = statisticsData.availableCategories
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -169,7 +170,8 @@ fun StatisticsScreen(
                 ChartSection(
                     title = "지출 분석",
                     items = chartData.expenseItems,
-                    total = chartData.totalExpense
+                    total = chartData.totalExpense,
+                    availableCategories = statisticsData.availableCategories
                 )
             }
         }
@@ -438,7 +440,8 @@ private fun SummaryItem(
 private fun ChartSection(
     title: String,
     items: List<com.woojin.paymanagement.data.ChartItem>,
-    total: Double
+    total: Double,
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
 ) {
     // 선택된 카테고리 상태
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -508,7 +511,8 @@ private fun ChartSection(
                         ChartLegendItem(
                             item = item,
                             isSubItem = false,
-                            isSelected = selectedCategory == item.category
+                            isSelected = selectedCategory == item.category,
+                            availableCategories = availableCategories
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -527,7 +531,8 @@ private fun ChartSection(
                                 color = etcColor
                             ),
                             isSubItem = false,
-                            isSelected = selectedCategory == "기타"
+                            isSelected = selectedCategory == "기타",
+                            availableCategories = availableCategories
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -537,7 +542,8 @@ private fun ChartSection(
                             ChartLegendItem(
                                 item = item,
                                 isSubItem = true,
-                                isSelected = selectedCategory == item.category
+                                isSelected = selectedCategory == item.category,
+                                availableCategories = availableCategories
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -552,7 +558,8 @@ private fun ChartSection(
 private fun ChartLegendItem(
     item: com.woojin.paymanagement.data.ChartItem,
     isSubItem: Boolean = false,
-    isSelected: Boolean = false
+    isSelected: Boolean = false,
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
 ) {
     Row(
         modifier = Modifier
@@ -595,7 +602,7 @@ private fun ChartLegendItem(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = getCategoryEmoji(item.category),
+                        text = getCategoryEmoji(item.category, availableCategories),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(

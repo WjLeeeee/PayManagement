@@ -99,7 +99,8 @@ fun DateDetailScreen(
                         onDelete = {
                             // 삭제 확인 다이얼로그 표시
                             viewModel.showDeleteConfirmation(transaction)
-                        }
+                        },
+                        availableCategories = uiState.availableCategories
                     )
                 }
             }

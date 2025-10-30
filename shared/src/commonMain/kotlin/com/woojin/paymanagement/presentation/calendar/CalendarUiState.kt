@@ -1,5 +1,6 @@
 package com.woojin.paymanagement.presentation.calendar
 
+import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.utils.PayPeriod
 import kotlinx.datetime.LocalDate
@@ -14,7 +15,8 @@ data class CalendarUiState(
     val isMoneyVisible: Boolean = true,
     val error: String? = null,
     val isMoveMode: Boolean = false,
-    val transactionToMove: Transaction? = null
+    val transactionToMove: Transaction? = null,
+    val availableCategories: List<Category> = emptyList()
 )
 
 data class PayPeriodSummary(

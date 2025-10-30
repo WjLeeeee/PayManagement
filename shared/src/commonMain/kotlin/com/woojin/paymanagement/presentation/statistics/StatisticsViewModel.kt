@@ -5,23 +5,43 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
+import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
 import com.woojin.paymanagement.domain.usecase.AnalyzePaymentMethodsUseCase
 import com.woojin.paymanagement.domain.usecase.CalculateChartDataUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodTransactionsUseCase
+import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 
 class StatisticsViewModel(
     private val getPayPeriodTransactionsUseCase: GetPayPeriodTransactionsUseCase,
     private val calculateChartDataUseCase: CalculateChartDataUseCase,
     private val analyzePaymentMethodsUseCase: AnalyzePaymentMethodsUseCase,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(StatisticsUiState())
         private set
+
+    init {
+        // 카테고리 목록을 로드하여 UiState에 반영
+        coroutineScope.launch {
+            combine(
+                getCategoriesUseCase(TransactionType.INCOME),
+                getCategoriesUseCase(TransactionType.EXPENSE)
+            ) { income, expense ->
+                income + expense
+            }.collect { categories ->
+                uiState = uiState.copy(availableCategories = categories)
+            }
+        }
+    }
 
     fun initializeStatistics(
         initialPayPeriod: PayPeriod?,

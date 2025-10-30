@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -78,6 +79,7 @@ fun CategoryManagementScreen(
                 items(uiState.categories) { category ->
                     CategoryItem(
                         category = category,
+                        onEdit = { viewModel.showEditDialog(category) },
                         onDelete = { viewModel.deleteCategory(category.id) }
                     )
                 }
@@ -93,6 +95,40 @@ fun CategoryManagementScreen(
                 onEmojiChange = { viewModel.updateNewCategoryEmoji(it) },
                 onConfirm = { viewModel.addCategory() },
                 onDismiss = { viewModel.hideAddDialog() }
+            )
+        }
+
+        // 카테고리 수정 다이얼로그
+        if (uiState.isEditDialogVisible) {
+            EditCategoryDialog(
+                name = uiState.editCategoryName,
+                emoji = uiState.editCategoryEmoji,
+                onNameChange = { viewModel.updateEditCategoryName(it) },
+                onEmojiChange = { viewModel.updateEditCategoryEmoji(it) },
+                onConfirm = { viewModel.updateCategory() },
+                onDismiss = { viewModel.hideEditDialog() }
+            )
+        }
+
+        // 변경 확인 다이얼로그
+        if (uiState.showConfirmDialog) {
+            ConfirmDialog(
+                message = uiState.confirmDialogMessage,
+                onConfirm = { viewModel.showConfirmDialogForUpdate() },
+                onDismiss = { viewModel.hideConfirmDialog() }
+            )
+        }
+
+        // 에러 표시
+        uiState.error?.let { errorMessage ->
+            AlertDialog(
+                onDismissRequest = { viewModel.clearError() },
+                text = { Text(errorMessage) },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.clearError() }) {
+                        Text("확인")
+                    }
+                }
             )
         }
     }
@@ -153,6 +189,7 @@ private fun AddCategoryItem(
 @Composable
 private fun CategoryItem(
     category: com.woojin.paymanagement.data.Category,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -201,12 +238,21 @@ private fun CategoryItem(
                     )
                 }
 
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "삭제",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                Row {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "수정",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "삭제",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }
@@ -246,6 +292,71 @@ private fun AddCategoryDialog(
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text("추가")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("취소")
+            }
+        }
+    )
+}
+
+@Composable
+private fun EditCategoryDialog(
+    name: String,
+    emoji: String,
+    onNameChange: (String) -> Unit,
+    onEmojiChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("카테고리 수정") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = emoji,
+                    onValueChange = onEmojiChange,
+                    label = { Text("이모지") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    label = { Text("카테고리 이름") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("수정")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("취소")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ConfirmDialog(
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("계속")
             }
         },
         dismissButton = {

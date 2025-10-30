@@ -100,3 +100,14 @@ fun getCategoryEmoji(category: String, uiState: AddTransactionUiState? = null): 
         else -> "📌"
     }
 }
+
+// 카테고리 리스트에서 이모지 찾기 (다른 UiState에서도 사용 가능)
+fun getCategoryEmoji(category: String, availableCategories: List<Category>): String {
+    // 카테고리 리스트에서 찾아서 이모지 반환
+    availableCategories.find { it.name == category }?.let {
+        return it.emoji
+    }
+
+    // 못 찾으면 기본값 사용
+    return getCategoryEmoji(category, null)
+}

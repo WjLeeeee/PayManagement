@@ -105,6 +105,11 @@ WHERE id = ?;
 deleteAllTransactions:
 DELETE FROM TransactionEntity;
 
+updateTransactionsCategoryName:
+UPDATE TransactionEntity
+SET category = ?
+WHERE category = ?;
+
 -- BalanceCard 관련 쿼리들
 insertBalanceCard:
 INSERT INTO BalanceCardEntity(id, name, initialAmount, currentBalance, createdDate, isActive)
