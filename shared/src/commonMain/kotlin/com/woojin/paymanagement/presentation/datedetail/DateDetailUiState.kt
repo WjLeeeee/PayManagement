@@ -12,5 +12,6 @@ data class DateDetailUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val transactionToDelete: Transaction? = null, // 삭제 확인 대기 중인 거래
-    val availableCategories: List<Category> = emptyList()
+    val availableCategories: List<Category> = emptyList(),
+    val expandedTransactionId: String? = null // 확장된 거래 ID
 )

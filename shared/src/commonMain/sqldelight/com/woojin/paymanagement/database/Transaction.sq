@@ -1,4 +1,4 @@
--- Schema version 8
+-- Schema version 9
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -26,6 +26,7 @@ CREATE TABLE TransactionEntity (
     amount REAL NOT NULL,
     type TEXT NOT NULL,
     category TEXT NOT NULL,
+    merchant TEXT,
     memo TEXT NOT NULL,
     date TEXT NOT NULL,
     incomeType TEXT,
@@ -76,8 +77,8 @@ CREATE TABLE CategoryBudgetEntity (
 );
 
 insertTransaction:
-INSERT INTO TransactionEntity(id, amount, type, category, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName, actualAmount, settlementAmount, isSettlement)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO TransactionEntity(id, amount, type, category, merchant, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName, actualAmount, settlementAmount, isSettlement)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllTransactions:
 SELECT * FROM TransactionEntity
@@ -95,7 +96,7 @@ ORDER BY date DESC;
 
 updateTransaction:
 UPDATE TransactionEntity
-SET amount = ?, type = ?, category = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, actualAmount = ?, settlementAmount = ?, isSettlement = ?
+SET amount = ?, type = ?, category = ?, merchant = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, actualAmount = ?, settlementAmount = ?, isSettlement = ?
 WHERE id = ?;
 
 deleteTransaction:

@@ -66,6 +66,7 @@ class CalculatorUseCase {
                 TransactionDetail(
                     amount = transaction.amount,
                     memo = transaction.memo,
+                    merchant = transaction.merchant,
                     date = transaction.date
                 )
             }

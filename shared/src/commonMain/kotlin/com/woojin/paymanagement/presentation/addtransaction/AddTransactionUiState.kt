@@ -19,6 +19,7 @@ data class AddTransactionUiState(
     val selectedGiftCard: GiftCard? = null,
     val cardName: String = "",
     val category: String = "",
+    val merchant: String = "", // 사용처 (지출일 때만 필수)
     val memo: String = "",
     val date: LocalDate? = null,
 

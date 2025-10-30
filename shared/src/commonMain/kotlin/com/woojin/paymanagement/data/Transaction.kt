@@ -9,6 +9,7 @@ data class Transaction(
     val amount: Double,
     val type: TransactionType,
     val category: String,
+    val merchant: String? = null,        // 사용처 (지출일 때만 필수)
     val memo: String,
     val date: LocalDate,
     val incomeType: IncomeType? = null, // 수입일 때만 사용

@@ -11,7 +11,7 @@ actual class DatabaseDriverFactory {
                 name = "PayManagementDatabase.db",
                 onConfiguration = { config ->
                     config.copy(
-                        version = 8
+                        version = 9
                     )
                 }
             )
@@ -22,7 +22,7 @@ actual class DatabaseDriverFactory {
                 name = "PayManagementDatabase.db",
                 onConfiguration = { config ->
                     config.copy(
-                        version = 8
+                        version = 9
                     )
                 }
             )
@@ -113,6 +113,126 @@ actual class DatabaseDriverFactory {
             0,
             null
         )
+
+        // TransactionEntity merchant 컬럼 추가 마이그레이션
+        val merchantColumnInfo = try {
+            driver.executeQuery(
+                null,
+                "PRAGMA table_info(TransactionEntity)",
+                { cursor ->
+                    var hasMerchant = false
+                    var merchantPosition = -1
+                    while (cursor.next().value) {
+                        val position = cursor.getLong(0)?.toInt() ?: -1
+                        val columnName = cursor.getString(1)
+                        if (columnName == "merchant") {
+                            hasMerchant = true
+                            merchantPosition = position
+                            break
+                        }
+                    }
+                    app.cash.sqldelight.db.QueryResult.Value(Pair(hasMerchant, merchantPosition))
+                },
+                0
+            ).value
+        } catch (e: Exception) {
+            Pair(false, -1)
+        }
+
+        val hasMerchantColumn = merchantColumnInfo.first
+        val merchantPosition = merchantColumnInfo.second
+
+        if (!hasMerchantColumn) {
+            // merchant 컬럼이 없으면 테이블 재생성 (올바른 컬럼 순서로)
+            try {
+                driver.execute(
+                    null,
+                    """
+                    CREATE TABLE IF NOT EXISTS TransactionEntity_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        amount REAL NOT NULL,
+                        type TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        merchant TEXT,
+                        memo TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        incomeType TEXT,
+                        paymentMethod TEXT,
+                        balanceCardId TEXT,
+                        giftCardId TEXT,
+                        cardName TEXT,
+                        actualAmount REAL,
+                        settlementAmount REAL,
+                        isSettlement INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                    0,
+                    null
+                )
+
+                driver.execute(
+                    null,
+                    """
+                    INSERT INTO TransactionEntity_new
+                    SELECT id, amount, type, category, NULL as merchant, memo, date, incomeType, paymentMethod,
+                           balanceCardId, giftCardId, cardName, actualAmount, settlementAmount, isSettlement
+                    FROM TransactionEntity
+                    """.trimIndent(),
+                    0,
+                    null
+                )
+
+                driver.execute(null, "DROP TABLE TransactionEntity", 0, null)
+                driver.execute(null, "ALTER TABLE TransactionEntity_new RENAME TO TransactionEntity", 0, null)
+            } catch (e: Exception) {
+                // 테이블이 없거나 다른 오류 무시 (스키마가 새로 생성될 것임)
+            }
+        } else if (merchantPosition != 4) {
+            // merchant 컬럼이 있지만 잘못된 위치에 있으면 테이블 재생성
+            try {
+                driver.execute(
+                    null,
+                    """
+                    CREATE TABLE TransactionEntity_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        amount REAL NOT NULL,
+                        type TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        merchant TEXT,
+                        memo TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        incomeType TEXT,
+                        paymentMethod TEXT,
+                        balanceCardId TEXT,
+                        giftCardId TEXT,
+                        cardName TEXT,
+                        actualAmount REAL,
+                        settlementAmount REAL,
+                        isSettlement INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                    0,
+                    null
+                )
+
+                driver.execute(
+                    null,
+                    """
+                    INSERT INTO TransactionEntity_new
+                    SELECT id, amount, type, category, merchant, memo, date, incomeType, paymentMethod,
+                           balanceCardId, giftCardId, cardName, actualAmount, settlementAmount, isSettlement
+                    FROM TransactionEntity
+                    """.trimIndent(),
+                    0,
+                    null
+                )
+
+                driver.execute(null, "DROP TABLE TransactionEntity", 0, null)
+                driver.execute(null, "ALTER TABLE TransactionEntity_new RENAME TO TransactionEntity", 0, null)
+            } catch (e: Exception) {
+                // 오류 무시
+            }
+        }
 
         // CategoryBudgetEntity 마이그레이션: categoryId -> categoryIds
         // 기존 테이블 확인

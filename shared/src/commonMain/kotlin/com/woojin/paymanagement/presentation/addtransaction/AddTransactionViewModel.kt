@@ -108,6 +108,7 @@ class AddTransactionViewModel(
                 selectedPaymentMethod = editTransaction.paymentMethod ?: PaymentMethod.CASH,
                 cardName = editTransaction.cardName ?: "",
                 category = editTransaction.category,
+                merchant = editTransaction.merchant ?: "",
                 memo = editTransaction.memo,
                 date = initialDate,
                 isSettlement = editTransaction.isSettlement,
@@ -258,6 +259,11 @@ class AddTransactionViewModel(
         validateInput()
     }
 
+    fun updateMerchant(merchant: String) {
+        uiState = uiState.copy(merchant = merchant)
+        validateInput()
+    }
+
     fun updateMemo(memo: String) {
         uiState = uiState.copy(memo = memo)
     }
@@ -349,6 +355,8 @@ class AddTransactionViewModel(
     private fun validateInput() {
         val isValidInput = uiState.amount.text.isNotBlank() &&
                           uiState.category.isNotBlank() &&
+                          // 지출일 때 사용처 필수
+                          (uiState.selectedType == TransactionType.INCOME || uiState.merchant.isNotBlank()) &&
                           // 수입일 때 검증
                           (uiState.selectedType == TransactionType.EXPENSE ||
                            uiState.selectedIncomeType == IncomeType.CASH ||
@@ -388,6 +396,7 @@ class AddTransactionViewModel(
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
+                        merchant = uiState.merchant.ifBlank { null },
                         memo = uiState.memo,
                         date = currentDate,
                         paymentMethod = uiState.selectedPaymentMethod,
@@ -414,6 +423,7 @@ class AddTransactionViewModel(
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
+                        merchant = uiState.merchant.ifBlank { null },
                         memo = uiState.memo,
                         date = currentDate,
                         paymentMethod = uiState.selectedPaymentMethod,
@@ -437,6 +447,7 @@ class AddTransactionViewModel(
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
+                        merchant = if (uiState.selectedType == TransactionType.EXPENSE) uiState.merchant.ifBlank { null } else null,
                         memo = uiState.memo,
                         date = currentDate,
                         incomeType = if (uiState.selectedType == TransactionType.INCOME) uiState.selectedIncomeType else null,

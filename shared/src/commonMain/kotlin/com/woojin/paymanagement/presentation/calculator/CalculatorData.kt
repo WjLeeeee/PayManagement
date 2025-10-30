@@ -33,5 +33,6 @@ data class CategorySummary(
 data class TransactionDetail(
     val amount: Double,
     val memo: String,
+    val merchant: String? = null,  // 사용처
     val date: LocalDate
 )

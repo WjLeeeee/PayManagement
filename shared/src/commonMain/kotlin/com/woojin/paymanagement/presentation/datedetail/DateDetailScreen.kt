@@ -95,6 +95,8 @@ fun DateDetailScreen(
                 items(dayTransactions) { transaction ->
                     TransactionDetailItem(
                         transaction = transaction,
+                        isExpanded = uiState.expandedTransactionId == transaction.id,
+                        onClick = { viewModel.toggleTransactionExpansion(transaction.id) },
                         onEdit = { onEditTransaction(transaction) },
                         onDelete = {
                             // 삭제 확인 다이얼로그 표시
