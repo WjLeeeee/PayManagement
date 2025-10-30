@@ -154,7 +154,7 @@ class AddTransactionViewModel(
             ),
             selectedType = TransactionType.EXPENSE, // 카드 사용은 지출
             selectedPaymentMethod = PaymentMethod.CARD, // 결제수단은 카드
-            memo = parsedTransaction.merchantName, // 가맹점명을 메모에
+            merchant = parsedTransaction.merchantName, // 가맹점명을 사용처에
             date = parsedTransaction.date, // 파싱된 날짜
             availableBalanceCards = availableBalanceCards,
             availableGiftCards = availableGiftCards,
