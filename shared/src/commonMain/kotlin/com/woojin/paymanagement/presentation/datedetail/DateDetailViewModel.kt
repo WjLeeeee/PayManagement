@@ -95,4 +95,10 @@ class DateDetailViewModel(
     fun dismissDeleteConfirmation() {
         uiState = uiState.copy(transactionToDelete = null)
     }
+
+    fun toggleTransactionExpansion(transactionId: String) {
+        uiState = uiState.copy(
+            expandedTransactionId = if (uiState.expandedTransactionId == transactionId) null else transactionId
+        )
+    }
 }

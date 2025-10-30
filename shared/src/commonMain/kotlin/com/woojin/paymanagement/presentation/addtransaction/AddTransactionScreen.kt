@@ -187,6 +187,18 @@ fun AddTransactionScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Merchant Input (지출일 때만 표시)
+        if (uiState.selectedType == TransactionType.EXPENSE) {
+            OutlinedTextField(
+                value = uiState.merchant,
+                onValueChange = viewModel::updateMerchant,
+                label = { Text("사용처") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         // Memo Input
         OutlinedTextField(
             value = uiState.memo,

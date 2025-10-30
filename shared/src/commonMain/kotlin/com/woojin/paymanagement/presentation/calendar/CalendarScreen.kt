@@ -929,10 +929,10 @@ private fun TransactionItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (transaction.memo.isNotBlank()) {
+            if (!transaction.merchant.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = transaction.memo,
+                    text = transaction.merchant,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )

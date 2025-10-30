@@ -521,14 +521,25 @@ private fun TransactionDetailItem(detail: TransactionDetail) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            // 메모
-            if (detail.memo.isNotEmpty()) {
+
+            // 사용처 (제목 위치)
+            if (!detail.merchant.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = detail.memo,
+                    text = detail.merchant,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // 메모 (사용처 하단, 작은 글씨)
+            if (detail.memo.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = detail.memo,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
