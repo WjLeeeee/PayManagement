@@ -218,7 +218,8 @@ fun TransactionListHeader(
 fun TransactionDetailItem(
     transaction: Transaction,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -261,7 +262,7 @@ fun TransactionDetailItem(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
-                                text = getCategoryEmoji(transaction.category),
+                                text = getCategoryEmoji(transaction.category, availableCategories),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(

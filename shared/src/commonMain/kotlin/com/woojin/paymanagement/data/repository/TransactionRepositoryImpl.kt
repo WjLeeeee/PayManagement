@@ -48,4 +48,8 @@ class TransactionRepositoryImpl(
     override suspend fun deleteTransaction(transactionId: String) {
         databaseHelper.deleteTransaction(transactionId)
     }
+
+    override suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String) {
+        databaseHelper.updateTransactionsCategoryName(oldCategoryName, newCategoryName)
+    }
 }

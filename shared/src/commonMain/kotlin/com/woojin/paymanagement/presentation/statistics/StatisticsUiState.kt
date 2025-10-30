@@ -1,5 +1,6 @@
 package com.woojin.paymanagement.presentation.statistics
 
+import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.ChartData
 import com.woojin.paymanagement.data.PaymentMethodSummary
 import com.woojin.paymanagement.data.Transaction
@@ -12,5 +13,6 @@ data class StatisticsUiState(
     val transactions: List<Transaction> = emptyList(),
     val chartData: ChartData? = null,
     val paymentSummary: PaymentMethodSummary? = null,
-    val showCalculatorDialog: Boolean = false
+    val showCalculatorDialog: Boolean = false,
+    val availableCategories: List<Category> = emptyList()
 )

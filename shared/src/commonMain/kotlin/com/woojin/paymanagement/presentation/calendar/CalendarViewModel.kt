@@ -4,15 +4,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
 import com.woojin.paymanagement.domain.usecase.GetDailyTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodSummaryUseCase
 import com.woojin.paymanagement.domain.usecase.GetMoneyVisibilityUseCase
 import com.woojin.paymanagement.domain.usecase.SetMoneyVisibilityUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
@@ -23,6 +26,7 @@ class CalendarViewModel(
     private val getMoneyVisibilityUseCase: GetMoneyVisibilityUseCase,
     private val setMoneyVisibilityUseCase: SetMoneyVisibilityUseCase,
     private val updateTransactionUseCase: UpdateTransactionUseCase,
+    private val getCategoriesUseCase: GetCategoriesUseCase,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(CalendarUiState())
@@ -30,6 +34,20 @@ class CalendarViewModel(
 
     private val payday: Int get() = preferencesRepository.getPayday()
     private val adjustment: com.woojin.paymanagement.utils.PaydayAdjustment get() = preferencesRepository.getPaydayAdjustment()
+
+    init {
+        // 카테고리 목록을 로드하여 UiState에 반영
+        coroutineScope.launch {
+            combine(
+                getCategoriesUseCase(TransactionType.INCOME),
+                getCategoriesUseCase(TransactionType.EXPENSE)
+            ) { income, expense ->
+                income + expense
+            }.collect { categories ->
+                uiState = uiState.copy(availableCategories = categories)
+            }
+        }
+    }
 
     fun initializeCalendar(
         transactions: List<Transaction>,

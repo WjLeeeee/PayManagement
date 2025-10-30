@@ -95,11 +95,15 @@ class DatabaseHelper(
     suspend fun deleteTransaction(id: String) {
         queries.deleteTransaction(id)
     }
-    
+
     suspend fun deleteAllTransactions() {
         queries.deleteAllTransactions()
     }
-    
+
+    suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String) {
+        queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName)
+    }
+
     // BalanceCard 관련 메서드들
     fun getAllBalanceCards(): Flow<List<BalanceCard>> {
         return queries.selectAllBalanceCards()

@@ -4,20 +4,41 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetTransactionsByDateUseCase
+import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
 class DateDetailViewModel(
     private val getTransactionsByDateUseCase: GetTransactionsByDateUseCase,
     private val calculateDailySummaryUseCase: CalculateDailySummaryUseCase,
-    private val deleteTransactionUseCase: DeleteTransactionUseCase
+    private val deleteTransactionUseCase: DeleteTransactionUseCase,
+    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(DateDetailUiState())
         private set
+
+    init {
+        // 카테고리 목록을 로드하여 UiState에 반영
+        coroutineScope.launch {
+            combine(
+                getCategoriesUseCase(TransactionType.INCOME),
+                getCategoriesUseCase(TransactionType.EXPENSE)
+            ) { income, expense ->
+                income + expense
+            }.collect { categories ->
+                uiState = uiState.copy(availableCategories = categories)
+            }
+        }
+    }
 
     fun initializeDate(date: LocalDate?) {
         uiState = uiState.copy(selectedDate = date)
