@@ -66,6 +66,7 @@ import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialOverlay
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -266,12 +267,8 @@ fun CalendarScreen(
                     tutorialViewModel = tutorialViewModel
                 )
             } else {
-                // 로딩 상태 표시
-                Text(
-                    text = "로딩 중...",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                // 로딩 상태 표시 - Shimmer Effect
+                CalendarScreenShimmer()
             }
 
             Spacer(modifier = Modifier.weight(1f))
