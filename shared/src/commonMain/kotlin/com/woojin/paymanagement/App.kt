@@ -192,9 +192,6 @@ fun PayManagementApp(
     var navigationStack by remember { mutableStateOf(listOf(initialScreen)) }
     val currentScreen = navigationStack.last()
 
-    // 앱 정보 다이얼로그 상태
-    var showAppInfoDialog by remember { mutableStateOf(false) }
-
     // 네비게이션 헬퍼 함수들
     fun navigateTo(screen: Screen) {
         navigationStack = navigationStack + screen
@@ -345,46 +342,6 @@ fun PayManagementApp(
             dismissButton = {
                 TextButton(onClick = { showPaydayChangeDialog = false }) {
                     Text("취소")
-                }
-            }
-        )
-    }
-
-    // 앱 정보 다이얼로그
-    if (showAppInfoDialog) {
-        val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
-        AlertDialog(
-            onDismissRequest = { showAppInfoDialog = false },
-            icon = {
-                Text(
-                    text = "ℹ️",
-                    style = MaterialTheme.typography.displayMedium
-                )
-            },
-            title = {
-                Text(
-                    text = "앱 정보",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            },
-            text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "버전 이름: ${appInfo.getVersionName()}",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = "버전 코드: ${appInfo.getVersionCode()}",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAppInfoDialog = false }) {
-                    Text("확인")
                 }
             }
         )
@@ -981,16 +938,14 @@ fun PayManagementApp(
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "버전 ${appInfo.getVersionName()}",
+                                            text = "Version ${appInfo.getVersionName()}, Code ${appInfo.getVersionCode()}",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
-                                onClick = {
-                                    showAppInfoDialog = true
-                                },
+                                onClick = { /* 앱 정보 표시 */ },
                                 icon = {
                                     Text(
                                         text = "ℹ️",
