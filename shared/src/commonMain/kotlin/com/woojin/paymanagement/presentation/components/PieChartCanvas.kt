@@ -48,7 +48,9 @@ internal fun PieChartCanvas(
     items: List<ChartItem>,
     modifier: Modifier = Modifier,
     chartSize: Dp = 200.dp,
-    showLegend: Boolean = true
+    showLegend: Boolean = true,
+    labelTextColor: Color = Color.Black,
+    valueLineColor: Color = Color.Gray
 ) {
     if (items.isEmpty()) {
         EmptyChart(modifier, chartSize)
@@ -67,12 +69,12 @@ internal fun PieChartCanvas(
                 .size(chartSize * 2.5f)
                 .padding(16.dp)
         ) {
-            drawPieChartWithLabels(items, textMeasurer)
+            drawPieChartWithLabels(items, textMeasurer, labelTextColor, valueLineColor)
         }
 
         if (showLegend) {
             Spacer(modifier = Modifier.height(16.dp))
-            ChartLegend(items = items)
+            ChartLegend(items = items, labelTextColor = labelTextColor, valueLineColor = valueLineColor)
         }
     }
 }
@@ -104,7 +106,12 @@ private fun EmptyChart(modifier: Modifier, chartSize: Dp) {
     }
 }
 
-private fun DrawScope.drawPieChartWithLabels(items: List<ChartItem>, textMeasurer: TextMeasurer) {
+private fun DrawScope.drawPieChartWithLabels(
+    items: List<ChartItem>,
+    textMeasurer: TextMeasurer,
+    labelTextColor: Color,
+    valueLineColor: Color
+) {
     val total = items.sumOf { it.percentage.toDouble() }.toFloat()
     if (total == 0f) return
 
@@ -117,11 +124,11 @@ private fun DrawScope.drawPieChartWithLabels(items: List<ChartItem>, textMeasure
     val categoryStyle = TextStyle(
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        color = Color.Black
+        color = labelTextColor
     )
     val detailStyle = TextStyle(
         fontSize = 10.sp,
-        color = Color.Gray
+        color = valueLineColor
     )
 
     // 라벨 정보 저장
@@ -407,19 +414,27 @@ private fun DrawScope.drawPieChartWithLabels(items: List<ChartItem>, textMeasure
 }
 
 @Composable
-private fun ChartLegend(items: List<ChartItem>) {
+private fun ChartLegend(
+    items: List<ChartItem>,
+    labelTextColor: Color,
+    valueLineColor: Color
+) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
         items.forEach { item ->
-            LegendItem(item = item)
+            LegendItem(item = item, labelTextColor = labelTextColor, valueLineColor = valueLineColor)
             Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
 @Composable
-private fun LegendItem(item: ChartItem) {
+private fun LegendItem(
+    item: ChartItem,
+    labelTextColor: Color,
+    valueLineColor: Color
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -443,21 +458,21 @@ private fun LegendItem(item: ChartItem) {
                     text = item.category,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Black
+                    color = labelTextColor
                 )
                 Text(
                     text = "${Utils.formatAmount(item.amount)}원",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = valueLineColor
                 )
             }
         }
-        
+
         Text(
             text = "${(item.percentage * 10).toInt() / 10.0}%",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = labelTextColor
         )
     }
 }

@@ -1,6 +1,5 @@
 package com.woojin.paymanagement.presentation.cardmanagement
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -24,6 +23,7 @@ import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.utils.Utils
+import com.woojin.paymanagement.utils.PlatformBackHandler
 import kotlinx.datetime.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +35,7 @@ fun CardManagementScreen(
     val uiState = viewModel.uiState
 
     // Android 뒤로가기 버튼 처리
-    BackHandler(onBack = onNavigateBack)
+    PlatformBackHandler(onBack = onNavigateBack)
 
     Scaffold(
         topBar = {
