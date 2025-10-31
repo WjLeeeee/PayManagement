@@ -41,6 +41,9 @@ import com.woojin.paymanagement.domain.usecase.SaveCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.GetSpentAmountByCategoryUseCase
+import com.woojin.paymanagement.domain.usecase.PurchaseTipUseCase
+import com.woojin.paymanagement.domain.repository.BillingRepository
+import com.woojin.paymanagement.domain.repository.BillingRepositoryImpl
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -52,6 +55,7 @@ val domainModule = module {
     singleOf(::TransactionRepositoryImpl) bind TransactionRepository::class
     singleOf(::CategoryRepositoryImpl) bind CategoryRepository::class
     singleOf(::BudgetRepositoryImpl) bind BudgetRepository::class
+    singleOf(::BillingRepositoryImpl) bind BillingRepository::class
     single<com.woojin.paymanagement.domain.repository.PreferencesRepository> {
         com.woojin.paymanagement.data.repository.PreferencesRepositoryImpl(get())
     }
@@ -110,4 +114,7 @@ val domainModule = module {
     factoryOf(::UpdateCategoryBudgetUseCase)
     factoryOf(::DeleteCategoryBudgetUseCase)
     factoryOf(::GetSpentAmountByCategoryUseCase)
+
+    // Billing Use Cases
+    factoryOf(::PurchaseTipUseCase)
 }

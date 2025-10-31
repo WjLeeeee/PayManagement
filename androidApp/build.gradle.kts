@@ -11,8 +11,8 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 28
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 7
+        versionName = "1.3"
     }
     buildFeatures {
         compose = true
@@ -45,5 +45,6 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
     implementation(libs.kotlinx.datetime)
+    implementation(libs.billing)
     debugImplementation(libs.compose.ui.tooling)
 }

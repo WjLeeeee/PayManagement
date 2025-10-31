@@ -46,13 +46,13 @@ import com.woojin.paymanagement.utils.PlatformBackHandler
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TipDonationScreen(
+    viewModel: TipDonationViewModel,
     onNavigateBack: () -> Unit
 ) {
     // Android 뒤로가기 버튼 처리
     PlatformBackHandler(onBack = onNavigateBack)
 
-    var selectedTipAmount by remember { mutableStateOf<TipAmount?>(null) }
-    var showThankYouDialog by remember { mutableStateOf(false) }
+    val uiState = viewModel.uiState
 
     Scaffold(
         topBar = {
@@ -99,65 +99,55 @@ fun TipDonationScreen(
                 emoji = "☕",
                 title = "커피 사주기",
                 amount = TipAmount.COFFEE,
-                isSelected = selectedTipAmount == TipAmount.COFFEE,
-                onClick = { selectedTipAmount = TipAmount.COFFEE }
+                isSelected = uiState.selectedTipAmount == TipAmount.COFFEE,
+                onClick = { viewModel.selectTipAmount(TipAmount.COFFEE) }
             )
 
             TipOption(
                 emoji = "🍱",
                 title = "점심 사주기",
                 amount = TipAmount.LUNCH,
-                isSelected = selectedTipAmount == TipAmount.LUNCH,
-                onClick = { selectedTipAmount = TipAmount.LUNCH }
+                isSelected = uiState.selectedTipAmount == TipAmount.LUNCH,
+                onClick = { viewModel.selectTipAmount(TipAmount.LUNCH) }
             )
 
             TipOption(
                 emoji = "🍽️",
                 title = "저녁 사주기",
                 amount = TipAmount.DINNER,
-                isSelected = selectedTipAmount == TipAmount.DINNER,
-                onClick = { selectedTipAmount = TipAmount.DINNER }
+                isSelected = uiState.selectedTipAmount == TipAmount.DINNER,
+                onClick = { viewModel.selectTipAmount(TipAmount.DINNER) }
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
             // 결제 버튼
             Button(
-                onClick = {
-                    selectedTipAmount?.let {
-                        // TODO: 실제 결제 연동 (Google Play Billing)
-                        showThankYouDialog = true
-                    }
-                },
+                onClick = { viewModel.purchaseTip() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = selectedTipAmount != null,
+                enabled = uiState.selectedTipAmount != null && !uiState.isPurchasing,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = selectedTipAmount?.let { "₩${it.krw} 결제하기" } ?: "금액을 선택해주세요",
+                    text = when {
+                        uiState.isPurchasing -> "결제 처리 중..."
+                        uiState.selectedTipAmount != null -> "₩${uiState.selectedTipAmount.krw} 결제하기"
+                        else -> "금액을 선택해주세요"
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
-
-            // 안내 문구
-            Text(
-                text = "※ 현재 결제 기능은 준비 중입니다",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
-            )
         }
     }
 
     // 감사 다이얼로그
-    if (showThankYouDialog) {
+    if (uiState.showThankYouDialog) {
         AlertDialog(
             onDismissRequest = {
-                showThankYouDialog = false
-                onNavigateBack()
+                viewModel.dismissThankYouDialog()
             },
             icon = {
                 Text(
@@ -179,9 +169,38 @@ fun TipDonationScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    showThankYouDialog = false
-                    onNavigateBack()
+                    viewModel.dismissThankYouDialog()
                 }) {
+                    Text("확인")
+                }
+            }
+        )
+    }
+
+    // 에러 다이얼로그
+    uiState.purchaseError?.let { error ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissError() },
+            icon = {
+                Text(
+                    text = "⚠️",
+                    style = MaterialTheme.typography.displayMedium
+                )
+            },
+            title = {
+                Text(
+                    text = "결제 실패",
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Text(
+                    text = error,
+                    textAlign = TextAlign.Center
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissError() }) {
                     Text("확인")
                 }
             }
@@ -252,13 +271,4 @@ private fun TipOption(
             )
         }
     }
-}
-
-/**
- * 팁 금액 옵션
- */
-enum class TipAmount(val krw: String) {
-    COFFEE("1,000"),
-    LUNCH("5,000"),
-    DINNER("10,000")
 }

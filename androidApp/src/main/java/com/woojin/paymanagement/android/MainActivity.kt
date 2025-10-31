@@ -186,12 +186,19 @@ fun StatusBarOverlayScreen(
                 val appInfo = AppInfo().apply {
                     initialize(context)
                 }
+                val billingClient = remember {
+                    com.woojin.paymanagement.utils.BillingClient(
+                        context = context,
+                        activityProvider = { context as? ComponentActivity }
+                    )
+                }
                 App(
                     databaseDriverFactory = DatabaseDriverFactory(context = context),
                     preferencesManager = PreferencesManager(context = context),
                     notificationPermissionChecker = NotificationPermissionChecker(context = context),
                     appInfo = appInfo,
                     fileHandler = fileHandler,
+                    billingClient = billingClient,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     onNavigationHandled = onNavigationHandled,
                     onSendTestNotifications = { transactions ->
