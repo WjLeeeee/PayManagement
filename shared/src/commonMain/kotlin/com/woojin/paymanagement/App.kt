@@ -889,6 +889,39 @@ fun PayManagementApp(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
+                            // 팁주기 (Android만)
+                            if (com.woojin.paymanagement.utils.Platform.isAndroid()) {
+                                NavigationDrawerItem(
+                                    label = {
+                                        Column {
+                                            Text(
+                                                text = "팁주기",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "개발자 응원하기",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    selected = false,
+                                    onClick = {
+                                        navigateTo(Screen.TipDonation)
+                                        scope.launch { drawerState.close() }
+                                    },
+                                    icon = {
+                                        Text(
+                                            text = "☕",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
                             NavigationDrawerItem(
                                 label = {
@@ -1454,6 +1487,12 @@ fun PayManagementApp(
                 }
             )
         }
+
+        Screen.TipDonation -> {
+            com.woojin.paymanagement.presentation.tipdonation.TipDonationScreen(
+                onNavigateBack = { navigateBack() }
+            )
+        }
     }
     } // BoxWithConstraints 닫기
     }
@@ -1469,5 +1508,6 @@ enum class Screen {
     ParsedTransactionList,
     CategoryManagement,
     CardManagement,
-    BudgetSettings
+    BudgetSettings,
+    TipDonation
 }
