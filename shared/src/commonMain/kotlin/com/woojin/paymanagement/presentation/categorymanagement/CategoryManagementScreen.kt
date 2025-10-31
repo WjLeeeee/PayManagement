@@ -1,6 +1,5 @@
 package com.woojin.paymanagement.presentation.categorymanagement
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.utils.PlatformBackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +29,7 @@ fun CategoryManagementScreen(
     val uiState = viewModel.uiState
 
     // Android 뒤로가기 버튼 처리
-    BackHandler(onBack = onNavigateBack)
+    PlatformBackHandler(onBack = onNavigateBack)
 
     Scaffold(
         topBar = {

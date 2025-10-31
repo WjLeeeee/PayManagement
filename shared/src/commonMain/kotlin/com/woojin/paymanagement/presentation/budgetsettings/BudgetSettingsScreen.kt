@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.utils.Utils
-import androidx.activity.compose.BackHandler
+import com.woojin.paymanagement.utils.PlatformBackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +38,7 @@ fun BudgetSettingsScreen(
     val uiState = viewModel.uiState
 
     // 시스템 뒤로가기 버튼 처리
-    BackHandler(onBack = onNavigateBack)
+    PlatformBackHandler(onBack = onNavigateBack)
 
     Scaffold(
         topBar = {

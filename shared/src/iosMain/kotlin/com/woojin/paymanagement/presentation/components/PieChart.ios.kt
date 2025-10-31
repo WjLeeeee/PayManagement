@@ -27,6 +27,8 @@ actual fun PieChart(
         items = items,
         modifier = modifier,
         chartSize = chartSize,
-        showLegend = showLegend
+        showLegend = showLegend,
+        labelTextColor = labelTextColor,
+        valueLineColor = valueLineColor
     )
 }
