@@ -91,6 +91,7 @@ fun App(
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
     appInfo: com.woojin.paymanagement.utils.AppInfo,
     fileHandler: com.woojin.paymanagement.utils.FileHandler,
+    billingClient: com.woojin.paymanagement.utils.BillingClient,
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
     onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
@@ -103,7 +104,7 @@ fun App(
 
     // Koin 초기화
     LaunchedEffect(Unit) {
-        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo, fileHandler)
+        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo, fileHandler, billingClient)
         isKoinInitialized = true
     }
 
@@ -130,7 +131,8 @@ private fun initializeKoin(
     preferencesManager: PreferencesManager,
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
     appInfo: com.woojin.paymanagement.utils.AppInfo,
-    fileHandler: com.woojin.paymanagement.utils.FileHandler
+    fileHandler: com.woojin.paymanagement.utils.FileHandler,
+    billingClient: com.woojin.paymanagement.utils.BillingClient
 ) {
     try {
         val koin = startKoin {
@@ -142,6 +144,7 @@ private fun initializeKoin(
                     single<com.woojin.paymanagement.utils.NotificationPermissionChecker> { notificationPermissionChecker }
                     single<com.woojin.paymanagement.utils.AppInfo> { appInfo }
                     single<com.woojin.paymanagement.utils.FileHandler> { fileHandler }
+                    single<com.woojin.paymanagement.utils.BillingClient> { billingClient }
                     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
                 },
                 // 공통 의존성들
@@ -188,6 +191,9 @@ fun PayManagementApp(
     // 네비게이션 스택 관리
     var navigationStack by remember { mutableStateOf(listOf(initialScreen)) }
     val currentScreen = navigationStack.last()
+
+    // 앱 정보 다이얼로그 상태
+    var showAppInfoDialog by remember { mutableStateOf(false) }
 
     // 네비게이션 헬퍼 함수들
     fun navigateTo(screen: Screen) {
@@ -339,6 +345,46 @@ fun PayManagementApp(
             dismissButton = {
                 TextButton(onClick = { showPaydayChangeDialog = false }) {
                     Text("취소")
+                }
+            }
+        )
+    }
+
+    // 앱 정보 다이얼로그
+    if (showAppInfoDialog) {
+        val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
+        AlertDialog(
+            onDismissRequest = { showAppInfoDialog = false },
+            icon = {
+                Text(
+                    text = "ℹ️",
+                    style = MaterialTheme.typography.displayMedium
+                )
+            },
+            title = {
+                Text(
+                    text = "앱 정보",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "버전 이름: ${appInfo.getVersionName()}",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        text = "버전 코드: ${appInfo.getVersionCode()}",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAppInfoDialog = false }) {
+                    Text("확인")
                 }
             }
         )
@@ -942,7 +988,9 @@ fun PayManagementApp(
                                     }
                                 },
                                 selected = false,
-                                onClick = { /* 추후 앱 정보 상세 화면으로 이동 가능 */ },
+                                onClick = {
+                                    showAppInfoDialog = true
+                                },
                                 icon = {
                                     Text(
                                         text = "ℹ️",
@@ -1489,7 +1537,10 @@ fun PayManagementApp(
         }
 
         Screen.TipDonation -> {
+            val tipDonationViewModel = remember { koinInject<com.woojin.paymanagement.presentation.tipdonation.TipDonationViewModel>() }
+
             com.woojin.paymanagement.presentation.tipdonation.TipDonationScreen(
+                viewModel = tipDonationViewModel,
                 onNavigateBack = { navigateBack() }
             )
         }

@@ -9,3 +9,12 @@ captures
 local.properties
 xcuserdata
 .kotlin
+
+# 키스토어 파일 (절대 커밋하면 안 됨!)
+*.jks
+*.keystore
+keystore.properties
+
+# API 키 및 시크릿
+google-services.json
+key.properties

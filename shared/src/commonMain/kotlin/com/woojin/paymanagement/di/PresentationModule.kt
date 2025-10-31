@@ -9,6 +9,7 @@ import com.woojin.paymanagement.presentation.datedetail.DateDetailViewModel
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionViewModel
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupViewModel
 import com.woojin.paymanagement.presentation.statistics.StatisticsViewModel
+import com.woojin.paymanagement.presentation.tipdonation.TipDonationViewModel
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel
 import org.koin.dsl.module
 
@@ -35,4 +36,5 @@ val presentationModule = module {
     factory { CategoryManagementViewModel(get(), get(), get(), get()) }
     factory { CardManagementViewModel(get()) }
     factory { BudgetSettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { TipDonationViewModel(get(), get()) }
 }
