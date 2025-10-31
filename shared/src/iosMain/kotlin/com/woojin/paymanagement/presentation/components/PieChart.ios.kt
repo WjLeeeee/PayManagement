@@ -2,6 +2,7 @@ package com.woojin.paymanagement.presentation.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.ChartItem
@@ -16,6 +17,8 @@ actual fun PieChart(
     modifier: Modifier,
     chartSize: Dp,
     showLegend: Boolean,
+    labelTextColor: Color,
+    valueLineColor: Color,
     onItemSelected: (String?) -> Unit
 ) {
     // iOS에서는 기존 Canvas 기반 구현 사용

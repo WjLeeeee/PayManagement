@@ -495,6 +495,8 @@ private fun ChartSection(
                     items = processedItems,
                     chartSize = 120.dp,
                     showLegend = false,
+                    labelTextColor = MaterialTheme.colorScheme.onSurface,
+                    valueLineColor = MaterialTheme.colorScheme.onSurface,
                     onItemSelected = { category ->
                         selectedCategory = category
                     }

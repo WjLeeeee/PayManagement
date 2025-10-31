@@ -17,10 +17,19 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
-import com.github.mikephil.charting.formatter.PercentFormatter
+import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.woojin.paymanagement.data.ChartItem
+
+// 커스텀 포매터: 카테고리명 + 백분율
+class PieChartValueFormatter : ValueFormatter() {
+    override fun getPieLabel(value: Float, pieEntry: PieEntry?): String {
+        val category = pieEntry?.label ?: ""
+        val percentage = value.toInt()
+        return "$category $percentage%"
+    }
+}
 
 @Composable
 actual fun PieChart(
@@ -28,6 +37,8 @@ actual fun PieChart(
     modifier: Modifier,
     chartSize: Dp,
     showLegend: Boolean,
+    labelTextColor: androidx.compose.ui.graphics.Color,
+    valueLineColor: androidx.compose.ui.graphics.Color,
     onItemSelected: (String?) -> Unit
 ) {
     val entries = remember(items) {
@@ -47,10 +58,9 @@ actual fun PieChart(
                 description.isEnabled = false
                 setUsePercentValues(true)
                 setDrawHoleEnabled(false)
-                setDrawEntryLabels(true)
-                setEntryLabelColor(android.graphics.Color.BLACK)
-                setEntryLabelTextSize(7f)
-                setEntryLabelTypeface(Typeface.DEFAULT)
+
+                // 내부 라벨 끄기 (외부에 선으로 연결된 라벨 사용)
+                setDrawEntryLabels(false)
 
                 // 최소 각도 보장 (작은 조각도 최소한 보이도록)
                 minAngleForSlices = 10f  // 최소 10도 보장
@@ -61,6 +71,9 @@ actual fun PieChart(
 
                 // 애니메이션
                 animateY(1000, Easing.EaseInOutQuad)
+
+                // 외부 공간 확보 (라벨과 선을 위한 여백 - 더 크게)
+                setExtraOffsets(20f, 10f, 20f, 10f)
 
                 // 선택 이벤트 리스너
                 setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
@@ -90,17 +103,31 @@ actual fun PieChart(
                 this.colors = colors
                 sliceSpace = 2f
                 selectionShift = 5f
-                valueTextSize = 11f
-                valueTextColor = android.graphics.Color.BLACK
+
+                // 외부 라벨 설정
+                valueTextSize = 10f
+                valueTextColor = labelTextColor.toArgb()
                 valueTypeface = Typeface.DEFAULT
 
-                // 값 표시 설정 (백분율)
-                valueFormatter = PercentFormatter(chart)
+                // 값을 바깥쪽에 표시
+                yValuePosition = PieDataSet.ValuePosition.OUTSIDE_SLICE
+                xValuePosition = PieDataSet.ValuePosition.OUTSIDE_SLICE
+
+                // 선 설정 (조각에서 라벨로 연결되는 선 - 더 길게)
+                this.valueLineColor = valueLineColor.toArgb()
+                valueLinePart1OffsetPercentage = 80f // 조각 중심에서 시작
+                valueLinePart1Length = 0.7f // 첫 번째 선 길이 (증가)
+                valueLinePart2Length = 0.4f // 두 번째 선 길이 (수평선, 증가)
+                isValueLineVariableLength = true // 선 길이 가변
+                valueLineWidth = 1f // 선 두께
+
+                // 값 표시 설정 (카테고리명 + 백분율)
+                valueFormatter = PieChartValueFormatter()
             }
 
             val data = PieData(dataSet).apply {
-                setValueTextSize(7f)
-                setValueTextColor(android.graphics.Color.BLACK)
+                setValueTextSize(10f)
+                setValueTextColor(labelTextColor.toArgb())
             }
 
             chart.data = data

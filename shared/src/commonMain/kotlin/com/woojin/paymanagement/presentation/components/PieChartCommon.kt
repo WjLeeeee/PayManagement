@@ -2,6 +2,7 @@ package com.woojin.paymanagement.presentation.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.ChartItem
@@ -18,5 +19,7 @@ expect fun PieChart(
     modifier: Modifier = Modifier,
     chartSize: Dp = 200.dp,
     showLegend: Boolean = true,
+    labelTextColor: Color = Color.Black,
+    valueLineColor: Color = Color.Gray,
     onItemSelected: (String?) -> Unit = {}
 )
