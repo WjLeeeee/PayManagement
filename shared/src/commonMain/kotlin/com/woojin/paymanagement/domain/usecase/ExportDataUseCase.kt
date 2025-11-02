@@ -34,7 +34,7 @@ class ExportDataUseCase(
 
             // 백업 데이터 생성
             val backupData = BackupData(
-                version = 1,
+                version = 2,
                 exportDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString(),
                 payday = preferencesManager.getPayday(),
                 paydayAdjustment = preferencesManager.getPaydayAdjustment().name,
@@ -62,7 +62,11 @@ class ExportDataUseCase(
         incomeType = incomeType?.name,
         balanceCardId = balanceCardId,
         giftCardId = giftCardId,
-        cardName = cardName
+        cardName = cardName,
+        merchant = merchant,
+        actualAmount = actualAmount,
+        settlementAmount = settlementAmount,
+        isSettlement = isSettlement
     )
 
     private fun com.woojin.paymanagement.data.BalanceCard.toBackup() = BalanceCardBackup(
