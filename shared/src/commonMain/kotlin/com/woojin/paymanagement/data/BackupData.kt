@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class BackupData(
-    val version: Int = 1, // 백업 데이터 버전
+    val version: Int = 2, // 백업 데이터 버전 (v2: merchant, actualAmount, settlementAmount, isSettlement 추가)
     val exportDate: String, // 내보내기 날짜
     val payday: Int, // 월급날
     val paydayAdjustment: String, // 월급날 조정 (enum name)
@@ -28,7 +28,11 @@ data class TransactionBackup(
     val incomeType: String?,
     val balanceCardId: String?,
     val giftCardId: String?,
-    val cardName: String?
+    val cardName: String?,
+    val merchant: String? = null, // 사용처 (v2부터 추가)
+    val actualAmount: Double? = null, // 실제 결제액 - 더치페이 (v2부터 추가)
+    val settlementAmount: Double? = null, // 정산받은 금액 - 더치페이 (v2부터 추가)
+    val isSettlement: Boolean = false // 더치페이 여부 (v2부터 추가)
 )
 
 @Serializable

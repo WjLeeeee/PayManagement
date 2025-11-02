@@ -95,9 +95,10 @@ class ImportDataUseCase(
         balanceCardId = balanceCardId,
         giftCardId = giftCardId,
         cardName = cardName,
-        actualAmount = null,
-        settlementAmount = null,
-        isSettlement = false
+        merchant = merchant,
+        actualAmount = actualAmount,
+        settlementAmount = settlementAmount,
+        isSettlement = isSettlement
     )
 
     private fun BalanceCardBackup.toBalanceCard() = BalanceCard(
