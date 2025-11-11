@@ -242,7 +242,8 @@ class BudgetSettingsViewModel(
             showAddCategoryDialog = false,
             selectedCategories = emptySet(),
             groupName = "",
-            newBudgetAmount = TextFieldValue("")
+            newBudgetAmount = TextFieldValue(""),
+            newBudgetMemo = ""
         )
     }
 
@@ -309,6 +310,7 @@ class BudgetSettingsViewModel(
                 }
 
                 // 카테고리 예산 추가
+                val memo = uiState.newBudgetMemo.ifBlank { null }
                 val categoryBudget = if (selectedCategories.size == 1) {
                     // 단일 카테고리
                     val category = selectedCategories.first()
@@ -318,7 +320,8 @@ class BudgetSettingsViewModel(
                         categoryIds = listOf(category.id),
                         categoryName = category.name,
                         categoryEmoji = category.emoji,
-                        allocatedAmount = amount
+                        allocatedAmount = amount,
+                        memo = memo
                     )
                 } else {
                     // 카테고리 그룹
@@ -332,7 +335,8 @@ class BudgetSettingsViewModel(
                         categoryIds = selectedCategories.map { it.id },
                         categoryName = groupName,
                         categoryEmoji = "📦",  // 그룹은 항상 📦 이모지 사용
-                        allocatedAmount = amount
+                        allocatedAmount = amount,
+                        memo = memo
                     )
                 }
 
@@ -355,7 +359,8 @@ class BudgetSettingsViewModel(
             editAmount = TextFieldValue(
                 text = formattedAmount,
                 selection = TextRange(formattedAmount.length)
-            )
+            ),
+            editMemo = budget.categoryBudget.memo ?: ""
         )
     }
 
@@ -363,7 +368,8 @@ class BudgetSettingsViewModel(
         uiState = uiState.copy(
             showEditDialog = false,
             editingBudget = null,
-            editAmount = TextFieldValue("")
+            editAmount = TextFieldValue(""),
+            editMemo = ""
         )
     }
 
@@ -398,7 +404,8 @@ class BudgetSettingsViewModel(
         viewModelScope.launch {
             try {
                 uiState = uiState.copy(isSaving = true)
-                updateCategoryBudgetUseCase(editing.categoryBudget.id, amount)
+                val memo = uiState.editMemo.ifBlank { null }
+                updateCategoryBudgetUseCase(editing.categoryBudget.id, amount, memo)
                 hideEditDialog()
             } catch (e: Exception) {
                 uiState = uiState.copy(error = e.message)
@@ -416,6 +423,14 @@ class BudgetSettingsViewModel(
                 uiState = uiState.copy(error = e.message)
             }
         }
+    }
+
+    fun updateEditMemo(newMemo: String) {
+        uiState = uiState.copy(editMemo = newMemo)
+    }
+
+    fun updateNewBudgetMemo(newMemo: String) {
+        uiState = uiState.copy(newBudgetMemo = newMemo)
     }
 
     fun clearError() {

@@ -92,6 +92,7 @@ fun BudgetSettingsScreen(
                 onCategoryToggled = { viewModel.toggleCategorySelection(it) },
                 onGroupNameChanged = { viewModel.updateGroupName(it) },
                 onAmountChanged = { viewModel.updateNewBudgetAmount(it) },
+                onMemoChanged = { viewModel.updateNewBudgetMemo(it) },
                 onConfirm = { viewModel.addCategoryBudget() }
             )
         }
@@ -101,6 +102,7 @@ fun BudgetSettingsScreen(
                 uiState = uiState,
                 onDismiss = { viewModel.hideEditDialog() },
                 onAmountChanged = { viewModel.updateEditAmount(it) },
+                onMemoChanged = { viewModel.updateEditMemo(it) },
                 onConfirm = { viewModel.updateCategoryBudget() }
             )
         }
@@ -600,6 +602,36 @@ fun CategoryBudgetCard(
                         }
                     }
                 }
+
+                // 메모 표시
+                budget.categoryBudget.memo?.let { memo ->
+                    if (memo.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp)
+                            ) {
+                                Text(
+                                    text = "메모",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = memo,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -791,6 +823,7 @@ fun AddCategoryBudgetDialog(
     onCategoryToggled: (Category) -> Unit,
     onGroupNameChanged: (String) -> Unit,
     onAmountChanged: (TextFieldValue) -> Unit,
+    onMemoChanged: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
     AlertDialog(
@@ -959,6 +992,37 @@ fun AddCategoryBudgetDialog(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
+
+                item {
+                    Text(
+                        text = "메모 (선택사항)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = uiState.newBudgetMemo,
+                        onValueChange = onMemoChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3,
+                        maxLines = 5,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         },
         confirmButton = {
@@ -982,6 +1046,7 @@ fun EditCategoryBudgetDialog(
     uiState: BudgetSettingsUiState,
     onDismiss: () -> Unit,
     onAmountChanged: (TextFieldValue) -> Unit,
+    onMemoChanged: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
     val budget = uiState.editingBudget ?: return
@@ -990,8 +1055,16 @@ fun EditCategoryBudgetDialog(
         onDismissRequest = onDismiss,
         title = { Text("${budget.categoryBudget.categoryEmoji} ${budget.categoryBudget.categoryName} 예산 수정") },
         text = {
-            Column {
-                Text("배분 금액")
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+            ) {
+                Text(
+                    text = "배분 금액",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = uiState.editAmount,
@@ -1000,7 +1073,31 @@ fun EditCategoryBudgetDialog(
                     placeholder = { Text("금액을 입력하세요") },
                     suffix = { Text("원") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "메모 (선택사항)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = uiState.editMemo,
+                    onValueChange = onMemoChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 5,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                    )
                 )
             }
         },

@@ -7,13 +7,16 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class BackupData(
-    val version: Int = 2, // 백업 데이터 버전 (v2: merchant, actualAmount, settlementAmount, isSettlement 추가)
+    val version: Int = 3, // 백업 데이터 버전 (v3: categories, budgetPlans, categoryBudgets 추가)
     val exportDate: String, // 내보내기 날짜
     val payday: Int, // 월급날
     val paydayAdjustment: String, // 월급날 조정 (enum name)
     val transactions: List<TransactionBackup>,
     val balanceCards: List<BalanceCardBackup>,
-    val giftCards: List<GiftCardBackup>
+    val giftCards: List<GiftCardBackup>,
+    val categories: List<CategoryBackup> = emptyList(), // v3부터 추가
+    val budgetPlans: List<BudgetPlanBackup> = emptyList(), // v3부터 추가
+    val categoryBudgets: List<CategoryBudgetBackup> = emptyList() // v3부터 추가
 )
 
 @Serializable
@@ -52,5 +55,35 @@ data class GiftCardBackup(
     val totalAmount: Double,
     val usedAmount: Double,
     val createdDate: String, // ISO 8601 형식
-    val isActive: Boolean
+    val isActive: Boolean,
+    val minimumUsageRate: Double = 0.8 // v2부터 추가
+)
+
+@Serializable
+data class CategoryBackup(
+    val id: String,
+    val name: String,
+    val emoji: String,
+    val type: String, // "INCOME" or "EXPENSE"
+    val isActive: Boolean,
+    val sortOrder: Int
+)
+
+@Serializable
+data class BudgetPlanBackup(
+    val id: String,
+    val periodStartDate: String, // ISO 8601 형식 (YYYY-MM-DD)
+    val periodEndDate: String, // ISO 8601 형식
+    val createdAt: String // ISO 8601 형식
+)
+
+@Serializable
+data class CategoryBudgetBackup(
+    val id: String,
+    val budgetPlanId: String,
+    val categoryIds: List<String>, // JSON 배열
+    val categoryName: String,
+    val categoryEmoji: String,
+    val allocatedAmount: Double,
+    val memo: String? = null // v3부터 추가
 )

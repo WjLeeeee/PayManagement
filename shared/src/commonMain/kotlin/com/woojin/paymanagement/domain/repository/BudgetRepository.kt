@@ -13,7 +13,7 @@ interface BudgetRepository {
 
     fun getCategoryBudgetsByPlanId(budgetPlanId: String): Flow<List<CategoryBudget>>
     suspend fun insertCategoryBudget(categoryBudget: CategoryBudget)
-    suspend fun updateCategoryBudget(id: String, allocatedAmount: Double)
+    suspend fun updateCategoryBudget(id: String, allocatedAmount: Double, memo: String? = null)
     suspend fun deleteCategoryBudget(id: String)
 
     suspend fun getSpentAmountByCategory(categoryName: String, startDate: LocalDate, endDate: LocalDate): Double

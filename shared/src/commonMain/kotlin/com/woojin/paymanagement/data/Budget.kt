@@ -23,7 +23,8 @@ data class CategoryBudget(
     val categoryIds: List<String>,  // 단일 또는 복수 카테고리 ID
     val categoryName: String,        // 단일: 카테고리명, 그룹: 그룹명
     val categoryEmoji: String,       // 단일: 카테고리 이모지, 그룹: 그룹 이모지
-    val allocatedAmount: Double
+    val allocatedAmount: Double,
+    val memo: String? = null         // 카테고리 예산에 대한 메모 (예: 세부 항목)
 ) {
     // 편의 속성
     val isGroup: Boolean get() = categoryIds.size > 1
