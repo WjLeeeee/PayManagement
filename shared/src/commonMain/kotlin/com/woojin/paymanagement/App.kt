@@ -650,9 +650,10 @@ fun PayManagementApp(
                                             .clip(RoundedCornerShape(8.dp))
                                             .clickable {
                                                 scope.launch {
-                                                    val result = exportDataUseCase()
+                                                    val result = exportDataUseCase(com.woojin.paymanagement.domain.model.BackupType.ALL)
                                                     result.onSuccess { jsonString ->
-                                                        val fileName = "paymanagement_backup_${Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date}.json"
+                                                        val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                                                        val fileName = "paymanagement_backup_${currentDate}.json"
                                                         fileHandler.setSaveData(
                                                             fileName = fileName,
                                                             jsonContent = jsonString,
@@ -686,7 +687,7 @@ fun PayManagementApp(
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "데이터를 JSON 파일로 저장",
+                                                text = "전체 데이터를 JSON 파일로 저장",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -735,7 +736,7 @@ fun PayManagementApp(
                                         AlertDialog(
                                             onDismissRequest = { showReplaceConfirmDialog = false },
                                             title = { Text("데이터 가져오기") },
-                                            text = { Text("⚠️ 기존 데이터를 모두 삭제하고 파일에서 데이터를 가져옵니다.\n\n계속하시겠습니까?") },
+                                            text = { Text("⚠️ JSON 파일에 포함된 데이터를 가져옵니다.\n기존 데이터는 삭제됩니다.\n\n계속하시겠습니까?") },
                                             confirmButton = {
                                                 Button(onClick = {
                                                     showReplaceConfirmDialog = false

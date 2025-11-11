@@ -8,12 +8,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class BackupData(
     val version: Int = 3, // 백업 데이터 버전 (v3: categories, budgetPlans, categoryBudgets 추가)
-    val exportDate: String, // 내보내기 날짜
-    val payday: Int, // 월급날
-    val paydayAdjustment: String, // 월급날 조정 (enum name)
-    val transactions: List<TransactionBackup>,
-    val balanceCards: List<BalanceCardBackup>,
-    val giftCards: List<GiftCardBackup>,
+    val exportDate: String = "", // 내보내기 날짜
+    val payday: Int = 0, // 월급날
+    val paydayAdjustment: String = "NONE", // 월급날 조정 (enum name)
+    val transactions: List<TransactionBackup> = emptyList(),
+    val balanceCards: List<BalanceCardBackup> = emptyList(),
+    val giftCards: List<GiftCardBackup> = emptyList(),
     val categories: List<CategoryBackup> = emptyList(), // v3부터 추가
     val budgetPlans: List<BudgetPlanBackup> = emptyList(), // v3부터 추가
     val categoryBudgets: List<CategoryBudgetBackup> = emptyList() // v3부터 추가

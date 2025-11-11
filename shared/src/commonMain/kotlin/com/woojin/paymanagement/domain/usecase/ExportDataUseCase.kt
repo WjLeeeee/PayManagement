@@ -8,6 +8,7 @@ import com.woojin.paymanagement.data.CategoryBackup
 import com.woojin.paymanagement.data.BudgetPlanBackup
 import com.woojin.paymanagement.data.CategoryBudgetBackup
 import com.woojin.paymanagement.database.DatabaseHelper
+import com.woojin.paymanagement.domain.model.BackupType
 import com.woojin.paymanagement.utils.PreferencesManager
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.encodeToString
@@ -28,19 +29,35 @@ class ExportDataUseCase(
         ignoreUnknownKeys = true
     }
 
-    suspend operator fun invoke(): Result<String> {
+    suspend operator fun invoke(type: BackupType = BackupType.ALL): Result<String> {
         return try {
-            // 모든 데이터 수집
-            val transactions = databaseHelper.getAllTransactions().first()
-            val balanceCards = databaseHelper.getAllBalanceCards().first()
-            val giftCards = databaseHelper.getAllGiftCards().first()
-            val categories = databaseHelper.getAllCategories().first()
-            val budgetPlans = databaseHelper.getAllBudgetPlans().first()
+            // 타입에 따라 필요한 데이터만 수집
+            val transactions = if (type == BackupType.ALL || type == BackupType.TRANSACTIONS) {
+                databaseHelper.getAllTransactions().first()
+            } else emptyList()
 
-            // 모든 예산 계획에 대한 카테고리 예산 수집
-            val allCategoryBudgets = budgetPlans.flatMap { plan ->
-                databaseHelper.getCategoryBudgetsByPlanId(plan.id).first()
-            }
+            val balanceCards = if (type == BackupType.ALL || type == BackupType.CARDS) {
+                databaseHelper.getAllBalanceCards().first()
+            } else emptyList()
+
+            val giftCards = if (type == BackupType.ALL || type == BackupType.CARDS) {
+                databaseHelper.getAllGiftCards().first()
+            } else emptyList()
+
+            val categories = if (type == BackupType.ALL || type == BackupType.CATEGORIES) {
+                databaseHelper.getAllCategories().first()
+            } else emptyList()
+
+            val budgetPlans = if (type == BackupType.ALL || type == BackupType.BUDGET) {
+                databaseHelper.getAllBudgetPlans().first()
+            } else emptyList()
+
+            // 예산 계획에 대한 카테고리 예산 수집
+            val allCategoryBudgets = if (type == BackupType.ALL || type == BackupType.BUDGET) {
+                budgetPlans.flatMap { plan ->
+                    databaseHelper.getCategoryBudgetsByPlanId(plan.id).first()
+                }
+            } else emptyList()
 
             // 백업 데이터 생성
             val backupData = BackupData(
