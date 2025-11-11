@@ -5,9 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -106,73 +106,51 @@ fun CalendarScreen(
 
     var fabExpanded by remember { mutableStateOf(false) }
 
-    // 스와이프 애니메이션을 위한 offset 상태
-    var targetOffsetX by remember { mutableStateOf(0f) }
-    var isDragging by remember { mutableStateOf(false) }
-    val animatedOffsetX by animateFloatAsState(
-        targetValue = targetOffsetX,
-        animationSpec = if (isDragging) {
-            // 드래그 중에는 애니메이션 없이 즉시 반영
-            tween(durationMillis = 0)
-        } else {
-            // 드래그 끝난 후에는 부드럽게 애니메이션
-            tween(durationMillis = 300)
-        },
-        label = "swipe_animation"
+    // HorizontalPager 상태 (무한 스크롤을 위해 큰 pageCount 사용)
+    val initialPage = Int.MAX_VALUE / 2
+    val pagerState = rememberPagerState(
+        initialPage = initialPage,
+        pageCount = { Int.MAX_VALUE }
     )
-    var totalDragAmount by remember { mutableStateOf(0f) }
 
-    // 화면 너비 가져오기
-    var screenWidth by remember { mutableStateOf(0f) }
+    // 이전 페이지 추적
+    var previousPage by remember { mutableStateOf(initialPage) }
+    var isInitialized by remember { mutableStateOf(false) }
+
+    // 페이지 변경 감지 및 ViewModel 업데이트
+    LaunchedEffect(pagerState.currentPage) {
+        val currentPage = pagerState.currentPage
+
+        if (!isInitialized) {
+            // 첫 로드 시에는 navigate 호출 안 함
+            isInitialized = true
+            previousPage = currentPage
+            return@LaunchedEffect
+        }
+
+        if (currentPage > previousPage) {
+            // 다음 기간으로 이동
+            viewModel.navigateToNextPeriod()
+        } else if (currentPage < previousPage) {
+            // 이전 기간으로 이동
+            viewModel.navigateToPreviousPeriod()
+        }
+
+        previousPage = currentPage
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .onGloballyPositioned { coordinates ->
-                    screenWidth = coordinates.size.width.toFloat()
-                }
-                .offset(x = with(density) { animatedOffsetX.toDp() })
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
-                        onDragStart = {
-                            totalDragAmount = 0f
-                            isDragging = true
-                        },
-                        onDragEnd = {
-                            isDragging = false
-                            // 화면 너비의 30% 이상 드래그했으면 페이지 전환
-                            val threshold = screenWidth * 0.3f
-                            if (totalDragAmount > threshold) {
-                                // 오른쪽으로 스와이프 -> 이전 기간
-                                viewModel.navigateToPreviousPeriod()
-                            } else if (totalDragAmount < -threshold) {
-                                // 왼쪽으로 스와이프 -> 다음 기간
-                                viewModel.navigateToNextPeriod()
-                            }
-                            // 애니메이션으로 원위치
-                            targetOffsetX = 0f
-                            totalDragAmount = 0f
-                        },
-                        onDragCancel = {
-                            isDragging = false
-                            // 드래그 취소 시 원위치
-                            targetOffsetX = 0f
-                            totalDragAmount = 0f
-                        },
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            totalDragAmount += dragAmount
-                            // 화면 너비의 30%까지만 따라가도록 제한
-                            val maxOffset = screenWidth * 0.3f
-                            targetOffsetX = totalDragAmount.coerceIn(-maxOffset, maxOffset)
-                        }
-                    )
-                }
-        ) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
             // Drawer Menu Button & Year/Month Header
             if (uiState.currentPayPeriod != null) {
                 Box(
@@ -272,6 +250,7 @@ fun CalendarScreen(
             }
 
             Spacer(modifier = Modifier.weight(1f))
+            }
         }
 
         // Expandable Floating Action Button
