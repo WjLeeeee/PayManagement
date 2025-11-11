@@ -167,6 +167,10 @@ class DatabaseHelper(
         queries.deleteBalanceCard(id)
     }
 
+    suspend fun deleteAllBalanceCards() {
+        queries.deleteAllBalanceCards()
+    }
+
     fun getTransactionsByBalanceCard(balanceCardId: String): Flow<List<Transaction>> {
         return queries.selectTransactionsByBalanceCard(balanceCardId)
             .asFlow()
@@ -233,6 +237,10 @@ class DatabaseHelper(
 
     suspend fun deleteGiftCard(id: String) {
         queries.deleteGiftCard(id)
+    }
+
+    suspend fun deleteAllGiftCards() {
+        queries.deleteAllGiftCards()
     }
 
     fun getTransactionsByGiftCard(giftCardId: String): Flow<List<Transaction>> {

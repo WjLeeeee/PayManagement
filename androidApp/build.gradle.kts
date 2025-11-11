@@ -11,8 +11,8 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 28
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.5"
+        versionCode = 10
+        versionName = "1.6"
     }
     buildFeatures {
         compose = true
