@@ -8,7 +8,7 @@ import com.woojin.paymanagement.utils.PayPeriod
 data class BudgetSettingsUiState(
     val currentPeriod: PayPeriod? = null,
     val selectedTab: BudgetTab = BudgetTab.SETTINGS,
-    val monthlySalary: String = "",
+    val monthlySalary: TextFieldValue = TextFieldValue(""),
     val categoryBudgets: List<CategoryBudgetWithProgress> = emptyList(),
     val totalAllocated: Double = 0.0,
     val unallocated: Double = 0.0,

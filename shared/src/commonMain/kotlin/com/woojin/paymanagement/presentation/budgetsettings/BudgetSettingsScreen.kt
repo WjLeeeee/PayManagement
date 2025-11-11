@@ -162,7 +162,7 @@ fun BudgetSettingsTab(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "💵 이번 달 고정 급여",
+                            text = "💵 고정 급여",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
