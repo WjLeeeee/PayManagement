@@ -68,9 +68,13 @@ class BudgetSettingsViewModel(
                     adjustment = adjustment
                 )
 
+                val formattedSalary = if (monthlySalary > 0) formatWithCommas(monthlySalary.toLong()) else ""
                 uiState = uiState.copy(
                     currentPeriod = currentPeriod,
-                    monthlySalary = if (monthlySalary > 0) formatWithCommas(monthlySalary.toLong()) else ""
+                    monthlySalary = TextFieldValue(
+                        text = formattedSalary,
+                        selection = TextRange(formattedSalary.length)
+                    )
                 )
 
                 // 예산 계획 및 카테고리 예산 로드
@@ -195,9 +199,9 @@ class BudgetSettingsViewModel(
         uiState = uiState.copy(selectedTab = tab)
     }
 
-    fun updateMonthlySalary(salary: String) {
+    fun updateMonthlySalary(newValue: TextFieldValue) {
         // 쉼표 제거 후 숫자만 추출
-        val digitsOnly = removeCommas(salary)
+        val digitsOnly = removeCommas(newValue.text)
 
         if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
             val formattedSalary = if (digitsOnly.isNotEmpty()) {
@@ -207,7 +211,13 @@ class BudgetSettingsViewModel(
                 ""
             }
 
-            uiState = uiState.copy(monthlySalary = formattedSalary)
+            // 커서를 항상 텍스트 끝에 위치시켜 자연스러운 숫자 입력 제공
+            uiState = uiState.copy(
+                monthlySalary = TextFieldValue(
+                    text = formattedSalary,
+                    selection = TextRange(formattedSalary.length)
+                )
+            )
 
             // PreferencesRepository에 저장
             val salaryAmount = digitsOnly.toDoubleOrNull() ?: 0.0
@@ -438,6 +448,6 @@ class BudgetSettingsViewModel(
     }
 
     private fun getSalaryAmount(): Double {
-        return removeCommas(uiState.monthlySalary).toDoubleOrNull() ?: 0.0
+        return removeCommas(uiState.monthlySalary.text).toDoubleOrNull() ?: 0.0
     }
 }
