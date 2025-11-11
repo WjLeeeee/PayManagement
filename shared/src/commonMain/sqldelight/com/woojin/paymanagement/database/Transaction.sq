@@ -1,4 +1,4 @@
--- Schema version 9
+-- Schema version 10
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -73,6 +73,7 @@ CREATE TABLE CategoryBudgetEntity (
     categoryName TEXT NOT NULL,
     categoryEmoji TEXT NOT NULL,
     allocatedAmount REAL NOT NULL,
+    memo TEXT,  -- 카테고리 예산에 대한 메모
     FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
 );
 
@@ -280,8 +281,8 @@ DELETE FROM BudgetPlanEntity;
 
 -- CategoryBudget 관련 쿼리들
 insertCategoryBudget:
-INSERT INTO CategoryBudgetEntity(id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO CategoryBudgetEntity(id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 selectCategoryBudgetsByPlanId:
 SELECT * FROM CategoryBudgetEntity
@@ -290,7 +291,7 @@ ORDER BY categoryName ASC;
 
 updateCategoryBudget:
 UPDATE CategoryBudgetEntity
-SET allocatedAmount = ?
+SET allocatedAmount = ?, memo = ?
 WHERE id = ?;
 
 deleteCategoryBudget:

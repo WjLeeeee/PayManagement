@@ -4,6 +4,9 @@ import com.woojin.paymanagement.data.BackupData
 import com.woojin.paymanagement.data.BalanceCardBackup
 import com.woojin.paymanagement.data.GiftCardBackup
 import com.woojin.paymanagement.data.TransactionBackup
+import com.woojin.paymanagement.data.CategoryBackup
+import com.woojin.paymanagement.data.BudgetPlanBackup
+import com.woojin.paymanagement.data.CategoryBudgetBackup
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.utils.PreferencesManager
 import kotlinx.coroutines.flow.first
@@ -31,16 +34,26 @@ class ExportDataUseCase(
             val transactions = databaseHelper.getAllTransactions().first()
             val balanceCards = databaseHelper.getAllBalanceCards().first()
             val giftCards = databaseHelper.getAllGiftCards().first()
+            val categories = databaseHelper.getAllCategories().first()
+            val budgetPlans = databaseHelper.getAllBudgetPlans().first()
+
+            // 모든 예산 계획에 대한 카테고리 예산 수집
+            val allCategoryBudgets = budgetPlans.flatMap { plan ->
+                databaseHelper.getCategoryBudgetsByPlanId(plan.id).first()
+            }
 
             // 백업 데이터 생성
             val backupData = BackupData(
-                version = 2,
+                version = 3,
                 exportDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString(),
                 payday = preferencesManager.getPayday(),
                 paydayAdjustment = preferencesManager.getPaydayAdjustment().name,
                 transactions = transactions.map { it.toBackup() },
                 balanceCards = balanceCards.map { it.toBackup() },
-                giftCards = giftCards.map { it.toBackup() }
+                giftCards = giftCards.map { it.toBackup() },
+                categories = categories.map { it.toBackup() },
+                budgetPlans = budgetPlans.map { it.toBackup() },
+                categoryBudgets = allCategoryBudgets.map { it.toBackup() }
             )
 
             // JSON 변환
@@ -84,6 +97,33 @@ class ExportDataUseCase(
         totalAmount = totalAmount,
         usedAmount = usedAmount,
         createdDate = createdDate.toString(),
-        isActive = isActive
+        isActive = isActive,
+        minimumUsageRate = minimumUsageRate
+    )
+
+    private fun com.woojin.paymanagement.data.Category.toBackup() = CategoryBackup(
+        id = id,
+        name = name,
+        emoji = emoji,
+        type = type.name,
+        isActive = isActive,
+        sortOrder = sortOrder
+    )
+
+    private fun com.woojin.paymanagement.data.BudgetPlan.toBackup() = BudgetPlanBackup(
+        id = id,
+        periodStartDate = periodStartDate.toString(),
+        periodEndDate = periodEndDate.toString(),
+        createdAt = createdAt.toString()
+    )
+
+    private fun com.woojin.paymanagement.data.CategoryBudget.toBackup() = CategoryBudgetBackup(
+        id = id,
+        budgetPlanId = budgetPlanId,
+        categoryIds = categoryIds,
+        categoryName = categoryName,
+        categoryEmoji = categoryEmoji,
+        allocatedAmount = allocatedAmount,
+        memo = memo
     )
 }

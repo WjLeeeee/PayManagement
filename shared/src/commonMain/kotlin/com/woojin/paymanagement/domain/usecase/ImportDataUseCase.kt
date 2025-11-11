@@ -38,6 +38,17 @@ class ImportDataUseCase(
             var successCount = 0
             var failureCount = 0
 
+            // 카테고리 복원 (먼저 복원 - 다른 데이터가 의존할 수 있음)
+            backupData.categories.forEach { backup ->
+                try {
+                    val category = backup.toCategory()
+                    databaseHelper.insertCategory(category)
+                    successCount++
+                } catch (e: Exception) {
+                    failureCount++
+                }
+            }
+
             // 잔액권 복원
             backupData.balanceCards.forEach { backup ->
                 try {
@@ -60,6 +71,28 @@ class ImportDataUseCase(
                 }
             }
 
+            // 예산 계획 복원
+            backupData.budgetPlans.forEach { backup ->
+                try {
+                    val budgetPlan = backup.toBudgetPlan()
+                    databaseHelper.insertBudgetPlan(budgetPlan)
+                    successCount++
+                } catch (e: Exception) {
+                    failureCount++
+                }
+            }
+
+            // 카테고리 예산 복원 (예산 계획 이후에 복원)
+            backupData.categoryBudgets.forEach { backup ->
+                try {
+                    val categoryBudget = backup.toCategoryBudget()
+                    databaseHelper.insertCategoryBudget(categoryBudget)
+                    successCount++
+                } catch (e: Exception) {
+                    failureCount++
+                }
+            }
+
             // 거래 내역 복원
             backupData.transactions.forEach { backup ->
                 try {
@@ -73,7 +106,9 @@ class ImportDataUseCase(
 
             Result.success(
                 ImportResult(
-                    totalCount = backupData.transactions.size + backupData.balanceCards.size + backupData.giftCards.size,
+                    totalCount = backupData.transactions.size + backupData.balanceCards.size +
+                                 backupData.giftCards.size + backupData.categories.size +
+                                 backupData.budgetPlans.size + backupData.categoryBudgets.size,
                     successCount = successCount,
                     failureCount = failureCount
                 )
@@ -116,7 +151,34 @@ class ImportDataUseCase(
         totalAmount = totalAmount,
         usedAmount = usedAmount,
         createdDate = LocalDate.parse(createdDate),
-        isActive = isActive
+        isActive = isActive,
+        minimumUsageRate = minimumUsageRate
+    )
+
+    private fun CategoryBackup.toCategory() = Category(
+        id = id,
+        name = name,
+        emoji = emoji,
+        type = TransactionType.valueOf(type),
+        isActive = isActive,
+        sortOrder = sortOrder
+    )
+
+    private fun BudgetPlanBackup.toBudgetPlan() = BudgetPlan(
+        id = id,
+        periodStartDate = LocalDate.parse(periodStartDate),
+        periodEndDate = LocalDate.parse(periodEndDate),
+        createdAt = LocalDate.parse(createdAt)
+    )
+
+    private fun CategoryBudgetBackup.toCategoryBudget() = CategoryBudget(
+        id = id,
+        budgetPlanId = budgetPlanId,
+        categoryIds = categoryIds,
+        categoryName = categoryName,
+        categoryEmoji = categoryEmoji,
+        allocatedAmount = allocatedAmount,
+        memo = memo
     )
 }
 

@@ -20,10 +20,12 @@ data class BudgetSettingsUiState(
     val showEditDialog: Boolean = false,
     val editingBudget: CategoryBudgetWithProgress? = null,
     val editAmount: TextFieldValue = TextFieldValue(""),
+    val editMemo: String = "",  // 예산 수정 시 메모
     val availableCategories: List<Category> = emptyList(),
     val selectedCategories: Set<Category> = emptySet(),
     val groupName: String = "",
-    val newBudgetAmount: TextFieldValue = TextFieldValue("")
+    val newBudgetAmount: TextFieldValue = TextFieldValue(""),
+    val newBudgetMemo: String = ""  // 예산 추가 시 메모
 )
 
 enum class BudgetTab {

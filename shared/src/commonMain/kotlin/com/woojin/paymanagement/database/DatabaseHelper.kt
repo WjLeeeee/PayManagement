@@ -393,12 +393,13 @@ class DatabaseHelper(
             categoryIds = json.encodeToString(categoryBudget.categoryIds),
             categoryName = categoryBudget.categoryName,
             categoryEmoji = categoryBudget.categoryEmoji,
-            allocatedAmount = categoryBudget.allocatedAmount
+            allocatedAmount = categoryBudget.allocatedAmount,
+            memo = categoryBudget.memo
         )
     }
 
-    suspend fun updateCategoryBudget(id: String, allocatedAmount: Double) {
-        queries.updateCategoryBudget(allocatedAmount, id)
+    suspend fun updateCategoryBudget(id: String, allocatedAmount: Double, memo: String? = null) {
+        queries.updateCategoryBudget(allocatedAmount, memo, id)
     }
 
     suspend fun deleteCategoryBudget(id: String) {
@@ -418,9 +419,13 @@ class DatabaseHelper(
      * 모든 데이터를 삭제합니다 (백업 복원 시 사용)
      */
     suspend fun deleteAllData() {
+        // 외래 키 관계를 고려한 순서로 삭제
+        queries.deleteAllCategoryBudgets()  // 예산 관련 먼저 삭제
+        queries.deleteAllBudgetPlans()
         queries.deleteAllTransactions()
         queries.deleteAllBalanceCards()
         queries.deleteAllGiftCards()
+        queries.deleteAllCategories()  // 카테고리는 마지막에 삭제
         // 파싱된 거래 내역은 유지 (백업 대상이 아님)
     }
 
@@ -513,7 +518,8 @@ class DatabaseHelper(
             categoryIds = categoryIdsList,
             categoryName = this.categoryName,
             categoryEmoji = this.categoryEmoji,
-            allocatedAmount = this.allocatedAmount
+            allocatedAmount = this.allocatedAmount,
+            memo = this.memo
         )
     }
 }

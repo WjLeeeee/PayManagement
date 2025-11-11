@@ -35,8 +35,8 @@ class BudgetRepositoryImpl(
         databaseHelper.insertCategoryBudget(categoryBudget)
     }
 
-    override suspend fun updateCategoryBudget(id: String, allocatedAmount: Double) {
-        databaseHelper.updateCategoryBudget(id, allocatedAmount)
+    override suspend fun updateCategoryBudget(id: String, allocatedAmount: Double, memo: String?) {
+        databaseHelper.updateCategoryBudget(id, allocatedAmount, memo)
     }
 
     override suspend fun deleteCategoryBudget(id: String) {
