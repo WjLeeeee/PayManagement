@@ -3,12 +3,13 @@ package com.woojin.paymanagement.data
 import kotlinx.datetime.LocalDate
 
 /**
- * 급여 사이클별 예산 계획
+ * 예산 템플릿
+ * effectiveFromDate부터 다음 템플릿 시작 전까지 유효
  */
 data class BudgetPlan(
     val id: String,
-    val periodStartDate: LocalDate,
-    val periodEndDate: LocalDate,
+    val effectiveFromDate: LocalDate,  // 이 날짜부터 적용
+    val monthlySalary: Double,          // 고정 급여
     val createdAt: LocalDate
 )
 

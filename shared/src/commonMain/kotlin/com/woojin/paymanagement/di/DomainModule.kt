@@ -36,12 +36,14 @@ import com.woojin.paymanagement.domain.usecase.UpdateCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.GetCurrentBudgetPlanUseCase
 import com.woojin.paymanagement.domain.usecase.SaveBudgetPlanUseCase
+import com.woojin.paymanagement.domain.usecase.DeleteBudgetPlanUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoryBudgetsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.GetSpentAmountByCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.PurchaseTipUseCase
+import com.woojin.paymanagement.domain.usecase.GetOldestTransactionDateUseCase
 import com.woojin.paymanagement.domain.repository.BillingRepository
 import com.woojin.paymanagement.domain.repository.BillingRepositoryImpl
 import org.koin.core.module.dsl.factoryOf
@@ -109,11 +111,13 @@ val domainModule = module {
     // Budget Use Cases
     factoryOf(::GetCurrentBudgetPlanUseCase)
     factoryOf(::SaveBudgetPlanUseCase)
+    factoryOf(::DeleteBudgetPlanUseCase)
     factoryOf(::GetCategoryBudgetsUseCase)
     factoryOf(::SaveCategoryBudgetUseCase)
     factoryOf(::UpdateCategoryBudgetUseCase)
     factoryOf(::DeleteCategoryBudgetUseCase)
     factoryOf(::GetSpentAmountByCategoryUseCase)
+    factoryOf(::GetOldestTransactionDateUseCase)
 
     // Billing Use Cases
     factoryOf(::PurchaseTipUseCase)

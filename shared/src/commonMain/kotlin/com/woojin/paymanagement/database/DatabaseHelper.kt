@@ -53,7 +53,16 @@ class DatabaseHelper(
                 entities.map { it.toTransaction() }
             }
     }
-    
+
+    suspend fun getOldestTransactionDate(): LocalDate? {
+        return try {
+            val dateString = queries.selectOldestTransactionDate().executeAsOneOrNull()?.oldestDate
+            dateString?.let { LocalDate.parse(it) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     suspend fun insertTransaction(transaction: Transaction) {
         queries.insertTransaction(
             id = transaction.id,
@@ -349,8 +358,8 @@ class DatabaseHelper(
     }
 
     // BudgetPlan 관련 메서드들
-    fun getBudgetPlanByPeriod(startDate: LocalDate, endDate: LocalDate): Flow<BudgetPlan?> {
-        return queries.selectBudgetPlanByPeriod(startDate.toString(), endDate.toString())
+    fun getBudgetPlanByDate(date: LocalDate): Flow<BudgetPlan?> {
+        return queries.selectBudgetPlanByDate(date.toString())
             .asFlow()
             .mapToList(Dispatchers.IO)
             .map { entities ->
@@ -370,8 +379,8 @@ class DatabaseHelper(
     suspend fun insertBudgetPlan(budgetPlan: BudgetPlan) {
         queries.insertBudgetPlan(
             id = budgetPlan.id,
-            periodStartDate = budgetPlan.periodStartDate.toString(),
-            periodEndDate = budgetPlan.periodEndDate.toString(),
+            effectiveFromDate = budgetPlan.effectiveFromDate.toString(),
+            monthlySalary = budgetPlan.monthlySalary,
             createdAt = budgetPlan.createdAt.toString()
         )
     }
@@ -506,8 +515,8 @@ class DatabaseHelper(
     private fun BudgetPlanEntity.toBudgetPlan(): BudgetPlan {
         return BudgetPlan(
             id = this.id,
-            periodStartDate = LocalDate.parse(this.periodStartDate),
-            periodEndDate = LocalDate.parse(this.periodEndDate),
+            effectiveFromDate = LocalDate.parse(this.effectiveFromDate),
+            monthlySalary = this.monthlySalary,
             createdAt = LocalDate.parse(this.createdAt)
         )
     }

@@ -79,7 +79,8 @@ fun BudgetSettingsScreen(
                     onNavigateToCategoryManagement = onNavigateToCategoryManagement
                 )
                 BudgetTab.PROGRESS -> BudgetProgressTab(
-                    uiState = uiState
+                    uiState = uiState,
+                    viewModel = viewModel
                 )
             }
         }
@@ -364,22 +365,62 @@ fun BudgetSettingsTab(
 
 @Composable
 fun BudgetProgressTab(
-    uiState: BudgetSettingsUiState
+    uiState: BudgetSettingsUiState,
+    viewModel: BudgetSettingsViewModel
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 급여 사이클
+        // 급여 사이클 with 이전/다음 버튼
         item {
-            uiState.currentPeriod?.let { period ->
-                Text(
-                    text = "📅 ${period.displayText}",
-                    style = MaterialTheme.typography.titleMedium,
+            uiState.viewingPeriod?.let { period ->
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 이전 버튼 (가장 오래된 거래 내역 기간이면 비활성화)
+                    IconButton(
+                        onClick = { viewModel.navigateToPreviousPeriod() },
+                        enabled = uiState.canNavigatePrevious
+                    ) {
+                        Text(
+                            text = "◀",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = if (uiState.canNavigatePrevious) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            }
+                        )
+                    }
+
+                    // 급여 기간 표시
+                    Text(
+                        text = "📅 ${period.displayText}",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // 다음 버튼 (미래 기간이면 비활성화)
+                    IconButton(
+                        onClick = { viewModel.navigateToNextPeriod() },
+                        enabled = uiState.canNavigateNext
+                    ) {
+                        Text(
+                            text = "▶",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = if (uiState.canNavigateNext) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            }
+                        )
+                    }
+                }
             }
         }
 
@@ -418,6 +459,24 @@ fun BudgetProgressTab(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(12.dp))
+
+                        // 급여
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "급여:",
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            val salaryAmount = uiState.monthlySalary.text.replace(",", "").toDoubleOrNull() ?: 0.0
+                            Text(
+                                text = "${Utils.formatAmount(salaryAmount)}원",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),

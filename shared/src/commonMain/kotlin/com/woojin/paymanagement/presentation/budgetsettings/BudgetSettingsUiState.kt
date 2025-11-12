@@ -6,7 +6,10 @@ import com.woojin.paymanagement.data.CategoryBudget
 import com.woojin.paymanagement.utils.PayPeriod
 
 data class BudgetSettingsUiState(
-    val currentPeriod: PayPeriod? = null,
+    val currentPeriod: PayPeriod? = null,  // 실제 현재 급여 기간
+    val viewingPeriod: PayPeriod? = null,  // 사용 현황에서 보고 있는 급여 기간
+    val canNavigateNext: Boolean = false,  // 다음 기간으로 이동 가능한지 (미래 기간 체크)
+    val canNavigatePrevious: Boolean = true,  // 이전 기간으로 이동 가능한지 (거래 내역 체크)
     val selectedTab: BudgetTab = BudgetTab.SETTINGS,
     val monthlySalary: TextFieldValue = TextFieldValue(""),
     val categoryBudgets: List<CategoryBudgetWithProgress> = emptyList(),

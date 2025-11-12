@@ -61,7 +61,7 @@ class ExportDataUseCase(
 
             // 백업 데이터 생성
             val backupData = BackupData(
-                version = 3,
+                version = 4,
                 exportDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString(),
                 payday = preferencesManager.getPayday(),
                 paydayAdjustment = preferencesManager.getPaydayAdjustment().name,
@@ -129,8 +129,8 @@ class ExportDataUseCase(
 
     private fun com.woojin.paymanagement.data.BudgetPlan.toBackup() = BudgetPlanBackup(
         id = id,
-        periodStartDate = periodStartDate.toString(),
-        periodEndDate = periodEndDate.toString(),
+        effectiveFromDate = effectiveFromDate.toString(),
+        monthlySalary = monthlySalary,
         createdAt = createdAt.toString()
     )
 

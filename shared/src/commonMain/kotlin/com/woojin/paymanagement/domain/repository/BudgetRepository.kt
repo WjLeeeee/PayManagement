@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
 interface BudgetRepository {
-    fun getBudgetPlanByPeriod(startDate: LocalDate, endDate: LocalDate): Flow<BudgetPlan?>
+    fun getBudgetPlanByDate(date: LocalDate): Flow<BudgetPlan?>
     fun getAllBudgetPlans(): Flow<List<BudgetPlan>>
     suspend fun insertBudgetPlan(budgetPlan: BudgetPlan)
     suspend fun deleteBudgetPlan(id: String)

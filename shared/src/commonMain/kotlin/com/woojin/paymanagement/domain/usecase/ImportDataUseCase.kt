@@ -206,12 +206,23 @@ class ImportDataUseCase(
         sortOrder = sortOrder
     )
 
-    private fun BudgetPlanBackup.toBudgetPlan() = BudgetPlan(
-        id = id,
-        periodStartDate = LocalDate.parse(periodStartDate),
-        periodEndDate = LocalDate.parse(periodEndDate),
-        createdAt = LocalDate.parse(createdAt)
-    )
+    private fun BudgetPlanBackup.toBudgetPlan(): BudgetPlan {
+        // v4 형식: effectiveFromDate와 monthlySalary 사용
+        // v3 형식 (하위 호환): periodStartDate를 effectiveFromDate로 사용, monthlySalary는 0
+        val effectiveDate = if (effectiveFromDate.isNotEmpty()) {
+            LocalDate.parse(effectiveFromDate)
+        } else {
+            // v3 백업 데이터: periodStartDate를 effectiveFromDate로 변환
+            LocalDate.parse(periodStartDate ?: throw IllegalArgumentException("Invalid budget plan backup data"))
+        }
+
+        return BudgetPlan(
+            id = id,
+            effectiveFromDate = effectiveDate,
+            monthlySalary = monthlySalary,  // v3 데이터의 경우 0.0
+            createdAt = LocalDate.parse(createdAt)
+        )
+    }
 
     private fun CategoryBudgetBackup.toCategoryBudget() = CategoryBudget(
         id = id,
