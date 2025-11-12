@@ -32,4 +32,8 @@ class ParsedTransactionRepositoryImpl(
     override suspend fun deleteAll() {
         databaseHelper.deleteAllParsedTransactions()
     }
+
+    override suspend fun hasRecentTransactionWithAmount(amount: Double, startTime: Long, endTime: Long): Boolean {
+        return databaseHelper.hasRecentTransactionWithAmount(amount, startTime, endTime)
+    }
 }

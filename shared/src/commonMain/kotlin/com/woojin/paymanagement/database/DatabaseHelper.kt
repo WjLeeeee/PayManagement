@@ -304,6 +304,10 @@ class DatabaseHelper(
         queries.deleteAllParsedTransactions()
     }
 
+    suspend fun hasRecentTransactionWithAmount(amount: Double, startTime: Long, endTime: Long): Boolean {
+        return queries.checkRecentTransactionByAmount(amount, startTime, endTime).executeAsOne()
+    }
+
     // Category 관련 메서드들
     fun getAllCategories(): Flow<List<Category>> {
         return queries.selectAllCategories()

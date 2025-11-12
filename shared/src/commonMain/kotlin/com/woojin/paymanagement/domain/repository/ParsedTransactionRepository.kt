@@ -10,4 +10,5 @@ interface ParsedTransactionRepository {
     suspend fun markAsProcessed(id: String)
     suspend fun deleteParsedTransaction(id: String)
     suspend fun deleteAll()
+    suspend fun hasRecentTransactionWithAmount(amount: Double, startTime: Long, endTime: Long): Boolean
 }
