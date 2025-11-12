@@ -32,7 +32,7 @@ val presentationModule = module {
     factory { PaydaySetupViewModel(get(), get(), get()) }
     factory { StatisticsViewModel(get(), get(), get(), get(), get(), get()) }
     factory { CalendarTutorialViewModel(get()) }
-    factory { ParsedTransactionViewModel(get(), get(), get(), get()) }
+    factory { ParsedTransactionViewModel(get(), get(), get()) }
     factory { CategoryManagementViewModel(get(), get(), get(), get()) }
     factory { CardManagementViewModel(get()) }
     factory { BudgetSettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }

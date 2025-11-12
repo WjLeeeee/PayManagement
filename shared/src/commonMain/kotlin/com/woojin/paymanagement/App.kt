@@ -94,7 +94,6 @@ fun App(
     billingClient: com.woojin.paymanagement.utils.BillingClient,
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
-    onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
@@ -113,7 +112,6 @@ fun App(
             PayManagementApp(
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                 onNavigationHandled = onNavigationHandled,
-                onSendTestNotifications = onSendTestNotifications,
                 onThemeChanged = onThemeChanged,
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 onLaunchSaveFile = onLaunchSaveFile,
@@ -165,7 +163,6 @@ private fun initializeKoin(
 fun PayManagementApp(
     shouldNavigateToParsedTransactions: Boolean = false,
     onNavigationHandled: () -> Unit = {},
-    onSendTestNotifications: ((List<com.woojin.paymanagement.data.ParsedTransaction>) -> Unit)? = null,
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
@@ -1450,7 +1447,6 @@ fun PayManagementApp(
                     navigateTo(Screen.AddTransaction)
                 },
                 onBack = { navigateBack() },
-                onSendTestNotifications = onSendTestNotifications,
                 hasNotificationPermission = notificationPermissionChecker.hasPostNotificationPermission(),
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 onOpenNotificationSettings = {

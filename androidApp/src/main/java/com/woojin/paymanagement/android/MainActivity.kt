@@ -201,12 +201,6 @@ fun StatusBarOverlayScreen(
                     billingClient = billingClient,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     onNavigationHandled = onNavigationHandled,
-                    onSendTestNotifications = { transactions ->
-                        // 각 테스트 거래에 대해 알림 전송
-                        transactions.forEach { transaction ->
-                            TransactionNotificationHelper.sendTransactionNotification(context, transaction)
-                        }
-                    },
                     onThemeChanged = { onThemeChanged() },
                     onRequestPostNotificationPermission = { callback ->
                         // 콜백 저장

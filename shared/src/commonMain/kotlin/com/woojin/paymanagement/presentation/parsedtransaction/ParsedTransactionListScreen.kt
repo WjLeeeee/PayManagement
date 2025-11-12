@@ -48,7 +48,6 @@ fun ParsedTransactionListScreen(
     viewModel: ParsedTransactionViewModel,
     onTransactionClick: (ParsedTransaction) -> Unit,
     onBack: () -> Unit,
-    onSendTestNotifications: ((List<ParsedTransaction>) -> Unit)? = null,
     hasNotificationPermission: Boolean = true,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onOpenNotificationSettings: () -> Unit = {},
@@ -124,21 +123,6 @@ fun ParsedTransactionListScreen(
                     text = if (hasPermission) "🔔 알림" else "🔕 알림",
                     fontWeight = if (hasPermission) FontWeight.Bold else FontWeight.Normal
                 )
-            }
-
-            // 테스트 데이터 추가 버튼
-            TextButton(
-                onClick = {
-                    scope.launch {
-                        val testTransactions = viewModel.addTestData()
-                        // 권한이 있으면 테스트 알림 전송
-                        if (hasPermission) {
-                            onSendTestNotifications?.invoke(testTransactions)
-                        }
-                    }
-                }
-            ) {
-                Text("테스트", color = MaterialTheme.colorScheme.primary)
             }
         }
 
