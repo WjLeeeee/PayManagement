@@ -11,8 +11,8 @@ class BudgetRepositoryImpl(
     private val databaseHelper: DatabaseHelper
 ) : BudgetRepository {
 
-    override fun getBudgetPlanByPeriod(startDate: LocalDate, endDate: LocalDate): Flow<BudgetPlan?> {
-        return databaseHelper.getBudgetPlanByPeriod(startDate, endDate)
+    override fun getBudgetPlanByDate(date: LocalDate): Flow<BudgetPlan?> {
+        return databaseHelper.getBudgetPlanByDate(date)
     }
 
     override fun getAllBudgetPlans(): Flow<List<BudgetPlan>> {

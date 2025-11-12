@@ -78,16 +78,50 @@ actual class DatabaseDriverFactory(private val context: Context) {
             0
         )
 
-        // BudgetPlanEntity 테이블이 없으면 생성
+        // BudgetPlanEntity 마이그레이션 (v10 -> v11)
+        // 기존 스키마 확인
+        val hasOldBudgetSchema = try {
+            driver.executeQuery(
+                null,
+                "PRAGMA table_info(BudgetPlanEntity)",
+                { cursor ->
+                    var hasOldColumn = false
+                    while (cursor.next().value) {
+                        val columnName = cursor.getString(1)
+                        if (columnName == "periodStartDate") {
+                            hasOldColumn = true
+                            break
+                        }
+                    }
+                    app.cash.sqldelight.db.QueryResult.Value(hasOldColumn)
+                },
+                0
+            ).value
+        } catch (e: Exception) {
+            false
+        }
+
+        if (hasOldBudgetSchema) {
+            // v10 스키마 발견: 기존 데이터 삭제 후 새 스키마로 재생성
+            try {
+                // CategoryBudgetEntity 먼저 삭제 (외래키 제약)
+                driver.execute(null, "DROP TABLE IF EXISTS CategoryBudgetEntity", 0)
+                driver.execute(null, "DROP TABLE IF EXISTS BudgetPlanEntity", 0)
+            } catch (e: Exception) {
+                // 무시
+            }
+        }
+
+        // 새 스키마로 테이블 생성
         driver.execute(
             null,
             """
             CREATE TABLE IF NOT EXISTS BudgetPlanEntity (
                 id TEXT NOT NULL PRIMARY KEY,
-                periodStartDate TEXT NOT NULL,
-                periodEndDate TEXT NOT NULL,
+                effectiveFromDate TEXT NOT NULL,
+                monthlySalary REAL NOT NULL,
                 createdAt TEXT NOT NULL,
-                UNIQUE(periodStartDate, periodEndDate)
+                UNIQUE(effectiveFromDate)
             )
             """.trimIndent(),
             0
@@ -210,66 +244,88 @@ actual class DatabaseDriverFactory(private val context: Context) {
         }
 
         // CategoryBudgetEntity 마이그레이션: categoryId -> categoryIds
-        // 기존 테이블 확인
-        val hasOldSchema = try {
-            driver.executeQuery(
-                null,
-                "PRAGMA table_info(CategoryBudgetEntity)",
-                { cursor ->
-                    var hasOldColumn = false
-                    while (cursor.next().value) {
-                        val columnName = cursor.getString(1)
-                        if (columnName == "categoryId") {
-                            hasOldColumn = true
-                            break
+        // BudgetPlanEntity 마이그레이션에서 이미 삭제되었을 수 있으므로 확인
+        if (!hasOldBudgetSchema) {
+            // v11 스키마가 아니면 마이그레이션 진행
+            val hasOldSchema = try {
+                driver.executeQuery(
+                    null,
+                    "PRAGMA table_info(CategoryBudgetEntity)",
+                    { cursor ->
+                        var hasOldColumn = false
+                        while (cursor.next().value) {
+                            val columnName = cursor.getString(1)
+                            if (columnName == "categoryId") {
+                                hasOldColumn = true
+                                break
+                            }
                         }
-                    }
-                    app.cash.sqldelight.db.QueryResult.Value(hasOldColumn)
-                },
-                0
-            ).value
-        } catch (e: Exception) {
-            false
-        }
+                        app.cash.sqldelight.db.QueryResult.Value(hasOldColumn)
+                    },
+                    0
+                ).value
+            } catch (e: Exception) {
+                false
+            }
 
-        if (hasOldSchema) {
-            // 구 스키마가 존재하면 마이그레이션
-            // 1. 임시 테이블 생성
-            driver.execute(
-                null,
-                """
-                CREATE TABLE IF NOT EXISTS CategoryBudgetEntity_new (
-                    id TEXT NOT NULL PRIMARY KEY,
-                    budgetPlanId TEXT NOT NULL,
-                    categoryIds TEXT NOT NULL,
-                    categoryName TEXT NOT NULL,
-                    categoryEmoji TEXT NOT NULL,
-                    allocatedAmount REAL NOT NULL,
-                    memo TEXT,
-                    FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
+            if (hasOldSchema) {
+                // 구 스키마가 존재하면 마이그레이션
+                // 1. 임시 테이블 생성
+                driver.execute(
+                    null,
+                    """
+                    CREATE TABLE IF NOT EXISTS CategoryBudgetEntity_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        budgetPlanId TEXT NOT NULL,
+                        categoryIds TEXT NOT NULL,
+                        categoryName TEXT NOT NULL,
+                        categoryEmoji TEXT NOT NULL,
+                        allocatedAmount REAL NOT NULL,
+                        memo TEXT,
+                        FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                    0
                 )
-                """.trimIndent(),
-                0
-            )
 
-            // 2. 기존 데이터를 변환하여 복사 (categoryId -> ["categoryId"] JSON 배열)
-            driver.execute(
-                null,
-                """
-                INSERT INTO CategoryBudgetEntity_new (id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo)
-                SELECT id, budgetPlanId, '["' || categoryId || '"]', categoryName, categoryEmoji, allocatedAmount, NULL
-                FROM CategoryBudgetEntity
-                """.trimIndent(),
-                0
-            )
+                // 2. 기존 데이터를 변환하여 복사 (categoryId -> ["categoryId"] JSON 배열)
+                driver.execute(
+                    null,
+                    """
+                    INSERT INTO CategoryBudgetEntity_new (id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo)
+                    SELECT id, budgetPlanId, '["' || categoryId || '"]', categoryName, categoryEmoji, allocatedAmount, NULL
+                    FROM CategoryBudgetEntity
+                    """.trimIndent(),
+                    0
+                )
 
-            // 3. 구 테이블 삭제
-            driver.execute(null, "DROP TABLE CategoryBudgetEntity", 0)
+                // 3. 구 테이블 삭제
+                driver.execute(null, "DROP TABLE CategoryBudgetEntity", 0)
 
-            // 4. 새 테이블 이름 변경
-            driver.execute(null, "ALTER TABLE CategoryBudgetEntity_new RENAME TO CategoryBudgetEntity", 0)
+                // 4. 새 테이블 이름 변경
+                driver.execute(null, "ALTER TABLE CategoryBudgetEntity_new RENAME TO CategoryBudgetEntity", 0)
+            } else {
+                // 새로 설치하는 경우 바로 새 스키마로 생성
+                driver.execute(
+                    null,
+                    """
+                    CREATE TABLE IF NOT EXISTS CategoryBudgetEntity (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        budgetPlanId TEXT NOT NULL,
+                        categoryIds TEXT NOT NULL,
+                        categoryName TEXT NOT NULL,
+                        categoryEmoji TEXT NOT NULL,
+                        allocatedAmount REAL NOT NULL,
+                        memo TEXT,
+                        FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
+                    )
+                    """.trimIndent(),
+                    0
+                )
+            }
         } else {
-            // 새로 설치하는 경우 바로 새 스키마로 생성
+            // hasOldBudgetSchema == true: 이미 CategoryBudgetEntity 삭제됨
+            // 새 스키마로 생성
             driver.execute(
                 null,
                 """

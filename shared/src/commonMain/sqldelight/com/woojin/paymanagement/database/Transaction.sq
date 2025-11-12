@@ -1,4 +1,4 @@
--- Schema version 10
+-- Schema version 11
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -60,10 +60,10 @@ CREATE TABLE GiftCardEntity (
 
 CREATE TABLE BudgetPlanEntity (
     id TEXT NOT NULL PRIMARY KEY,
-    periodStartDate TEXT NOT NULL,
-    periodEndDate TEXT NOT NULL,
+    effectiveFromDate TEXT NOT NULL,  -- 이 날짜부터 적용
+    monthlySalary REAL NOT NULL,       -- 고정 급여
     createdAt TEXT NOT NULL,
-    UNIQUE(periodStartDate, periodEndDate)
+    UNIQUE(effectiveFromDate)
 );
 
 CREATE TABLE CategoryBudgetEntity (
@@ -94,6 +94,9 @@ selectTransactionsByMonth:
 SELECT * FROM TransactionEntity
 WHERE substr(date, 1, 7) = ?
 ORDER BY date DESC;
+
+selectOldestTransactionDate:
+SELECT MIN(date) AS oldestDate FROM TransactionEntity;
 
 updateTransaction:
 UPDATE TransactionEntity
@@ -261,16 +264,18 @@ DELETE FROM CategoryEntity;
 
 -- BudgetPlan 관련 쿼리들
 insertBudgetPlan:
-INSERT INTO BudgetPlanEntity(id, periodStartDate, periodEndDate, createdAt)
+INSERT INTO BudgetPlanEntity(id, effectiveFromDate, monthlySalary, createdAt)
 VALUES (?, ?, ?, ?);
 
-selectBudgetPlanByPeriod:
+selectBudgetPlanByDate:
 SELECT * FROM BudgetPlanEntity
-WHERE periodStartDate = ? AND periodEndDate = ?;
+WHERE effectiveFromDate <= ?
+ORDER BY effectiveFromDate DESC
+LIMIT 1;
 
 selectAllBudgetPlans:
 SELECT * FROM BudgetPlanEntity
-ORDER BY periodStartDate DESC;
+ORDER BY effectiveFromDate DESC;
 
 deleteBudgetPlan:
 DELETE FROM BudgetPlanEntity

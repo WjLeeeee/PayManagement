@@ -52,4 +52,8 @@ class TransactionRepositoryImpl(
     override suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String) {
         databaseHelper.updateTransactionsCategoryName(oldCategoryName, newCategoryName)
     }
+
+    override suspend fun getOldestTransactionDate(): LocalDate? {
+        return databaseHelper.getOldestTransactionDate()
+    }
 }

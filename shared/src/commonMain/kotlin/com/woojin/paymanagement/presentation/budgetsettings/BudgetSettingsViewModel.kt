@@ -19,15 +19,19 @@ import com.woojin.paymanagement.domain.usecase.GetCategoryBudgetsUseCase
 import com.woojin.paymanagement.domain.usecase.GetCurrentBudgetPlanUseCase
 import com.woojin.paymanagement.domain.usecase.GetSpentAmountByCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.SaveBudgetPlanUseCase
+import com.woojin.paymanagement.domain.usecase.DeleteBudgetPlanUseCase
 import com.woojin.paymanagement.domain.usecase.SaveCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateCategoryBudgetUseCase
+import com.woojin.paymanagement.domain.usecase.GetOldestTransactionDateUseCase
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import com.woojin.paymanagement.utils.formatWithCommas
 import com.woojin.paymanagement.utils.removeCommas
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -35,18 +39,21 @@ class BudgetSettingsViewModel(
     private val preferencesRepository: PreferencesRepository,
     private val getCurrentBudgetPlanUseCase: GetCurrentBudgetPlanUseCase,
     private val saveBudgetPlanUseCase: SaveBudgetPlanUseCase,
+    private val deleteBudgetPlanUseCase: DeleteBudgetPlanUseCase,
     private val getCategoryBudgetsUseCase: GetCategoryBudgetsUseCase,
     private val saveCategoryBudgetUseCase: SaveCategoryBudgetUseCase,
     private val updateCategoryBudgetUseCase: UpdateCategoryBudgetUseCase,
     private val deleteCategoryBudgetUseCase: DeleteCategoryBudgetUseCase,
     private val getSpentAmountByCategoryUseCase: GetSpentAmountByCategoryUseCase,
-    private val getCategoriesUseCase: GetCategoriesUseCase
+    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val getOldestTransactionDateUseCase: GetOldestTransactionDateUseCase
 ) : ViewModel() {
 
     var uiState by mutableStateOf(BudgetSettingsUiState())
         private set
 
     private var budgetJob: Job? = null
+    private var salaryUpdateJob: Job? = null  // 급여 자동 저장용
 
     init {
         loadInitialData()
@@ -57,29 +64,48 @@ class BudgetSettingsViewModel(
             uiState = uiState.copy(isLoading = true)
 
             try {
-                // 급여 정보 로드
+                // 현재 날짜 기준으로 유효한 예산 템플릿 로드
+                val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+                // 급여일 정보 (사용 현황 탭에서 기간 계산용)
                 val payday = preferencesRepository.getPayday()
                 val adjustment = preferencesRepository.getPaydayAdjustment()
-                val monthlySalary = preferencesRepository.getMonthlySalary()
 
-                // 현재 급여 사이클 계산
+                // 현재 급여 사이클 계산 (사용 현황 탭용)
                 val currentPeriod = PayPeriodCalculator.getCurrentPayPeriod(
                     payday = payday,
                     adjustment = adjustment
                 )
 
-                val formattedSalary = if (monthlySalary > 0) formatWithCommas(monthlySalary.toLong()) else ""
+                // 가장 오래된 거래 내역 확인하여 이전 버튼 활성화 여부 결정
+                val oldestTransactionDate = getOldestTransactionDateUseCase()
+                val canNavigatePrevious = if (oldestTransactionDate != null) {
+                    // 가장 오래된 거래 내역이 속한 급여 기간 계산
+                    val oldestPayPeriod = PayPeriodCalculator.getCurrentPayPeriod(
+                        currentDate = oldestTransactionDate,
+                        payday = payday,
+                        adjustment = adjustment
+                    )
+                    // 현재 기간이 가장 오래된 기간보다 이후면 이전으로 이동 가능
+                    currentPeriod.startDate > oldestPayPeriod.startDate
+                } else {
+                    // 거래 내역이 없으면 이동 불가
+                    false
+                }
+
                 uiState = uiState.copy(
                     currentPeriod = currentPeriod,
-                    monthlySalary = TextFieldValue(
-                        text = formattedSalary,
-                        selection = TextRange(formattedSalary.length)
-                    )
+                    viewingPeriod = currentPeriod,  // 사용 현황 탭의 초기 기간
+                    canNavigateNext = false,  // 현재 기간이므로 다음으로 이동 불가
+                    canNavigatePrevious = canNavigatePrevious
                 )
 
-                // 예산 계획 및 카테고리 예산 로드
-                loadBudgetData(currentPeriod)
+                // 초기 탭에 따라 데이터 로드
+                // 기본 탭은 SETTINGS이므로 예산 템플릿만 로드
+                loadBudgetTemplate(today)
 
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 uiState = uiState.copy(
                     error = e.message,
@@ -89,26 +115,37 @@ class BudgetSettingsViewModel(
         }
     }
 
-    private fun loadBudgetData(payPeriod: com.woojin.paymanagement.utils.PayPeriod) {
+    // 예산 템플릿 로드 (예산 설정 탭용)
+    private fun loadBudgetTemplate(date: LocalDate) {
         budgetJob?.cancel()
 
         budgetJob = viewModelScope.launch {
             try {
-                getCurrentBudgetPlanUseCase(payPeriod).collect { budgetPlan ->
+                getCurrentBudgetPlanUseCase(date).collect { budgetPlan ->
                     if (budgetPlan != null) {
-                        // 예산 계획이 있으면 카테고리 예산 로드
-                        loadCategoryBudgets(budgetPlan.id, payPeriod)
-                    } else {
-                        // 예산 계획이 없으면 빈 상태
+                        // 예산 템플릿이 있으면 급여와 카테고리 예산 로드
+                        val formattedSalary = formatWithCommas(budgetPlan.monthlySalary.toLong())
                         uiState = uiState.copy(
+                            monthlySalary = TextFieldValue(
+                                text = formattedSalary,
+                                selection = TextRange(formattedSalary.length)
+                            )
+                        )
+                        loadCategoryBudgetsForTemplate(budgetPlan.id)
+                    } else {
+                        // 예산 템플릿이 없으면 빈 상태
+                        uiState = uiState.copy(
+                            monthlySalary = TextFieldValue(""),
                             categoryBudgets = emptyList(),
                             totalAllocated = 0.0,
-                            unallocated = getSalaryAmount(),
+                            unallocated = 0.0,
                             totalSpent = 0.0,
                             isLoading = false
                         )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 uiState = uiState.copy(
                     error = e.message,
@@ -118,11 +155,95 @@ class BudgetSettingsViewModel(
         }
     }
 
-    private suspend fun loadCategoryBudgets(
-        budgetPlanId: String,
+    // 사용 현황 탭에서 특정 기간의 지출 현황 로드
+    private fun loadBudgetDataForPeriod(payPeriod: com.woojin.paymanagement.utils.PayPeriod) {
+        budgetJob?.cancel()
+
+        budgetJob = viewModelScope.launch {
+            try {
+                // 항상 현재(오늘) 유효한 예산 템플릿 사용
+                val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                getCurrentBudgetPlanUseCase(today).collect { budgetPlan ->
+                    if (budgetPlan != null) {
+                        // 급여 정보 먼저 설정 (UI에 표시하기 위해)
+                        val formattedSalary = formatWithCommas(budgetPlan.monthlySalary.toLong())
+                        uiState = uiState.copy(
+                            monthlySalary = TextFieldValue(
+                                text = formattedSalary,
+                                selection = TextRange(formattedSalary.length)
+                            )
+                        )
+
+                        // 현재 템플릿으로 해당 기간의 지출 현황 계산
+                        loadCategoryBudgetsForPeriod(budgetPlan, payPeriod)
+                    } else {
+                        // 예산 템플릿이 없으면 빈 상태
+                        uiState = uiState.copy(
+                            monthlySalary = TextFieldValue(""),
+                            categoryBudgets = emptyList(),
+                            totalAllocated = 0.0,
+                            unallocated = 0.0,
+                            totalSpent = 0.0,
+                            isLoading = false
+                        )
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    error = e.message,
+                    isLoading = false
+                )
+            }
+        }
+    }
+
+    // 예산 설정 탭용: 템플릿만 로드 (지출 계산 안 함)
+    private suspend fun loadCategoryBudgetsForTemplate(budgetPlanId: String) {
+        getCategoryBudgetsUseCase(budgetPlanId).collect { categoryBudgets ->
+            // 모든 지출 카테고리 정보 가져오기
+            val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
+
+            // 카테고리 정보만 포함 (지출 계산 안 함)
+            val budgetsWithProgress = categoryBudgets.map { budget ->
+                val categories = if (budget.isGroup) {
+                    budget.categoryIds.mapNotNull { categoryId ->
+                        allCategories.find { it.id == categoryId }
+                    }
+                } else {
+                    emptyList()
+                }
+
+                CategoryBudgetWithProgress(
+                    categoryBudget = budget,
+                    spentAmount = 0.0,
+                    remainingAmount = budget.allocatedAmount,
+                    progress = 0f,
+                    categories = categories,
+                    categorySpentAmounts = emptyMap()
+                )
+            }
+
+            val totalAllocated = categoryBudgets.sumOf { it.allocatedAmount }
+            val salary = getSalaryAmount()
+
+            uiState = uiState.copy(
+                categoryBudgets = budgetsWithProgress,
+                totalAllocated = totalAllocated,
+                unallocated = salary - totalAllocated,
+                totalSpent = 0.0,
+                isLoading = false
+            )
+        }
+    }
+
+    // 사용 현황 탭용: 특정 기간의 지출 계산
+    private suspend fun loadCategoryBudgetsForPeriod(
+        budgetPlan: BudgetPlan,
         payPeriod: com.woojin.paymanagement.utils.PayPeriod
     ) {
-        getCategoryBudgetsUseCase(budgetPlanId).collect { categoryBudgets ->
+        getCategoryBudgetsUseCase(budgetPlan.id).collect { categoryBudgets ->
             // 모든 지출 카테고리 정보 가져오기
             val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
 
@@ -156,7 +277,7 @@ class BudgetSettingsViewModel(
                         }
                     }
                 } else {
-                    // 단일 카테고리: 기존 로직 사용
+                    // 단일 카테고리
                     getSpentAmountByCategoryUseCase(
                         categoryName = budget.categoryName,
                         startDate = payPeriod.startDate,
@@ -183,7 +304,7 @@ class BudgetSettingsViewModel(
 
             val totalAllocated = categoryBudgets.sumOf { it.allocatedAmount }
             val totalSpent = budgetsWithProgress.sumOf { it.spentAmount }
-            val salary = getSalaryAmount()
+            val salary = budgetPlan.monthlySalary  // BudgetPlan에서 직접 가져오기
 
             uiState = uiState.copy(
                 categoryBudgets = budgetsWithProgress,
@@ -197,6 +318,19 @@ class BudgetSettingsViewModel(
 
     fun selectTab(tab: BudgetTab) {
         uiState = uiState.copy(selectedTab = tab)
+
+        // 예산 설정 탭으로 전환 시, 항상 오늘 날짜의 템플릿 로드
+        if (tab == BudgetTab.SETTINGS) {
+            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            loadBudgetTemplate(today)
+        }
+        // 사용 현황 탭으로 전환 시, 현재 보고 있는 기간의 데이터 로드
+        else if (tab == BudgetTab.PROGRESS) {
+            val viewingPeriod = uiState.viewingPeriod
+            if (viewingPeriod != null) {
+                loadBudgetDataForPeriod(viewingPeriod)
+            }
+        }
     }
 
     fun updateMonthlySalary(newValue: TextFieldValue) {
@@ -211,22 +345,90 @@ class BudgetSettingsViewModel(
                 ""
             }
 
-            // 커서를 항상 텍스트 끝에 위치시켜 자연스러운 숫자 입력 제공
+            // UI 업데이트
             uiState = uiState.copy(
                 monthlySalary = TextFieldValue(
                     text = formattedSalary,
                     selection = TextRange(formattedSalary.length)
-                )
+                ),
+                unallocated = (digitsOnly.toDoubleOrNull() ?: 0.0) - uiState.totalAllocated
             )
 
-            // PreferencesRepository에 저장
-            val salaryAmount = digitsOnly.toDoubleOrNull() ?: 0.0
-            preferencesRepository.setMonthlySalary(salaryAmount)
+            // 입력이 끝나면 자동 저장 (1초 debounce)
+            salaryUpdateJob?.cancel()
+            salaryUpdateJob = viewModelScope.launch {
+                kotlinx.coroutines.delay(1000)  // 1초 대기
+                saveMonthlySalaryChange()
+            }
+        }
+    }
 
-            // 미배분 금액 재계산
-            uiState = uiState.copy(
-                unallocated = salaryAmount - uiState.totalAllocated
-            )
+    // 급여 변경 저장 (예산 템플릿 생성 또는 업데이트)
+    fun saveMonthlySalaryChange() {
+        val salaryAmount = getSalaryAmount()
+        if (salaryAmount <= 0) return
+
+        viewModelScope.launch {
+            try {
+                uiState = uiState.copy(isSaving = true)
+
+                val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+                // 현재 유효한 템플릿 가져오기
+                val existingPlan = getCurrentBudgetPlanUseCase(today).first()
+
+                if (existingPlan != null) {
+                    // 기존 템플릿이 있으면 카테고리 예산을 백업
+                    val existingCategoryBudgets = getCategoryBudgetsUseCase(existingPlan.id).first()
+
+                    // 오늘 날짜의 템플릿이면 삭제 (중복 방지)
+                    if (existingPlan.effectiveFromDate == today) {
+                        deleteBudgetPlanUseCase(existingPlan.id)
+                    }
+
+                    // 새 예산 템플릿 생성
+                    val newBudgetPlan = BudgetPlan(
+                        id = uuid4().toString(),
+                        effectiveFromDate = today,
+                        monthlySalary = salaryAmount,
+                        createdAt = today
+                    )
+                    saveBudgetPlanUseCase(newBudgetPlan)
+
+                    // 기존 카테고리 예산을 새 템플릿으로 복사
+                    existingCategoryBudgets.forEach { budget ->
+                        val newBudget = CategoryBudget(
+                            id = uuid4().toString(),
+                            budgetPlanId = newBudgetPlan.id,
+                            categoryIds = budget.categoryIds,
+                            categoryName = budget.categoryName,
+                            categoryEmoji = budget.categoryEmoji,
+                            allocatedAmount = budget.allocatedAmount,
+                            memo = budget.memo
+                        )
+                        saveCategoryBudgetUseCase(newBudget)
+                    }
+                } else {
+                    // 템플릿이 없으면 새로 생성
+                    val newBudgetPlan = BudgetPlan(
+                        id = uuid4().toString(),
+                        effectiveFromDate = today,
+                        monthlySalary = salaryAmount,
+                        createdAt = today
+                    )
+                    saveBudgetPlanUseCase(newBudgetPlan)
+                }
+
+                // 템플릿 재로드
+                loadBudgetTemplate(today)
+
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+            } finally {
+                uiState = uiState.copy(isSaving = false)
+            }
         }
     }
 
@@ -298,7 +500,6 @@ class BudgetSettingsViewModel(
         if (selectedCategories.isEmpty()) return
 
         val amount = removeCommas(uiState.newBudgetAmount.text).toDoubleOrNull() ?: return
-        val period = uiState.currentPeriod ?: return
 
         if (amount <= 0) return
 
@@ -306,14 +507,22 @@ class BudgetSettingsViewModel(
             try {
                 uiState = uiState.copy(isSaving = true)
 
-                // 예산 계획이 없으면 생성
-                var budgetPlan = getCurrentBudgetPlanUseCase(period).first()
+                val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+                // 현재 유효한 예산 템플릿 가져오기, 없으면 생성
+                var budgetPlan = getCurrentBudgetPlanUseCase(today).first()
                 if (budgetPlan == null) {
-                    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                    // 급여 정보가 없으면 예산 템플릿을 생성할 수 없음
+                    val salaryAmount = getSalaryAmount()
+                    if (salaryAmount <= 0) {
+                        uiState = uiState.copy(error = "먼저 월 급여를 입력해주세요")
+                        return@launch
+                    }
+
                     budgetPlan = BudgetPlan(
                         id = uuid4().toString(),
-                        periodStartDate = period.startDate,
-                        periodEndDate = period.endDate,
+                        effectiveFromDate = today,
+                        monthlySalary = salaryAmount,
                         createdAt = today
                     )
                     saveBudgetPlanUseCase(budgetPlan)
@@ -353,6 +562,8 @@ class BudgetSettingsViewModel(
                 saveCategoryBudgetUseCase(categoryBudget)
 
                 hideAddCategoryDialog()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 uiState = uiState.copy(error = e.message)
             } finally {
@@ -417,6 +628,8 @@ class BudgetSettingsViewModel(
                 val memo = uiState.editMemo.ifBlank { null }
                 updateCategoryBudgetUseCase(editing.categoryBudget.id, amount, memo)
                 hideEditDialog()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 uiState = uiState.copy(error = e.message)
             } finally {
@@ -429,6 +642,8 @@ class BudgetSettingsViewModel(
         viewModelScope.launch {
             try {
                 deleteCategoryBudgetUseCase(budget.categoryBudget.id)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 uiState = uiState.copy(error = e.message)
             }
@@ -445,6 +660,89 @@ class BudgetSettingsViewModel(
 
     fun clearError() {
         uiState = uiState.copy(error = null)
+    }
+
+    fun navigateToPreviousPeriod() {
+        val currentViewingPeriod = uiState.viewingPeriod ?: return
+        val payday = preferencesRepository.getPayday()
+        val adjustment = preferencesRepository.getPaydayAdjustment()
+
+        val previousPeriod = PayPeriodCalculator.getPreviousPayPeriod(
+            currentPeriod = currentViewingPeriod,
+            payday = payday,
+            adjustment = adjustment
+        )
+
+        // 가장 오래된 거래 내역이 속한 급여 기간 확인
+        viewModelScope.launch {
+            val oldestTransactionDate = getOldestTransactionDateUseCase()
+            // 이동한 후의 이전 기간이 가장 오래된 기간과 비교하여 더 이전으로 갈 수 있는지 확인
+            val canNavigatePrevious = if (oldestTransactionDate != null) {
+                // 가장 오래된 거래 내역이 속한 급여 기간 계산
+                val oldestPayPeriod = PayPeriodCalculator.getCurrentPayPeriod(
+                    currentDate = oldestTransactionDate,
+                    payday = payday,
+                    adjustment = adjustment
+                )
+                // 이동한 이전 기간이 가장 오래된 기간보다 이후면 또 이전으로 이동 가능
+                previousPeriod.startDate > oldestPayPeriod.startDate
+            } else {
+                // 거래 내역이 없으면 더 이상 이동 불가
+                false
+            }
+
+            uiState = uiState.copy(
+                viewingPeriod = previousPeriod,
+                canNavigateNext = true,  // 이전으로 갔으므로 다음으로 이동 가능
+                canNavigatePrevious = canNavigatePrevious
+            )
+
+            // 이전 기간의 지출 현황 로드
+            loadBudgetDataForPeriod(previousPeriod)
+        }
+    }
+
+    fun navigateToNextPeriod() {
+        val currentViewingPeriod = uiState.viewingPeriod ?: return
+        val currentPeriod = uiState.currentPeriod ?: return
+        val payday = preferencesRepository.getPayday()
+        val adjustment = preferencesRepository.getPaydayAdjustment()
+
+        val nextPeriod = PayPeriodCalculator.getNextPayPeriod(
+            currentPeriod = currentViewingPeriod,
+            payday = payday,
+            adjustment = adjustment
+        )
+
+        // 가장 오래된 거래 내역이 속한 급여 기간 확인
+        viewModelScope.launch {
+            val oldestTransactionDate = getOldestTransactionDateUseCase()
+            val canNavigatePrevious = if (oldestTransactionDate != null) {
+                // 가장 오래된 거래 내역이 속한 급여 기간 계산
+                val oldestPayPeriod = PayPeriodCalculator.getCurrentPayPeriod(
+                    currentDate = oldestTransactionDate,
+                    payday = payday,
+                    adjustment = adjustment
+                )
+                // 다음 기간이 가장 오래된 기간보다 이후면 이전으로 이동 가능
+                nextPeriod.startDate > oldestPayPeriod.startDate
+            } else {
+                // 거래 내역이 없으면 이동 불가
+                false
+            }
+
+            // 이동한 기간이 현재 기간인지 확인 (현재 기간이면 더 이상 미래로 못 감)
+            val isCurrentPeriod = nextPeriod.startDate == currentPeriod.startDate
+
+            uiState = uiState.copy(
+                viewingPeriod = nextPeriod,
+                canNavigateNext = !isCurrentPeriod,  // 현재 기간이 아니면 더 이동 가능
+                canNavigatePrevious = canNavigatePrevious
+            )
+
+            // 다음 기간의 지출 현황 로드
+            loadBudgetDataForPeriod(nextPeriod)
+        }
     }
 
     private fun getSalaryAmount(): Double {

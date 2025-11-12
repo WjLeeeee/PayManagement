@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class BackupData(
-    val version: Int = 3, // 백업 데이터 버전 (v3: categories, budgetPlans, categoryBudgets 추가)
+    val version: Int = 4, // 백업 데이터 버전 (v4: budget template system)
     val exportDate: String = "", // 내보내기 날짜
     val payday: Int = 0, // 월급날
     val paydayAdjustment: String = "NONE", // 월급날 조정 (enum name)
@@ -72,9 +72,12 @@ data class CategoryBackup(
 @Serializable
 data class BudgetPlanBackup(
     val id: String,
-    val periodStartDate: String, // ISO 8601 형식 (YYYY-MM-DD)
-    val periodEndDate: String, // ISO 8601 형식
-    val createdAt: String // ISO 8601 형식
+    val effectiveFromDate: String = "", // ISO 8601 형식 (YYYY-MM-DD) - v4부터, v3 호환을 위해 기본값
+    val monthlySalary: Double = 0.0, // v4부터, v3 호환을 위해 기본값
+    val createdAt: String, // ISO 8601 형식
+    // v3 하위 호환성을 위한 필드
+    val periodStartDate: String? = null,
+    val periodEndDate: String? = null
 )
 
 @Serializable
