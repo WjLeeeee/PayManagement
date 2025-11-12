@@ -202,7 +202,7 @@ ORDER BY date DESC;
 
 -- ParsedTransaction 관련 쿼리들
 insertParsedTransaction:
-INSERT INTO ParsedTransactionEntity(id, amount, merchantName, date, rawNotification, isProcessed, createdAt)
+INSERT OR IGNORE INTO ParsedTransactionEntity(id, amount, merchantName, date, rawNotification, isProcessed, createdAt)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
 selectAllParsedTransactions:
