@@ -226,6 +226,11 @@ WHERE id = ?;
 deleteAllParsedTransactions:
 DELETE FROM ParsedTransactionEntity;
 
+checkRecentTransactionByAmount:
+SELECT COUNT(*) > 0 AS hasRecent
+FROM ParsedTransactionEntity
+WHERE amount = ? AND createdAt >= ? AND createdAt <= ?;
+
 -- Category 관련 쿼리들
 insertCategory:
 INSERT INTO CategoryEntity(id, name, emoji, type, isActive, sortOrder)

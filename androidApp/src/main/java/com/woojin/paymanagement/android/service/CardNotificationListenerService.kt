@@ -6,6 +6,7 @@ import android.util.Log
 import com.woojin.paymanagement.android.util.TransactionNotificationHelper
 import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.domain.usecase.InsertParsedTransactionUseCase
+import com.woojin.paymanagement.domain.repository.ParsedTransactionRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +24,8 @@ class CardNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "CardNotificationListener"
         private const val SHINHAN_CARD_PACKAGE = "com.shcard.smartpay" // 신한카드 앱 패키지명
+        private const val SAMSUNG_PAY_PACKAGE = "com.samsung.android.spay" // 삼성페이 앱 패키지명
+        private const val DUPLICATE_CHECK_WINDOW_MS = 1 * 60 * 1000L // 1분
 
         /**
          * 알림 텍스트의 SHA-256 해시를 생성하여 고유 ID로 사용
@@ -35,6 +38,7 @@ class CardNotificationListenerService : NotificationListenerService() {
     }
 
     private val insertParsedTransactionUseCase: InsertParsedTransactionUseCase by inject()
+    private val parsedTransactionRepository: ParsedTransactionRepository by inject()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
@@ -46,9 +50,9 @@ class CardNotificationListenerService : NotificationListenerService() {
         super.onNotificationPosted(sbn)
 
         sbn?.let {
-            // 신한카드 앱에서 온 알림만 처리
-            if (it.packageName == SHINHAN_CARD_PACKAGE) {
-                handleCardNotification(it)
+            when (it.packageName) {
+                SHINHAN_CARD_PACKAGE -> handleCardNotification(it)
+                SAMSUNG_PAY_PACKAGE -> handleSamsungPayNotification(it)
             }
         }
     }
@@ -169,15 +173,117 @@ class CardNotificationListenerService : NotificationListenerService() {
     }
 
     /**
+     * 삼성페이 알림 처리
+     *
+     * 예시 포맷:
+     * Title: Samsung Wallet
+     * Text: ￦8,700 결제 완료
+     *       KFC KOREA
+     */
+    private fun handleSamsungPayNotification(sbn: StatusBarNotification) {
+        try {
+            val notification = sbn.notification
+            val extras = notification.extras
+
+            val title = extras.getCharSequence("android.title")?.toString() ?: ""
+            val text = extras.getCharSequence("android.text")?.toString() ?: ""
+            val bigText = extras.getCharSequence("android.bigText")?.toString() ?: text
+
+            Log.d(TAG, "Samsung Pay Notification - Title: $title")
+            Log.d(TAG, "Samsung Pay Notification - Text: $bigText")
+
+            // Samsung Wallet 알림이고 "결제 완료"가 포함된 경우만 처리
+            if (title.contains("Samsung Wallet", ignoreCase = true) && bigText.contains("결제 완료")) {
+                val parsedTransaction = parseSamsungPayNotification(bigText, title)
+
+                parsedTransaction?.let { transaction ->
+                    Log.d(TAG, "Parsed Samsung Pay transaction: $transaction")
+                    saveParsedTransaction(transaction)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error handling Samsung Pay notification", e)
+        }
+    }
+
+    /**
+     * 삼성페이 알림 파싱
+     *
+     * 예시: "￦8,700 결제 완료\nKFC KOREA"
+     */
+    private fun parseSamsungPayNotification(text: String, title: String): ParsedTransaction? {
+        try {
+            val lines = text.split("\n")
+
+            // 첫 번째 줄에서 금액 파싱: "￦8,700 결제 완료" -> 8700.0
+            val amountLine = lines.firstOrNull() ?: return null
+            val amountRegex = """￦([\d,]+)\s*결제\s*완료""".toRegex()
+            val amountMatch = amountRegex.find(amountLine)
+            val amount = amountMatch?.groupValues?.get(1)
+                ?.replace(",", "")
+                ?.toDoubleOrNull() ?: return null
+
+            // 두 번째 줄에서 가맹점명 파싱
+            val merchantName = lines.getOrNull(1)?.trim()
+            if (merchantName.isNullOrBlank()) {
+                Log.w(TAG, "Failed to parse Samsung Pay notification - missing merchant name")
+                return null
+            }
+
+            // 현재 날짜 사용 (삼성페이 알림에는 날짜 정보가 없음)
+            val calendar = Calendar.getInstance()
+            val currentYear = calendar.get(Calendar.YEAR)
+            val currentMonth = calendar.get(Calendar.MONTH) + 1
+            val currentDay = calendar.get(Calendar.DAY_OF_MONTH)
+
+            val transactionDate = try {
+                kotlinx.datetime.LocalDate(currentYear, currentMonth, currentDay)
+            } catch (e: Exception) {
+                Log.e(TAG, "Invalid date: $currentYear/$currentMonth/$currentDay", e)
+                return null
+            }
+
+            return ParsedTransaction(
+                id = generateNotificationId(text),
+                amount = amount,
+                merchantName = merchantName,
+                date = transactionDate,
+                rawNotification = text,
+                isProcessed = false,
+                createdAt = System.currentTimeMillis()
+            )
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing Samsung Pay notification", e)
+            return null
+        }
+    }
+
+    /**
      * 파싱된 거래를 저장
-     * 같은 알림 내용(같은 ID)이면 자동으로 무시됨 (INSERT OR IGNORE)
+     * 중복 체크: 최근 5분 이내 같은 금액의 거래가 있으면 저장하지 않음
      */
     private fun saveParsedTransaction(transaction: ParsedTransaction) {
         serviceScope.launch {
             try {
+                // 중복 체크: 최근 5분 이내 같은 금액의 거래가 있는지 확인
+                val currentTime = System.currentTimeMillis()
+                val startTime = currentTime - DUPLICATE_CHECK_WINDOW_MS
+                val isDuplicate = parsedTransactionRepository.hasRecentTransactionWithAmount(
+                    amount = transaction.amount,
+                    startTime = startTime,
+                    endTime = currentTime
+                )
+
+                if (isDuplicate) {
+                    Log.d(TAG, "Duplicate transaction detected (same amount within 5 minutes): ${transaction.merchantName} - ${transaction.amount}원")
+                    Log.d(TAG, "Skipping save to prevent duplicate entries")
+                    return@launch
+                }
+
+                // 중복이 아니면 저장
                 insertParsedTransactionUseCase(transaction)
                 Log.d(TAG, "Parsed transaction saved: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
-                Log.d(TAG, "Note: Duplicate notifications with same content are automatically ignored")
 
                 // 파싱 성공 시 사용자에게 알림 전송
                 TransactionNotificationHelper.sendTransactionNotification(this@CardNotificationListenerService, transaction)
