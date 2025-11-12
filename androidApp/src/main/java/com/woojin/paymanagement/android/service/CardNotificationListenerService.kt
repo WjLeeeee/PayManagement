@@ -12,8 +12,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
+import java.security.MessageDigest
 import java.util.Calendar
-import java.util.UUID
 
 /**
  * 카드 알림을 감지하고 파싱하는 NotificationListenerService
@@ -23,6 +23,15 @@ class CardNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "CardNotificationListener"
         private const val SHINHAN_CARD_PACKAGE = "com.shcard.smartpay" // 신한카드 앱 패키지명
+
+        /**
+         * 알림 텍스트의 SHA-256 해시를 생성하여 고유 ID로 사용
+         * 같은 알림 내용은 같은 ID를 가지므로 중복 저장 방지
+         */
+        private fun generateNotificationId(rawNotification: String): String {
+            val bytes = MessageDigest.getInstance("SHA-256").digest(rawNotification.toByteArray())
+            return bytes.joinToString("") { "%02x".format(it) }
+        }
     }
 
     private val insertParsedTransactionUseCase: InsertParsedTransactionUseCase by inject()
@@ -144,7 +153,7 @@ class CardNotificationListenerService : NotificationListenerService() {
             }
 
             return ParsedTransaction(
-                id = UUID.randomUUID().toString(),
+                id = generateNotificationId(text),  // 알림 내용의 해시를 ID로 사용
                 amount = amount,
                 merchantName = merchantName,
                 date = transactionDate,
@@ -161,12 +170,14 @@ class CardNotificationListenerService : NotificationListenerService() {
 
     /**
      * 파싱된 거래를 저장
+     * 같은 알림 내용(같은 ID)이면 자동으로 무시됨 (INSERT OR IGNORE)
      */
     private fun saveParsedTransaction(transaction: ParsedTransaction) {
         serviceScope.launch {
             try {
                 insertParsedTransactionUseCase(transaction)
-                Log.d(TAG, "Successfully saved parsed transaction: ${transaction.merchantName} - ${transaction.amount}원")
+                Log.d(TAG, "Parsed transaction saved: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
+                Log.d(TAG, "Note: Duplicate notifications with same content are automatically ignored")
 
                 // 파싱 성공 시 사용자에게 알림 전송
                 TransactionNotificationHelper.sendTransactionNotification(this@CardNotificationListenerService, transaction)
