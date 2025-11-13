@@ -148,7 +148,7 @@ fun StatisticsScreen(
                     title = "수입 분석",
                     items = chartData.incomeItems,
                     total = chartData.totalIncome,
-                    availableCategories = statisticsData.availableCategories
+                    availableCategories = uiState.availableCategories
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -162,7 +162,7 @@ fun StatisticsScreen(
                     title = "지출 분석",
                     items = chartData.expenseItems,
                     total = chartData.totalExpense,
-                    availableCategories = statisticsData.availableCategories
+                    availableCategories = uiState.availableCategories
                 )
             }
         }

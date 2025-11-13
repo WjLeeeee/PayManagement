@@ -60,6 +60,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.runtime.collectAsState
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
 import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
@@ -1581,6 +1582,9 @@ fun PayManagementApp(
 
     // 계산기 다이얼로그
     if (showCalculatorDialog) {
+        val categoryRepository = remember { koinInject<com.woojin.paymanagement.domain.repository.CategoryRepository>() }
+        val categories by categoryRepository.getAllCategories().collectAsState(initial = emptyList())
+
         val currentPayPeriod = remember {
             val payday = preferencesManager.getPayday()
             val adjustment = preferencesManager.getPaydayAdjustment()
@@ -1595,7 +1599,8 @@ fun PayManagementApp(
         CalculatorDialog(
             transactions = transactions,
             onDismiss = { showCalculatorDialog = false },
-            initialPayPeriod = currentPayPeriod
+            initialPayPeriod = currentPayPeriod,
+            allCategories = categories
         )
     }
     } // BoxWithConstraints 닫기
