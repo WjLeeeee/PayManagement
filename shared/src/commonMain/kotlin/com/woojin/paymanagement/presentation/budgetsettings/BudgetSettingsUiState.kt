@@ -12,6 +12,7 @@ data class BudgetSettingsUiState(
     val canNavigatePrevious: Boolean = true,  // 이전 기간으로 이동 가능한지 (거래 내역 체크)
     val selectedTab: BudgetTab = BudgetTab.SETTINGS,
     val monthlySalary: TextFieldValue = TextFieldValue(""),
+    val isSalaryEditing: Boolean = false,  // 급여 편집 모드 여부
     val categoryBudgets: List<CategoryBudgetWithProgress> = emptyList(),
     val totalAllocated: Double = 0.0,
     val unallocated: Double = 0.0,
