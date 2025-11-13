@@ -1581,10 +1581,21 @@ fun PayManagementApp(
 
     // 계산기 다이얼로그
     if (showCalculatorDialog) {
+        val currentPayPeriod = remember {
+            val payday = preferencesManager.getPayday()
+            val adjustment = preferencesManager.getPaydayAdjustment()
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            com.woojin.paymanagement.utils.PayPeriodCalculator.getCurrentPayPeriod(
+                currentDate = today,
+                payday = payday,
+                adjustment = adjustment
+            )
+        }
+
         CalculatorDialog(
             transactions = transactions,
             onDismiss = { showCalculatorDialog = false },
-            initialPayPeriod = null
+            initialPayPeriod = currentPayPeriod
         )
     }
     } // BoxWithConstraints 닫기
