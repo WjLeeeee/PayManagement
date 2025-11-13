@@ -47,7 +47,6 @@ import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
-import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
 import com.woojin.paymanagement.presentation.components.PieChart
 import com.woojin.paymanagement.utils.BackHandler
 import com.woojin.paymanagement.utils.PayPeriod
@@ -97,7 +96,7 @@ fun StatisticsScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-        // Header with back button and calculator button
+        // Header with back button
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -117,14 +116,6 @@ fun StatisticsScreen(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
-
-            TextButton(onClick = { viewModel.showCalculatorDialog() }) {
-                Text(
-                    text = "계산기",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium
-                )
-            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -204,17 +195,8 @@ fun StatisticsScreen(
                 textAlign = TextAlign.Center
             )
         }
-        
-            Spacer(modifier = Modifier.height(24.dp))
-        }
 
-        // Calculator Dialog
-        if (uiState.showCalculatorDialog) {
-            CalculatorDialog(
-                transactions = transactions,
-                onDismiss = { viewModel.hideCalculatorDialog() },
-                initialPayPeriod = uiState.currentPayPeriod
-            )
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

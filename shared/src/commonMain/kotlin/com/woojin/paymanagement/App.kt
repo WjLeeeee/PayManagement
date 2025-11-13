@@ -62,6 +62,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
 import com.woojin.paymanagement.presentation.calendar.CalendarScreen
+import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionListScreen
@@ -311,6 +312,7 @@ fun PayManagementApp(
     var showThemeDialog by remember { mutableStateOf(false) }
     var currentThemeMode by remember { mutableStateOf(preferencesManager.getThemeMode()) }
     var showPaydayChangeDialog by remember { mutableStateOf(false) }
+    var showCalculatorDialog by remember { mutableStateOf(false) }
 
     // 테마 설정 다이얼로그
     if (showThemeDialog) {
@@ -835,6 +837,36 @@ fun PayManagementApp(
                                 icon = {
                                     Text(
                                         text = "📂",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                modifier = Modifier.height(48.dp)
+                            )
+
+                            // 계산기
+                            NavigationDrawerItem(
+                                label = {
+                                    Column {
+                                        Text(
+                                            text = "계산기",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "소비 패턴 분석 및 계산",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    showCalculatorDialog = true
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "🔢",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 },
@@ -1505,6 +1537,15 @@ fun PayManagementApp(
                 onNavigateBack = { navigateBack() }
             )
         }
+    }
+
+    // 계산기 다이얼로그
+    if (showCalculatorDialog) {
+        CalculatorDialog(
+            transactions = transactions,
+            onDismiss = { showCalculatorDialog = false },
+            initialPayPeriod = null
+        )
     }
     } // BoxWithConstraints 닫기
     }
