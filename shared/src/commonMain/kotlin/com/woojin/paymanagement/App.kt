@@ -64,6 +64,7 @@ import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
 import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
+import com.woojin.paymanagement.presentation.monthlycomparison.MonthlyComparisonScreen
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionListScreen
 import com.woojin.paymanagement.presentation.settings.ThemeSettingsDialog
@@ -903,6 +904,36 @@ fun PayManagementApp(
                                 modifier = Modifier.height(48.dp)
                             )
 
+                            // 급여 기간 비교
+                            NavigationDrawerItem(
+                                label = {
+                                    Column {
+                                        Text(
+                                            text = "급여 기간 비교",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "이전/현재 급여 기간 지출 비교",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    navigateTo(Screen.MonthlyComparison)
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "📈",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                modifier = Modifier.height(48.dp)
+                            )
+
                             // 잔액권/상품권 관리
                             NavigationDrawerItem(
                                 label = {
@@ -1529,6 +1560,15 @@ fun PayManagementApp(
             )
         }
 
+        Screen.MonthlyComparison -> {
+            val monthlyComparisonViewModel = remember { koinInject<com.woojin.paymanagement.presentation.monthlycomparison.MonthlyComparisonViewModel>() }
+
+            MonthlyComparisonScreen(
+                viewModel = monthlyComparisonViewModel,
+                onBack = { navigateBack() }
+            )
+        }
+
         Screen.TipDonation -> {
             val tipDonationViewModel = remember { koinInject<com.woojin.paymanagement.presentation.tipdonation.TipDonationViewModel>() }
 
@@ -1562,5 +1602,6 @@ enum class Screen {
     CategoryManagement,
     CardManagement,
     BudgetSettings,
+    MonthlyComparison,
     TipDonation
 }
