@@ -162,22 +162,75 @@ fun BudgetSettingsTab(
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
-                        Text(
-                            text = "💵 고정 급여",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(
-                            value = uiState.monthlySalary,
-                            onValueChange = { viewModel.updateMonthlySalary(it) },
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("급여를 입력하세요") },
-                            suffix = { Text("원") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true
-                        )
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "💵 급여",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            // 편집 모드가 아닐 때만 수정 버튼 표시
+                            if (!uiState.isSalaryEditing) {
+                                IconButton(
+                                    onClick = { viewModel.toggleSalaryEditMode() },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "급여 수정",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (uiState.isSalaryEditing) {
+                            // 편집 모드: TextField 표시
+                            OutlinedTextField(
+                                value = uiState.monthlySalary,
+                                onValueChange = { viewModel.updateMonthlySalary(it) },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("급여를 입력하세요") },
+                                suffix = { Text("원") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                singleLine = true,
+                                trailingIcon = {
+                                    IconButton(onClick = { viewModel.toggleSalaryEditMode() }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "완료",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            )
+                        } else {
+                            // 표시 모드: Text 표시
+                            val salaryText = if (uiState.monthlySalary.text.isEmpty()) {
+                                "급여를 설정하세요"
+                            } else {
+                                "${uiState.monthlySalary.text}원"
+                            }
+
+                            Text(
+                                text = salaryText,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (uiState.monthlySalary.text.isEmpty()) {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                }
+                            )
+                        }
                     }
                 }
             }

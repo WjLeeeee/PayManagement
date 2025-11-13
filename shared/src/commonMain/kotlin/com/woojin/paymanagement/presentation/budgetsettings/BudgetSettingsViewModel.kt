@@ -333,6 +333,18 @@ class BudgetSettingsViewModel(
         }
     }
 
+    fun toggleSalaryEditMode() {
+        val isCurrentlyEditing = uiState.isSalaryEditing
+
+        if (isCurrentlyEditing) {
+            // 편집 모드를 끄면서 저장
+            salaryUpdateJob?.cancel()
+            saveMonthlySalaryChange()
+        }
+
+        uiState = uiState.copy(isSalaryEditing = !isCurrentlyEditing)
+    }
+
     fun updateMonthlySalary(newValue: TextFieldValue) {
         // 쉼표 제거 후 숫자만 추출
         val digitsOnly = removeCommas(newValue.text)
