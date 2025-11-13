@@ -176,9 +176,9 @@ class CardNotificationListenerService : NotificationListenerService() {
      * 삼성페이 알림 처리
      *
      * 예시 포맷:
-     * Title: Samsung Wallet
-     * Text: ￦8,700 결제 완료
-     *       KFC KOREA
+     * Title: Samsung Wallet   오후 6:39
+     * Text: ￦950 결제완료
+     *       (주)세계로데일리웨이
      */
     private fun handleSamsungPayNotification(sbn: StatusBarNotification) {
         try {
@@ -192,8 +192,8 @@ class CardNotificationListenerService : NotificationListenerService() {
             Log.d(TAG, "Samsung Pay Notification - Title: $title")
             Log.d(TAG, "Samsung Pay Notification - Text: $bigText")
 
-            // Samsung Wallet 알림이고 "결제 완료"가 포함된 경우만 처리
-            if (title.contains("Samsung Wallet", ignoreCase = true) && bigText.contains("결제 완료")) {
+            // Samsung Wallet 알림이고 ￦(금액) 정보가 있는 경우만 처리
+            if (title.contains("Samsung Wallet", ignoreCase = true) && bigText.contains("￦")) {
                 val parsedTransaction = parseSamsungPayNotification(bigText, title)
 
                 parsedTransaction?.let { transaction ->
@@ -209,15 +209,15 @@ class CardNotificationListenerService : NotificationListenerService() {
     /**
      * 삼성페이 알림 파싱
      *
-     * 예시: "￦8,700 결제 완료\nKFC KOREA"
+     * 예시: "￦950 결제완료\n(주)세계로데일리웨이"
      */
     private fun parseSamsungPayNotification(text: String, title: String): ParsedTransaction? {
         try {
             val lines = text.split("\n")
 
-            // 첫 번째 줄에서 금액 파싱: "￦8,700 결제 완료" -> 8700.0
+            // 첫 번째 줄에서 금액 파싱: "￦8,700 결제완료" 또는 "￦950 결제완료" -> 8700.0 또는 950.0
             val amountLine = lines.firstOrNull() ?: return null
-            val amountRegex = """￦([\d,]+)\s*결제\s*완료""".toRegex()
+            val amountRegex = """￦([\d,]+)""".toRegex()
             val amountMatch = amountRegex.find(amountLine)
             val amount = amountMatch?.groupValues?.get(1)
                 ?.replace(",", "")
