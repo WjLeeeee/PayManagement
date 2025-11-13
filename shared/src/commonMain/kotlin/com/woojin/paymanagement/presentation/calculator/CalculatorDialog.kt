@@ -62,7 +62,8 @@ import kotlinx.datetime.todayIn
 fun CalculatorDialog(
     transactions: List<Transaction>,
     onDismiss: () -> Unit,
-    initialPayPeriod: com.woojin.paymanagement.utils.PayPeriod? = null
+    initialPayPeriod: com.woojin.paymanagement.utils.PayPeriod? = null,
+    allCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
 ) {
     val calculatorUseCase = remember { CalculatorUseCase() }
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -324,7 +325,8 @@ fun CalculatorDialog(
                                 ) {
                                     Text(
                                         text = com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji(
-                                            category
+                                            category,
+                                            allCategories
                                         ),
                                         style = MaterialTheme.typography.bodyMedium
                                     )
