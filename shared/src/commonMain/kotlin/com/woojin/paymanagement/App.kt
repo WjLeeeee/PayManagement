@@ -440,7 +440,8 @@ fun PayManagementApp(
                                         text = "📅",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                }
+                                },
+                                modifier = Modifier.height(38.dp)
                             )
 
                             // 푸시 알림 설정 섹션 (확장 가능)
@@ -498,7 +499,8 @@ fun PayManagementApp(
                                         text = "🔔",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                }
+                                },
+                                modifier = Modifier.height(38.dp)
                             )
 
                             // 확장된 알림 설정 항목들 (애니메이션 적용)
@@ -635,7 +637,8 @@ fun PayManagementApp(
                                         text = "💾",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                }
+                                },
+                                modifier = Modifier.height(38.dp)
                             )
 
                             // 확장된 데이터 관리 항목들 (애니메이션 적용)
@@ -808,8 +811,6 @@ fun PayManagementApp(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
-
                             // 카테고리 관리
                             NavigationDrawerItem(
                                 label = {
@@ -836,10 +837,9 @@ fun PayManagementApp(
                                         text = "📂",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                }
+                                },
+                                modifier = Modifier.height(48.dp)
                             )
-
-                            Spacer(modifier = Modifier.height(8.dp))
 
                             // 예산 관리
                             NavigationDrawerItem(
@@ -867,10 +867,9 @@ fun PayManagementApp(
                                         text = "📊",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                }
+                                },
+                                modifier = Modifier.height(48.dp)
                             )
-
-                            Spacer(modifier = Modifier.height(8.dp))
 
                             // 잔액권/상품권 관리
                             NavigationDrawerItem(
@@ -898,10 +897,9 @@ fun PayManagementApp(
                                         text = "💳",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                }
+                                },
+                                modifier = Modifier.height(48.dp)
                             )
-
-                            Spacer(modifier = Modifier.height(8.dp))
 
                             // 팁주기 (Android만)
                             if (com.woojin.paymanagement.utils.Platform.isAndroid()) {
@@ -930,10 +928,9 @@ fun PayManagementApp(
                                             text = "☕",
                                             style = MaterialTheme.typography.bodyLarge
                                         )
-                                    }
+                                    },
+                                    modifier = Modifier.height(48.dp)
                                 )
-
-                                Spacer(modifier = Modifier.height(8.dp))
                             }
 
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
@@ -962,7 +959,8 @@ fun PayManagementApp(
                                         text = "ℹ️",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
-                                }
+                                },
+                                modifier = Modifier.height(48.dp)
                             )
                         }
 
@@ -1098,8 +1096,6 @@ fun PayManagementApp(
                                     )
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
