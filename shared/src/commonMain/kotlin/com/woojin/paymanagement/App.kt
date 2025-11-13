@@ -55,6 +55,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
 import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
@@ -496,8 +501,12 @@ fun PayManagementApp(
                                 }
                             )
 
-                            // 확장된 알림 설정 항목들
-                            if (isNotificationExpanded) {
+                            // 확장된 알림 설정 항목들 (애니메이션 적용)
+                            AnimatedVisibility(
+                                visible = isNotificationExpanded,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut()
+                            ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -629,8 +638,12 @@ fun PayManagementApp(
                                 }
                             )
 
-                            // 확장된 데이터 관리 항목들
-                            if (isDataManagementExpanded) {
+                            // 확장된 데이터 관리 항목들 (애니메이션 적용)
+                            AnimatedVisibility(
+                                visible = isDataManagementExpanded,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut()
+                            ) {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
