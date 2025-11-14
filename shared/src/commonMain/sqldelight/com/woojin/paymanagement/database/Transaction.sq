@@ -1,4 +1,4 @@
--- Schema version 11
+-- Schema version 12
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -75,6 +75,24 @@ CREATE TABLE CategoryBudgetEntity (
     allocatedAmount REAL NOT NULL,
     memo TEXT,  -- 카테고리 예산에 대한 메모
     FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
+);
+
+CREATE TABLE RecurringTransactionEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    type TEXT NOT NULL,
+    category TEXT NOT NULL,
+    amount REAL NOT NULL,
+    merchant TEXT NOT NULL,  -- 사용처 (필수)
+    memo TEXT NOT NULL DEFAULT '',  -- 메모 (선택)
+    paymentMethod TEXT NOT NULL,
+    balanceCardId TEXT,
+    giftCardId TEXT,
+    pattern TEXT NOT NULL,  -- MONTHLY 또는 WEEKLY
+    dayOfMonth INTEGER,  -- 1~31 (MONTHLY일 때)
+    dayOfWeek INTEGER,   -- 1~7 (WEEKLY일 때, 1=월요일, 7=일요일)
+    isActive INTEGER NOT NULL DEFAULT 1,
+    createdAt INTEGER NOT NULL,
+    lastExecutedDate TEXT  -- 마지막 실행 날짜 (YYYY-MM-DD)
 );
 
 insertTransaction:
@@ -316,3 +334,38 @@ selectSpentAmountByCategory:
 SELECT COALESCE(SUM(amount), 0.0) AS spent
 FROM TransactionEntity
 WHERE category = ? AND type = 'EXPENSE' AND date >= ? AND date <= ?;
+
+-- RecurringTransaction 관련 쿼리들
+insertRecurringTransaction:
+INSERT INTO RecurringTransactionEntity(id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, giftCardId, pattern, dayOfMonth, dayOfWeek, isActive, createdAt, lastExecutedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+selectAllRecurringTransactions:
+SELECT * FROM RecurringTransactionEntity
+ORDER BY createdAt DESC;
+
+selectActiveRecurringTransactions:
+SELECT * FROM RecurringTransactionEntity
+WHERE isActive = 1
+ORDER BY createdAt DESC;
+
+selectRecurringTransactionById:
+SELECT * FROM RecurringTransactionEntity
+WHERE id = ?;
+
+updateRecurringTransaction:
+UPDATE RecurringTransactionEntity
+SET type = ?, category = ?, amount = ?, merchant = ?, memo = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, pattern = ?, dayOfMonth = ?, dayOfWeek = ?, isActive = ?
+WHERE id = ?;
+
+updateRecurringTransactionLastExecuted:
+UPDATE RecurringTransactionEntity
+SET lastExecutedDate = ?
+WHERE id = ?;
+
+deleteRecurringTransaction:
+DELETE FROM RecurringTransactionEntity
+WHERE id = ?;
+
+deleteAllRecurringTransactions:
+DELETE FROM RecurringTransactionEntity;

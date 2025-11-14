@@ -36,12 +36,16 @@ import com.woojin.paymanagement.utils.FileHandler
 class MainActivity : ComponentActivity() {
 
     private var shouldNavigateToParsedTransactions by mutableStateOf(false)
+    private var shouldNavigateToRecurringTransactions by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Intent로부터 네비게이션 플래그 확인
         handleIntent(intent)
+
+        // WorkManager 스케줄링 (매일 오전 9시)
+        scheduleRecurringTransactionCheck()
 
         // PreferencesManager에서 테마 설정 읽기
         val preferencesManager = PreferencesManager(context = this)
@@ -83,7 +87,9 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme(darkTheme = isDarkMode) {
                 StatusBarOverlayScreen(
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
-                    onNavigationHandled = { shouldNavigateToParsedTransactions = false },
+                    shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
+                    onParsedTransactionsNavigationHandled = { shouldNavigateToParsedTransactions = false },
+                    onRecurringTransactionsNavigationHandled = { shouldNavigateToRecurringTransactions = false },
                     onThemeChanged = { recreate() }
                 )
             }
@@ -100,17 +106,66 @@ class MainActivity : ComponentActivity() {
         if (navigateToParsedTransactions) {
             shouldNavigateToParsedTransactions = true
         }
+
+        val navigateToRecurringTransactions = intent.getBooleanExtra(EXTRA_NAVIGATE_TO_RECURRING_TRANSACTIONS, false)
+        if (navigateToRecurringTransactions) {
+            shouldNavigateToRecurringTransactions = true
+        }
+    }
+
+    private fun scheduleRecurringTransactionCheck() {
+        val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.woojin.paymanagement.android.worker.RecurringTransactionWorker>(
+            repeatInterval = 1,
+            repeatIntervalTimeUnit = java.util.concurrent.TimeUnit.DAYS
+        ).setInitialDelay(
+            calculateInitialDelayToNineAM(),
+            java.util.concurrent.TimeUnit.MILLISECONDS
+        ).build()
+
+        androidx.work.WorkManager.getInstance(applicationContext)
+            .enqueueUniquePeriodicWork(
+                "recurring_transaction_check",
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                workRequest
+            )
+
+        // 알림 채널 초기화
+        com.woojin.paymanagement.android.util.RecurringTransactionNotificationHelper.initialize(this)
+    }
+
+    private fun calculateInitialDelayToNineAM(): Long {
+        val calendar = java.util.Calendar.getInstance()
+        val now = calendar.timeInMillis
+
+        // 오늘 오전 9시 설정
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 9)
+        calendar.set(java.util.Calendar.MINUTE, 0)
+        calendar.set(java.util.Calendar.SECOND, 0)
+        calendar.set(java.util.Calendar.MILLISECOND, 0)
+
+        var targetTime = calendar.timeInMillis
+
+        // 이미 오늘 오전 9시가 지났다면 내일 오전 9시로 설정
+        if (targetTime <= now) {
+            calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
+            targetTime = calendar.timeInMillis
+        }
+
+        return targetTime - now
     }
 
     companion object {
         const val EXTRA_NAVIGATE_TO_PARSED_TRANSACTIONS = "navigate_to_parsed_transactions"
+        const val EXTRA_NAVIGATE_TO_RECURRING_TRANSACTIONS = "navigate_to_recurring_transactions"
     }
 }
 
 @Composable
 fun StatusBarOverlayScreen(
     shouldNavigateToParsedTransactions: Boolean = false,
-    onNavigationHandled: () -> Unit = {},
+    shouldNavigateToRecurringTransactions: Boolean = false,
+    onParsedTransactionsNavigationHandled: () -> Unit = {},
+    onRecurringTransactionsNavigationHandled: () -> Unit = {},
     onThemeChanged: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -200,7 +255,9 @@ fun StatusBarOverlayScreen(
                     fileHandler = fileHandler,
                     billingClient = billingClient,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
-                    onNavigationHandled = onNavigationHandled,
+                    shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
+                    onParsedTransactionsNavigationHandled = onParsedTransactionsNavigationHandled,
+                    onRecurringTransactionsNavigationHandled = onRecurringTransactionsNavigationHandled,
                     onThemeChanged = { onThemeChanged() },
                     onRequestPostNotificationPermission = { callback ->
                         // 콜백 저장

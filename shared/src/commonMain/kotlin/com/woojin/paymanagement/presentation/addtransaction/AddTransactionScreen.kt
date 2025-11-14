@@ -45,6 +45,7 @@ fun AddTransactionScreen(
     selectedDate: LocalDate? = null,
     editTransaction: Transaction? = null,
     parsedTransaction: com.woojin.paymanagement.data.ParsedTransaction? = null,
+    recurringTransaction: com.woojin.paymanagement.data.RecurringTransaction? = null,
     viewModel: AddTransactionViewModel,
     onSave: (List<Transaction>) -> Unit,
     onCancel: () -> Unit
@@ -56,8 +57,10 @@ fun AddTransactionScreen(
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
 
-    LaunchedEffect(transactions, selectedDate, editTransaction, parsedTransaction) {
-        if (parsedTransaction != null) {
+    LaunchedEffect(transactions, selectedDate, editTransaction, parsedTransaction, recurringTransaction) {
+        if (recurringTransaction != null) {
+            viewModel.initializeWithRecurringTransaction(transactions, recurringTransaction)
+        } else if (parsedTransaction != null) {
             viewModel.initializeWithParsedTransaction(transactions, parsedTransaction)
         } else {
             viewModel.initialize(transactions, selectedDate, editTransaction)

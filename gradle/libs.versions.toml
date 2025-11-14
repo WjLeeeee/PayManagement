@@ -6,6 +6,7 @@ compose-multiplatform = "1.7.3"
 compose-material3 = "1.1.2"
 androidx-activityCompose = "1.8.0"
 androidx-core = "1.12.0"
+androidx-work = "2.9.0"
 kotlinx-datetime = "0.6.0"
 kotlinx-serialization = "1.6.2"
 sqldelight = "2.0.1"
@@ -18,6 +19,7 @@ billing = "7.1.1"
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work" }
 compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "compose" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "compose" }
