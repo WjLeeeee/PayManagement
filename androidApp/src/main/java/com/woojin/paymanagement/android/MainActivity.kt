@@ -114,6 +114,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun scheduleRecurringTransactionCheck() {
+        // 정기 작업 스케줄링 (매일 오전 9시)
         val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.woojin.paymanagement.android.worker.RecurringTransactionWorker>(
             repeatInterval = 1,
             repeatIntervalTimeUnit = java.util.concurrent.TimeUnit.DAYS
