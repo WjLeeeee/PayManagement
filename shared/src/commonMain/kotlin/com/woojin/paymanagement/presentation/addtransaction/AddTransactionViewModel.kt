@@ -168,6 +168,51 @@ class AddTransactionViewModel(
         validateInput()
     }
 
+    fun initializeWithRecurringTransaction(
+        transactions: List<Transaction>,
+        recurringTransaction: com.woojin.paymanagement.data.RecurringTransaction
+    ) {
+        reset()
+
+        val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions)
+        val availableGiftCards = getAvailableGiftCardsUseCase(transactions)
+
+        val amountText = formatWithCommas(recurringTransaction.amount.toLong())
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+        uiState = uiState.copy(
+            amount = TextFieldValue(
+                text = amountText,
+                selection = TextRange(amountText.length)
+            ),
+            selectedType = recurringTransaction.type,
+            selectedPaymentMethod = recurringTransaction.paymentMethod,
+            category = recurringTransaction.category,
+            merchant = recurringTransaction.merchant,
+            memo = recurringTransaction.memo,
+            date = today, // 오늘 날짜로 설정
+            availableBalanceCards = availableBalanceCards,
+            availableGiftCards = availableGiftCards,
+            isEditMode = false,
+            editTransaction = null
+        )
+
+        // 잔액권/상품권 결제 시 카드 선택
+        if (recurringTransaction.paymentMethod == PaymentMethod.BALANCE_CARD && recurringTransaction.balanceCardId != null) {
+            val selectedCard = availableBalanceCards.find { it.id == recurringTransaction.balanceCardId }
+            uiState = uiState.copy(selectedBalanceCard = selectedCard)
+        }
+        if (recurringTransaction.paymentMethod == PaymentMethod.GIFT_CARD && recurringTransaction.giftCardId != null) {
+            val selectedCard = availableGiftCards.find { it.id == recurringTransaction.giftCardId }
+            uiState = uiState.copy(selectedGiftCard = selectedCard)
+        }
+
+        // 최신 카테고리 로드
+        loadCategories()
+
+        validateInput()
+    }
+
     fun updateAmount(newValue: TextFieldValue) {
         val digitsOnly = removeCommas(newValue.text)
 

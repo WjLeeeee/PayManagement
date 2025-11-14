@@ -101,7 +101,9 @@ fun App(
     fileHandler: com.woojin.paymanagement.utils.FileHandler,
     billingClient: com.woojin.paymanagement.utils.BillingClient,
     shouldNavigateToParsedTransactions: Boolean = false,
-    onNavigationHandled: () -> Unit = {},
+    shouldNavigateToRecurringTransactions: Boolean = false,
+    onParsedTransactionsNavigationHandled: () -> Unit = {},
+    onRecurringTransactionsNavigationHandled: () -> Unit = {},
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
@@ -119,7 +121,9 @@ fun App(
         if (isKoinInitialized) {
             PayManagementApp(
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
-                onNavigationHandled = onNavigationHandled,
+                shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
+                onParsedTransactionsNavigationHandled = onParsedTransactionsNavigationHandled,
+                onRecurringTransactionsNavigationHandled = onRecurringTransactionsNavigationHandled,
                 onThemeChanged = onThemeChanged,
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 onLaunchSaveFile = onLaunchSaveFile,
@@ -170,7 +174,9 @@ private fun initializeKoin(
 @Composable
 fun PayManagementApp(
     shouldNavigateToParsedTransactions: Boolean = false,
-    onNavigationHandled: () -> Unit = {},
+    shouldNavigateToRecurringTransactions: Boolean = false,
+    onParsedTransactionsNavigationHandled: () -> Unit = {},
+    onRecurringTransactionsNavigationHandled: () -> Unit = {},
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
@@ -217,6 +223,7 @@ fun PayManagementApp(
     var selectedPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     var currentCalendarPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
     var selectedParsedTransaction by remember { mutableStateOf<com.woojin.paymanagement.data.ParsedTransaction?>(null) }
+    var selectedRecurringTransaction by remember { mutableStateOf<com.woojin.paymanagement.data.RecurringTransaction?>(null) }
     var showListenerPermissionDialog by remember { mutableStateOf(false) }
     var showPostPermissionDialog by remember { mutableStateOf(false) }
 
@@ -227,7 +234,18 @@ fun PayManagementApp(
             if (preferencesManager.isPaydaySet()) {
                 navigateTo(Screen.ParsedTransactionList)
             }
-            onNavigationHandled()
+            onParsedTransactionsNavigationHandled()
+        }
+    }
+
+    // Deep link 처리: 푸시 알림에서 반복 거래 관리 화면으로 이동
+    LaunchedEffect(shouldNavigateToRecurringTransactions) {
+        if (shouldNavigateToRecurringTransactions) {
+            // Payday가 설정되어 있을 때만 네비게이션 수행
+            if (preferencesManager.isPaydaySet()) {
+                navigateTo(Screen.RecurringTransaction)
+            }
+            onRecurringTransactionsNavigationHandled()
         }
     }
     
@@ -935,6 +953,36 @@ fun PayManagementApp(
                                 modifier = Modifier.height(48.dp)
                             )
 
+                            // 반복 거래 관리
+                            NavigationDrawerItem(
+                                label = {
+                                    Column {
+                                        Text(
+                                            text = "반복 거래 관리",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = "매달/매주 반복되는 거래 등록",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                selected = false,
+                                onClick = {
+                                    navigateTo(Screen.RecurringTransaction)
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "🔄",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                modifier = Modifier.height(48.dp)
+                            )
+
                             // 잔액권/상품권 관리
                             NavigationDrawerItem(
                                 label = {
@@ -1277,6 +1325,7 @@ fun PayManagementApp(
                 selectedDate = selectedDate,
                 editTransaction = editTransaction,
                 parsedTransaction = selectedParsedTransaction,
+                recurringTransaction = selectedRecurringTransaction,
                 viewModel = addTransactionViewModel,
                 onSave = { newTransactions ->
                     scope.launch {
@@ -1369,15 +1418,23 @@ fun PayManagementApp(
                                 val parsedTransactionViewModel = koinInject<com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionViewModel>()
                                 parsedTransactionViewModel.markAsProcessed(parsedTransaction.id)
                             }
+
+                            // 반복 거래에서 온 경우 lastExecutedDate 업데이트
+                            selectedRecurringTransaction?.let { recurringTransaction ->
+                                val markRecurringTransactionExecutedUseCase = koinInject<com.woojin.paymanagement.domain.usecase.MarkRecurringTransactionExecutedUseCase>()
+                                markRecurringTransactionExecutedUseCase(recurringTransaction.id)
+                            }
                         }
 
-                        // 파싱된 거래 상태 초기화
+                        // 상태 초기화
                         selectedParsedTransaction = null
+                        selectedRecurringTransaction = null
                     }
                     navigateBack()
                 },
                 onCancel = {
                     selectedParsedTransaction = null
+                    selectedRecurringTransaction = null
                     navigateBack()
                 }
             )
@@ -1416,6 +1473,7 @@ fun PayManagementApp(
                 transactions = transactions,
                 selectedDate = selectedDate,
                 editTransaction = editTransaction,
+                recurringTransaction = null,
                 viewModel = editTransactionViewModel,
                 onSave = { newTransactions ->
                     scope.launch {
@@ -1578,6 +1636,21 @@ fun PayManagementApp(
                 onNavigateBack = { navigateBack() }
             )
         }
+
+        Screen.RecurringTransaction -> {
+            val recurringTransactionViewModel = remember { koinInject<com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionViewModel>() }
+
+            com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionScreen(
+                viewModel = recurringTransactionViewModel,
+                onNavigateBack = { navigateBack() },
+                onNavigateToAddTransaction = { recurringTransaction ->
+                    selectedRecurringTransaction = recurringTransaction
+                    editTransaction = null
+                    selectedParsedTransaction = null
+                    navigateTo(Screen.AddTransaction)
+                }
+            )
+        }
     }
 
     // 계산기 다이얼로그
@@ -1619,5 +1692,6 @@ enum class Screen {
     CardManagement,
     BudgetSettings,
     MonthlyComparison,
-    TipDonation
+    TipDonation,
+    RecurringTransaction
 }

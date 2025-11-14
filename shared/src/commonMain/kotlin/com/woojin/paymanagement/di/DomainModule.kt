@@ -3,9 +3,11 @@ package com.woojin.paymanagement.di
 import com.woojin.paymanagement.data.repository.TransactionRepositoryImpl
 import com.woojin.paymanagement.data.repository.CategoryRepositoryImpl
 import com.woojin.paymanagement.data.repository.BudgetRepositoryImpl
+import com.woojin.paymanagement.data.repository.RecurringTransactionRepositoryImpl
 import com.woojin.paymanagement.domain.repository.TransactionRepository
 import com.woojin.paymanagement.domain.repository.CategoryRepository
 import com.woojin.paymanagement.domain.repository.BudgetRepository
+import com.woojin.paymanagement.domain.repository.RecurringTransactionRepository
 import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
@@ -44,6 +46,11 @@ import com.woojin.paymanagement.domain.usecase.DeleteCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.GetSpentAmountByCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.PurchaseTipUseCase
 import com.woojin.paymanagement.domain.usecase.GetOldestTransactionDateUseCase
+import com.woojin.paymanagement.domain.usecase.GetRecurringTransactionsUseCase
+import com.woojin.paymanagement.domain.usecase.SaveRecurringTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.DeleteRecurringTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.CheckTodayRecurringTransactionsUseCase
+import com.woojin.paymanagement.domain.usecase.MarkRecurringTransactionExecutedUseCase
 import com.woojin.paymanagement.domain.repository.BillingRepository
 import com.woojin.paymanagement.domain.repository.BillingRepositoryImpl
 import org.koin.core.module.dsl.factoryOf
@@ -57,6 +64,7 @@ val domainModule = module {
     singleOf(::TransactionRepositoryImpl) bind TransactionRepository::class
     singleOf(::CategoryRepositoryImpl) bind CategoryRepository::class
     singleOf(::BudgetRepositoryImpl) bind BudgetRepository::class
+    singleOf(::RecurringTransactionRepositoryImpl) bind RecurringTransactionRepository::class
     singleOf(::BillingRepositoryImpl) bind BillingRepository::class
     single<com.woojin.paymanagement.domain.repository.PreferencesRepository> {
         com.woojin.paymanagement.data.repository.PreferencesRepositoryImpl(get())
@@ -121,4 +129,11 @@ val domainModule = module {
 
     // Billing Use Cases
     factoryOf(::PurchaseTipUseCase)
+
+    // RecurringTransaction Use Cases
+    factoryOf(::GetRecurringTransactionsUseCase)
+    factoryOf(::SaveRecurringTransactionUseCase)
+    factoryOf(::DeleteRecurringTransactionUseCase)
+    factoryOf(::CheckTodayRecurringTransactionsUseCase)
+    factoryOf(::MarkRecurringTransactionExecutedUseCase)
 }

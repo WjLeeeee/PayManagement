@@ -12,6 +12,8 @@ import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.BudgetPlan
 import com.woojin.paymanagement.data.CategoryBudget
+import com.woojin.paymanagement.data.RecurringTransaction
+import com.woojin.paymanagement.data.RecurringPattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
@@ -541,6 +543,94 @@ class DatabaseHelper(
             categoryEmoji = this.categoryEmoji,
             allocatedAmount = this.allocatedAmount,
             memo = this.memo
+        )
+    }
+
+    // RecurringTransaction 관련 메서드들
+    fun getAllRecurringTransactions(): Flow<List<RecurringTransaction>> {
+        return queries.selectAllRecurringTransactions()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toRecurringTransaction() }
+            }
+    }
+
+    fun getActiveRecurringTransactions(): Flow<List<RecurringTransaction>> {
+        return queries.selectActiveRecurringTransactions()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toRecurringTransaction() }
+            }
+    }
+
+    suspend fun insertRecurringTransaction(recurringTransaction: RecurringTransaction) {
+        queries.insertRecurringTransaction(
+            id = recurringTransaction.id,
+            type = recurringTransaction.type.name,
+            category = recurringTransaction.category,
+            amount = recurringTransaction.amount,
+            merchant = recurringTransaction.merchant,
+            memo = recurringTransaction.memo,
+            paymentMethod = recurringTransaction.paymentMethod.name,
+            balanceCardId = recurringTransaction.balanceCardId,
+            giftCardId = recurringTransaction.giftCardId,
+            pattern = recurringTransaction.pattern.name,
+            dayOfMonth = recurringTransaction.dayOfMonth?.toLong(),
+            dayOfWeek = recurringTransaction.dayOfWeek?.toLong(),
+            isActive = if (recurringTransaction.isActive) 1 else 0,
+            createdAt = recurringTransaction.createdAt,
+            lastExecutedDate = recurringTransaction.lastExecutedDate
+        )
+    }
+
+    suspend fun updateRecurringTransaction(recurringTransaction: RecurringTransaction) {
+        queries.updateRecurringTransaction(
+            type = recurringTransaction.type.name,
+            category = recurringTransaction.category,
+            amount = recurringTransaction.amount,
+            merchant = recurringTransaction.merchant,
+            memo = recurringTransaction.memo,
+            paymentMethod = recurringTransaction.paymentMethod.name,
+            balanceCardId = recurringTransaction.balanceCardId,
+            giftCardId = recurringTransaction.giftCardId,
+            pattern = recurringTransaction.pattern.name,
+            dayOfMonth = recurringTransaction.dayOfMonth?.toLong(),
+            dayOfWeek = recurringTransaction.dayOfWeek?.toLong(),
+            isActive = if (recurringTransaction.isActive) 1 else 0,
+            id = recurringTransaction.id
+        )
+    }
+
+    suspend fun updateRecurringTransactionLastExecuted(id: String, date: String) {
+        queries.updateRecurringTransactionLastExecuted(
+            lastExecutedDate = date,
+            id = id
+        )
+    }
+
+    suspend fun deleteRecurringTransaction(id: String) {
+        queries.deleteRecurringTransaction(id)
+    }
+
+    private fun RecurringTransactionEntity.toRecurringTransaction(): RecurringTransaction {
+        return RecurringTransaction(
+            id = this.id,
+            type = TransactionType.valueOf(this.type),
+            category = this.category,
+            amount = this.amount,
+            merchant = this.merchant,
+            memo = this.memo,
+            paymentMethod = PaymentMethod.valueOf(this.paymentMethod),
+            balanceCardId = this.balanceCardId,
+            giftCardId = this.giftCardId,
+            pattern = RecurringPattern.valueOf(this.pattern),
+            dayOfMonth = this.dayOfMonth?.toInt(),
+            dayOfWeek = this.dayOfWeek?.toInt(),
+            isActive = this.isActive == 1L,
+            createdAt = this.createdAt,
+            lastExecutedDate = this.lastExecutedDate
         )
     }
 }
