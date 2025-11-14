@@ -393,102 +393,43 @@ actual class DatabaseDriverFactory(private val context: Context) {
         }
 
         if (hasRecurringTable) {
-            // 기존 테이블이 있으면 스키마 확인
-            val hasMemoColumn = try {
-                driver.executeQuery(
-                    null,
-                    "PRAGMA table_info(RecurringTransactionEntity)",
-                    { cursor ->
-                        var hasMemo = false
-                        while (cursor.next().value) {
-                            val columnName = cursor.getString(1)
-                            if (columnName == "memo") {
-                                hasMemo = true
-                                break
-                            }
-                        }
-                        app.cash.sqldelight.db.QueryResult.Value(hasMemo)
-                    },
-                    0
-                ).value
+            // 기존 테이블 삭제하고 새로 생성 (weekendHandling 컬럼 문제 해결)
+            android.util.Log.d("DatabaseMigration", "Dropping old RecurringTransactionEntity table")
+            try {
+                driver.execute(null, "DROP TABLE RecurringTransactionEntity", 0)
+                android.util.Log.d("DatabaseMigration", "Old table dropped successfully")
             } catch (e: Exception) {
-                false
+                android.util.Log.e("DatabaseMigration", "Failed to drop table", e)
             }
-
-            if (!hasMemoColumn) {
-                // merchantName을 merchant로, memo 컬럼 추가 (v12 -> v13)
-                try {
-                    // 새 테이블 생성
-                    driver.execute(
-                        null,
-                        """
-                        CREATE TABLE RecurringTransactionEntity_new (
-                            id TEXT NOT NULL PRIMARY KEY,
-                            type TEXT NOT NULL,
-                            category TEXT NOT NULL,
-                            amount REAL NOT NULL,
-                            merchant TEXT NOT NULL,
-                            memo TEXT NOT NULL DEFAULT '',
-                            paymentMethod TEXT NOT NULL,
-                            balanceCardId TEXT,
-                            giftCardId TEXT,
-                            pattern TEXT NOT NULL,
-                            dayOfMonth INTEGER,
-                            dayOfWeek INTEGER,
-                            isActive INTEGER NOT NULL DEFAULT 1,
-                            createdAt INTEGER NOT NULL,
-                            lastExecutedDate TEXT
-                        )
-                        """.trimIndent(),
-                        0
-                    )
-
-                    // 데이터 복사 (merchantName -> merchant, memo는 빈 문자열)
-                    driver.execute(
-                        null,
-                        """
-                        INSERT INTO RecurringTransactionEntity_new
-                        SELECT id, type, category, amount, merchantName, '', paymentMethod,
-                               balanceCardId, giftCardId, pattern, dayOfMonth, dayOfWeek,
-                               isActive, createdAt, lastExecutedDate
-                        FROM RecurringTransactionEntity
-                        """.trimIndent(),
-                        0
-                    )
-
-                    // 구 테이블 삭제 및 이름 변경
-                    driver.execute(null, "DROP TABLE RecurringTransactionEntity", 0)
-                    driver.execute(null, "ALTER TABLE RecurringTransactionEntity_new RENAME TO RecurringTransactionEntity", 0)
-                } catch (e: Exception) {
-                    // 마이그레이션 실패 시 무시 (새로 생성될 것임)
-                }
-            }
-        } else {
-            // 새로 설치하는 경우: v13 스키마로 바로 생성
-            driver.execute(
-                null,
-                """
-                CREATE TABLE IF NOT EXISTS RecurringTransactionEntity (
-                    id TEXT NOT NULL PRIMARY KEY,
-                    type TEXT NOT NULL,
-                    category TEXT NOT NULL,
-                    amount REAL NOT NULL,
-                    merchant TEXT NOT NULL,
-                    memo TEXT NOT NULL DEFAULT '',
-                    paymentMethod TEXT NOT NULL,
-                    balanceCardId TEXT,
-                    giftCardId TEXT,
-                    pattern TEXT NOT NULL,
-                    dayOfMonth INTEGER,
-                    dayOfWeek INTEGER,
-                    isActive INTEGER NOT NULL DEFAULT 1,
-                    createdAt INTEGER NOT NULL,
-                    lastExecutedDate TEXT
-                )
-                """.trimIndent(),
-                0
-            )
         }
+
+        // v14 스키마로 새로 생성
+        android.util.Log.d("DatabaseMigration", "Creating new RecurringTransactionEntity table with v14 schema")
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS RecurringTransactionEntity (
+                id TEXT NOT NULL PRIMARY KEY,
+                type TEXT NOT NULL,
+                category TEXT NOT NULL,
+                amount REAL NOT NULL,
+                merchant TEXT NOT NULL,
+                memo TEXT NOT NULL DEFAULT '',
+                paymentMethod TEXT NOT NULL,
+                balanceCardId TEXT,
+                giftCardId TEXT,
+                pattern TEXT NOT NULL,
+                dayOfMonth INTEGER,
+                dayOfWeek INTEGER,
+                weekendHandling TEXT NOT NULL DEFAULT 'AS_IS',
+                isActive INTEGER NOT NULL DEFAULT 1,
+                createdAt INTEGER NOT NULL,
+                lastExecutedDate TEXT
+            )
+            """.trimIndent(),
+            0
+        )
+        android.util.Log.d("DatabaseMigration", "RecurringTransactionEntity table created successfully")
 
         return driver
     }

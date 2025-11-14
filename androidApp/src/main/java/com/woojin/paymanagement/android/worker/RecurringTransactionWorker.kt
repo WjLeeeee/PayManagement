@@ -6,6 +6,7 @@ import androidx.work.WorkerParameters
 import com.woojin.paymanagement.android.util.RecurringTransactionNotificationHelper
 import com.woojin.paymanagement.domain.usecase.CheckTodayRecurringTransactionsUseCase
 import com.woojin.paymanagement.koinInstance
+import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -20,27 +21,24 @@ class RecurringTransactionWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            // Koin에서 UseCase 가져오기
-            val checkTodayRecurringTransactionsUseCase: CheckTodayRecurringTransactionsUseCase =
-                requireNotNull(koinInstance).get()
-
-            // 오늘 실행할 반복 거래 확인 (Flow를 collect)
-            var todayTransactions = emptyList<com.woojin.paymanagement.data.RecurringTransaction>()
-            checkTodayRecurringTransactionsUseCase().collect { transactions ->
-                todayTransactions = transactions
+            if (koinInstance == null) {
+                return Result.failure()
             }
 
-            // 오늘 실행할 항목이 있으면 알림 전송
+            val checkTodayRecurringTransactionsUseCase: CheckTodayRecurringTransactionsUseCase =
+                koinInstance!!.get()
+
+            val todayTransactions = checkTodayRecurringTransactionsUseCase().first()
+
             if (todayTransactions.isNotEmpty()) {
                 RecurringTransactionNotificationHelper.sendRecurringTransactionNotification(
                     context = applicationContext,
-                    transactionCount = todayTransactions.size
+                    transactions = todayTransactions
                 )
             }
 
             Result.success()
         } catch (e: Exception) {
-            e.printStackTrace()
             Result.failure()
         }
     }
