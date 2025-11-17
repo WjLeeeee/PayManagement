@@ -830,89 +830,222 @@ fun PayManagementApp(
                                             }
                                         )
                                     }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // 카테고리 관리
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                navigateTo(Screen.CategoryManagement)
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "📂",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "카테고리 관리",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "수입/지출 카테고리 추가 및 삭제",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
-                            // 카테고리 관리
+                            // 거래 도구 섹션
+                            var isTransactionToolsExpanded by remember { mutableStateOf(false) }
+
                             NavigationDrawerItem(
                                 label = {
-                                    Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Text(
-                                            text = "카테고리 관리",
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            text = "거래 도구",
+                                            style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
-                                        Text(
-                                            text = "수입/지출 카테고리 추가 및 삭제",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        Icon(
+                                            imageVector = if (isTransactionToolsExpanded)
+                                                Icons.Default.KeyboardArrowUp
+                                            else
+                                                Icons.Default.KeyboardArrowDown,
+                                            contentDescription = if (isTransactionToolsExpanded) "접기" else "펼치기",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    navigateTo(Screen.CategoryManagement)
-                                    scope.launch { drawerState.close() }
+                                    isTransactionToolsExpanded = !isTransactionToolsExpanded
                                 },
                                 icon = {
                                     Text(
-                                        text = "📂",
+                                        text = "💰",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 },
-                                modifier = Modifier.height(48.dp)
+                                modifier = Modifier.height(38.dp)
                             )
 
-                            // 계산기
+                            // 확장된 거래 도구 항목들
+                            AnimatedVisibility(
+                                visible = isTransactionToolsExpanded,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                ) {
+                                    // 계산기
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showCalculatorDialog = true
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "🔢",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "계산기",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "소비 패턴 분석 및 계산",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // 반복 거래 관리
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                navigateTo(Screen.RecurringTransaction)
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "🔄",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "반복 거래 관리",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "매달/매주 반복되는 거래 등록",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // 잔액권/상품권 관리
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                navigateTo(Screen.CardManagement)
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "💳",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "잔액권/상품권 관리",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "잔액권 및 상품권 조회 및 삭제",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 분석 & 예산 섹션
+                            var isAnalysisExpanded by remember { mutableStateOf(false) }
+
                             NavigationDrawerItem(
                                 label = {
-                                    Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Text(
-                                            text = "계산기",
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            text = "분석 & 예산",
+                                            style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
-                                        Text(
-                                            text = "소비 패턴 분석 및 계산",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        Icon(
+                                            imageVector = if (isAnalysisExpanded)
+                                                Icons.Default.KeyboardArrowUp
+                                            else
+                                                Icons.Default.KeyboardArrowDown,
+                                            contentDescription = if (isAnalysisExpanded) "접기" else "펼치기",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    showCalculatorDialog = true
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = {
-                                    Text(
-                                        text = "🔢",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(48.dp)
-                            )
-
-                            // 예산 관리
-                            NavigationDrawerItem(
-                                label = {
-                                    Column {
-                                        Text(
-                                            text = "예산 설정",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = "카테고리별 월간 예산 설정",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                },
-                                selected = false,
-                                onClick = {
-                                    navigateTo(Screen.BudgetSettings)
-                                    scope.launch { drawerState.close() }
+                                    isAnalysisExpanded = !isAnalysisExpanded
                                 },
                                 icon = {
                                     Text(
@@ -920,98 +1053,87 @@ fun PayManagementApp(
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 },
-                                modifier = Modifier.height(48.dp)
+                                modifier = Modifier.height(38.dp)
                             )
 
-                            // 급여 기간 비교
-                            NavigationDrawerItem(
-                                label = {
-                                    Column {
+                            // 확장된 분석 & 예산 항목들
+                            AnimatedVisibility(
+                                visible = isAnalysisExpanded,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                ) {
+                                    // 예산 설정
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                navigateTo(Screen.BudgetSettings)
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Text(
-                                            text = "급여 기간 비교",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
+                                            text = "💵",
+                                            style = MaterialTheme.typography.bodyLarge
                                         )
-                                        Text(
-                                            text = "이전/현재 급여 기간 지출 비교",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "예산 설정",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "카테고리별 월간 예산 설정",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
-                                },
-                                selected = false,
-                                onClick = {
-                                    navigateTo(Screen.MonthlyComparison)
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = {
-                                    Text(
-                                        text = "📈",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(48.dp)
-                            )
 
-                            // 반복 거래 관리
-                            NavigationDrawerItem(
-                                label = {
-                                    Column {
-                                        Text(
-                                            text = "반복 거래 관리",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = "매달/매주 반복되는 거래 등록",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                },
-                                selected = false,
-                                onClick = {
-                                    navigateTo(Screen.RecurringTransaction)
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = {
-                                    Text(
-                                        text = "🔄",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(48.dp)
-                            )
+                                    Spacer(modifier = Modifier.height(4.dp))
 
-                            // 잔액권/상품권 관리
-                            NavigationDrawerItem(
-                                label = {
-                                    Column {
+                                    // 급여 기간 비교
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                navigateTo(Screen.MonthlyComparison)
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Text(
-                                            text = "잔액권/상품권 관리",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium
+                                            text = "📈",
+                                            style = MaterialTheme.typography.bodyLarge
                                         )
-                                        Text(
-                                            text = "잔액권 및 상품권 조회 및 삭제",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "급여 기간 비교",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "이전/현재 급여 기간 지출 비교",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
-                                },
-                                selected = false,
-                                onClick = {
-                                    navigateTo(Screen.CardManagement)
-                                    scope.launch { drawerState.close() }
-                                },
-                                icon = {
-                                    Text(
-                                        text = "💳",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(48.dp)
-                            )
+                                }
+                            }
 
                             // 팁주기 (Android만)
                             if (com.woojin.paymanagement.utils.Platform.isAndroid()) {
