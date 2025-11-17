@@ -351,53 +351,6 @@ fun RecurringTransactionDialog(
                     HorizontalDivider()
                 }
 
-                // 주말 처리 방식 (매달 패턴일 때만 표시)
-                if (selectedPattern == RecurringPattern.MONTHLY) {
-                    Text(
-                        text = "주말 처리",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf(
-                            com.woojin.paymanagement.data.WeekendHandling.AS_IS to "그대로 적용",
-                            com.woojin.paymanagement.data.WeekendHandling.PREVIOUS_WEEKDAY to "이전 평일로",
-                            com.woojin.paymanagement.data.WeekendHandling.NEXT_WEEKDAY to "다음 평일로"
-                        ).forEach { (handling, label) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedWeekendHandling = handling }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                androidx.compose.material3.RadioButton(
-                                    selected = selectedWeekendHandling == handling,
-                                    onClick = { selectedWeekendHandling = handling },
-                                    colors = androidx.compose.material3.RadioButtonDefaults.colors(
-                                        selectedColor = if (selectedType == TransactionType.INCOME)
-                                            MaterialTheme.colorScheme.primary
-                                        else
-                                            MaterialTheme.colorScheme.error
-                                    )
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-
-                    HorizontalDivider()
-                }
-
                 // 반복 패턴 선택
                 Text(
                     text = "반복 패턴",
@@ -466,6 +419,51 @@ fun RecurringTransactionDialog(
                             Text("+", style = MaterialTheme.typography.titleLarge)
                         }
                     }
+
+                    // 주말 처리 방식 (매달 패턴일 때만 표시)
+                    Text(
+                        text = "주말 처리",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        listOf(
+                            com.woojin.paymanagement.data.WeekendHandling.AS_IS to "그대로 적용",
+                            com.woojin.paymanagement.data.WeekendHandling.PREVIOUS_WEEKDAY to "이전 평일로",
+                            com.woojin.paymanagement.data.WeekendHandling.NEXT_WEEKDAY to "다음 평일로"
+                        ).forEach { (handling, label) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedWeekendHandling = handling },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                androidx.compose.material3.RadioButton(
+                                    selected = selectedWeekendHandling == handling,
+                                    onClick = { selectedWeekendHandling = handling },
+                                    modifier = Modifier.size(40.dp),
+                                    colors = androidx.compose.material3.RadioButtonDefaults.colors(
+                                        selectedColor = if (selectedType == TransactionType.INCOME)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.error
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider()
                 } else {
                     Text(
                         text = "매주 무슨 요일?",

@@ -58,101 +58,87 @@ fun RecurringTransactionScreen(
                 CircularProgressIndicator()
             }
         } else {
-            Column(
+            // 오늘 실행할 항목 제외한 나머지 항목들
+            val otherTransactions = uiState.recurringTransactions.filter { transaction ->
+                !uiState.todayTransactions.any { it.id == transaction.id }
+            }
+
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // 오늘 실행할 항목 섹션
                 if (uiState.todayTransactions.isNotEmpty()) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        tonalElevation = 2.dp
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
-                        ) {
-                            Text(
-                                text = "오늘 실행할 항목",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-
-                            uiState.todayTransactions.forEach { transaction ->
-                                RecurringTransactionItem(
-                                    transaction = transaction,
-                                    isHighlighted = true,
-                                    categories = uiState.categories,
-                                    onEdit = { viewModel.showEditDialog(transaction) },
-                                    onDelete = { viewModel.deleteRecurringTransaction(transaction.id) },
-                                    onToggleActive = { viewModel.toggleActive(transaction) },
-                                    onClick = { onNavigateToAddTransaction(transaction) }
-                                )
-
-                                if (transaction != uiState.todayTransactions.last()) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                            }
-                        }
-                    }
-
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        thickness = 2.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
-                }
-
-                // 전체 반복 거래 리스트
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // 반복 거래 추가 아이템 (맨 위)
                     item {
-                        AddRecurringTransactionItem(
-                            onClick = { viewModel.showAddDialog() }
+                        Text(
+                            text = "오늘 실행할 항목",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
                     }
 
-                    if (uiState.recurringTransactions.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 32.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "등록된 반복 거래가 없습니다",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    } else {
-                        items(uiState.recurringTransactions) { transaction ->
-                            val isToday = uiState.todayTransactions.any { it.id == transaction.id }
+                    items(uiState.todayTransactions) { transaction ->
+                        RecurringTransactionItem(
+                            transaction = transaction,
+                            isHighlighted = true,
+                            categories = uiState.categories,
+                            onEdit = { viewModel.showEditDialog(transaction) },
+                            onDelete = { viewModel.deleteRecurringTransaction(transaction.id) },
+                            onToggleActive = { viewModel.toggleActive(transaction) },
+                            onClick = { onNavigateToAddTransaction(transaction) }
+                        )
+                    }
 
-                            RecurringTransactionItem(
-                                transaction = transaction,
-                                isHighlighted = isToday,
-                                categories = uiState.categories,
-                                onEdit = { viewModel.showEditDialog(transaction) },
-                                onDelete = { viewModel.deleteRecurringTransaction(transaction.id) },
-                                onToggleActive = { viewModel.toggleActive(transaction) },
-                                onClick = if (isToday) {
-                                    { onNavigateToAddTransaction(transaction) }
-                                } else {
-                                    null
-                                }
+                    item {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            thickness = 2.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                }
+
+                // 반복 거래 추가 버튼
+                item {
+                    AddRecurringTransactionItem(
+                        onClick = { viewModel.showAddDialog() }
+                    )
+                }
+
+                // 빈 상태 표시
+                if (uiState.recurringTransactions.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "등록된 반복 거래가 없습니다",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
+                }
+
+                // 오늘 실행할 항목 제외한 나머지 항목들
+                items(otherTransactions) { transaction ->
+                    RecurringTransactionItem(
+                        transaction = transaction,
+                        isHighlighted = false,
+                        categories = uiState.categories,
+                        onEdit = { viewModel.showEditDialog(transaction) },
+                        onDelete = { viewModel.deleteRecurringTransaction(transaction.id) },
+                        onToggleActive = { viewModel.toggleActive(transaction) },
+                        onClick = null
+                    )
                 }
             }
         }

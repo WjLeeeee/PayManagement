@@ -378,33 +378,7 @@ actual class DatabaseDriverFactory(private val context: Context) {
             }
         }
 
-        // RecurringTransactionEntity 테이블 생성 및 마이그레이션 (v11 -> v12, v12 -> v13)
-        val hasRecurringTable = try {
-            driver.executeQuery(
-                null,
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='RecurringTransactionEntity'",
-                { cursor ->
-                    app.cash.sqldelight.db.QueryResult.Value(cursor.next().value)
-                },
-                0
-            ).value
-        } catch (e: Exception) {
-            false
-        }
-
-        if (hasRecurringTable) {
-            // 기존 테이블 삭제하고 새로 생성 (weekendHandling 컬럼 문제 해결)
-            android.util.Log.d("DatabaseMigration", "Dropping old RecurringTransactionEntity table")
-            try {
-                driver.execute(null, "DROP TABLE RecurringTransactionEntity", 0)
-                android.util.Log.d("DatabaseMigration", "Old table dropped successfully")
-            } catch (e: Exception) {
-                android.util.Log.e("DatabaseMigration", "Failed to drop table", e)
-            }
-        }
-
-        // v14 스키마로 새로 생성
-        android.util.Log.d("DatabaseMigration", "Creating new RecurringTransactionEntity table with v14 schema")
+        // RecurringTransactionEntity 테이블이 없으면 생성
         driver.execute(
             null,
             """
@@ -429,7 +403,6 @@ actual class DatabaseDriverFactory(private val context: Context) {
             """.trimIndent(),
             0
         )
-        android.util.Log.d("DatabaseMigration", "RecurringTransactionEntity table created successfully")
 
         return driver
     }
