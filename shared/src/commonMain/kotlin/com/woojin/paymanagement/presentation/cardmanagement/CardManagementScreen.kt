@@ -45,7 +45,8 @@ fun CardManagementScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로가기")
                     }
-                }
+                },
+                windowInsets = WindowInsets(0.dp)
             )
         }
     ) { padding ->

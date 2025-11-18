@@ -44,7 +44,8 @@ fun RecurringTransactionScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "뒤로가기")
                     }
-                }
+                },
+                windowInsets = WindowInsets(0.dp)
             )
         }
     ) { padding ->

@@ -70,7 +70,6 @@ fun AddTransactionScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.systemBars)
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {

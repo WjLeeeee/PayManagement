@@ -60,7 +60,6 @@ fun DateDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.systemBars)
             .padding(16.dp)
     ) {
         // Header with back button
