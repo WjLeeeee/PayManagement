@@ -94,6 +94,7 @@ inline fun <reified T> koinInject(): T = requireNotNull(koinInstance).get()
 
 @Composable
 fun App(
+    modifier: Modifier = Modifier,
     databaseDriverFactory: DatabaseDriverFactory,
     preferencesManager: PreferencesManager,
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
@@ -120,6 +121,7 @@ fun App(
     MaterialTheme {
         if (isKoinInitialized) {
             PayManagementApp(
+                modifier = modifier,
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                 shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
                 onParsedTransactionsNavigationHandled = onParsedTransactionsNavigationHandled,
@@ -173,6 +175,7 @@ private fun initializeKoin(
 
 @Composable
 fun PayManagementApp(
+    modifier: Modifier = Modifier,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
     onParsedTransactionsNavigationHandled: () -> Unit = {},
@@ -371,7 +374,7 @@ fun PayManagementApp(
         )
     }
 
-    BoxWithConstraints {
+    BoxWithConstraints(modifier = modifier) {
         val screenWidth = maxWidth
 
         ModalNavigationDrawer(

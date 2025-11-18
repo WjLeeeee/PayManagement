@@ -11,10 +11,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalView
-import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,13 +29,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.app.ActivityCompat
+import com.google.android.gms.ads.MobileAds
 import com.woojin.paymanagement.App
-import com.woojin.paymanagement.android.util.TransactionNotificationHelper
 import com.woojin.paymanagement.database.DatabaseDriverFactory
-import com.woojin.paymanagement.utils.PreferencesManager
-import com.woojin.paymanagement.utils.NotificationPermissionChecker
 import com.woojin.paymanagement.utils.AppInfo
 import com.woojin.paymanagement.utils.FileHandler
+import com.woojin.paymanagement.utils.NotificationPermissionChecker
+import com.woojin.paymanagement.utils.PreferencesManager
 
 class MainActivity : ComponentActivity() {
 
@@ -47,12 +53,16 @@ class MainActivity : ComponentActivity() {
         // WorkManager 스케줄링 (매일 오전 9시)
         scheduleRecurringTransactionCheck()
 
+        // AdMob SDK 초기화
+        MobileAds.initialize(this) {}
+
         // PreferencesManager에서 테마 설정 읽기
         val preferencesManager = PreferencesManager(context = this)
         val themeMode = preferencesManager.getThemeMode()
 
         // 다크 모드 결정 (설정에 따라)
-        val systemDarkMode = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val systemDarkMode =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val isDarkMode = when (themeMode) {
             com.woojin.paymanagement.utils.ThemeMode.SYSTEM -> systemDarkMode
             com.woojin.paymanagement.utils.ThemeMode.LIGHT -> false
@@ -88,8 +98,12 @@ class MainActivity : ComponentActivity() {
                 StatusBarOverlayScreen(
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
-                    onParsedTransactionsNavigationHandled = { shouldNavigateToParsedTransactions = false },
-                    onRecurringTransactionsNavigationHandled = { shouldNavigateToRecurringTransactions = false },
+                    onParsedTransactionsNavigationHandled = {
+                        shouldNavigateToParsedTransactions = false
+                    },
+                    onRecurringTransactionsNavigationHandled = {
+                        shouldNavigateToRecurringTransactions = false
+                    },
                     onThemeChanged = { recreate() }
                 )
             }
@@ -102,12 +116,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleIntent(intent: Intent) {
-        val navigateToParsedTransactions = intent.getBooleanExtra(EXTRA_NAVIGATE_TO_PARSED_TRANSACTIONS, false)
+        val navigateToParsedTransactions =
+            intent.getBooleanExtra(EXTRA_NAVIGATE_TO_PARSED_TRANSACTIONS, false)
         if (navigateToParsedTransactions) {
             shouldNavigateToParsedTransactions = true
         }
 
-        val navigateToRecurringTransactions = intent.getBooleanExtra(EXTRA_NAVIGATE_TO_RECURRING_TRANSACTIONS, false)
+        val navigateToRecurringTransactions =
+            intent.getBooleanExtra(EXTRA_NAVIGATE_TO_RECURRING_TRANSACTIONS, false)
         if (navigateToRecurringTransactions) {
             shouldNavigateToRecurringTransactions = true
         }
@@ -115,13 +131,14 @@ class MainActivity : ComponentActivity() {
 
     private fun scheduleRecurringTransactionCheck() {
         // 정기 작업 스케줄링 (매일 오전 9시)
-        val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.woojin.paymanagement.android.worker.RecurringTransactionWorker>(
-            repeatInterval = 1,
-            repeatIntervalTimeUnit = java.util.concurrent.TimeUnit.DAYS
-        ).setInitialDelay(
-            calculateInitialDelayToNineAM(),
-            java.util.concurrent.TimeUnit.MILLISECONDS
-        ).build()
+        val workRequest =
+            androidx.work.PeriodicWorkRequestBuilder<com.woojin.paymanagement.android.worker.RecurringTransactionWorker>(
+                repeatInterval = 1,
+                repeatIntervalTimeUnit = java.util.concurrent.TimeUnit.DAYS
+            ).setInitialDelay(
+                calculateInitialDelayToNineAM(),
+                java.util.concurrent.TimeUnit.MILLISECONDS
+            ).build()
 
         androidx.work.WorkManager.getInstance(applicationContext)
             .enqueueUniquePeriodicWork(
@@ -234,7 +251,7 @@ fun StatusBarOverlayScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Column {
+            Column(modifier = Modifier.fillMaxSize()) {
                 // 상태바 크기만큼 패딩 추가
                 Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
@@ -249,6 +266,7 @@ fun StatusBarOverlayScreen(
                     )
                 }
                 App(
+                    modifier = Modifier.weight(1f),
                     databaseDriverFactory = DatabaseDriverFactory(context = context),
                     preferencesManager = PreferencesManager(context = context),
                     notificationPermissionChecker = NotificationPermissionChecker(context = context),
@@ -277,8 +295,10 @@ fun StatusBarOverlayScreen(
                             } ?: false
 
                             // 권한이 이미 영구적으로 거부되었는지 확인
-                            val notificationPermissionChecker = NotificationPermissionChecker(context)
-                            val hasPermission = notificationPermissionChecker.hasPostNotificationPermission()
+                            val notificationPermissionChecker =
+                                NotificationPermissionChecker(context)
+                            val hasPermission =
+                                notificationPermissionChecker.hasPostNotificationPermission()
 
                             if (hasPermission) {
                                 // 이미 권한이 있음
@@ -314,6 +334,11 @@ fun StatusBarOverlayScreen(
                         }
                         loadFileLauncher.launch(intent)
                     }
+                )
+
+                // 하단 배너 광고
+                BannerAdView(
+                    adUnitId = "ca-app-pub-9195598687879551/3919131534"
                 )
             }
         }

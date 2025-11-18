@@ -47,5 +47,9 @@ dependencies {
     implementation(libs.koin.compose)
     implementation(libs.kotlinx.datetime)
     implementation(libs.billing)
+
+    // AdMob
+    implementation("com.google.android.gms:play-services-ads:23.0.0")
+
     debugImplementation(libs.compose.ui.tooling)
 }
