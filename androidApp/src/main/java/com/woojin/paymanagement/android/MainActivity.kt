@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -340,6 +342,9 @@ fun StatusBarOverlayScreen(
                 BannerAdView(
                     adUnitId = "ca-app-pub-9195598687879551/3919131534"
                 )
+
+                // 네비게이션 바 영역만큼 여백 추가
+                Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
             }
         }
     }
