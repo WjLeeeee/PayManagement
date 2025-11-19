@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -261,16 +262,26 @@ fun StatusBarOverlayScreen(
                 val appInfo = AppInfo().apply {
                     initialize(context)
                 }
+                val preferencesManager = remember { PreferencesManager(context = context) }
                 val billingClient = remember {
                     com.woojin.paymanagement.utils.BillingClient(
                         context = context,
                         activityProvider = { context as? ComponentActivity }
                     )
                 }
+
+                // 광고 제거 상태 확인
+                val isAdRemovalActive = remember { mutableStateOf(preferencesManager.isAdRemovalActive()) }
+
+                // 화면이 다시 보일 때마다 광고 제거 상태 업데이트
+                LaunchedEffect(Unit) {
+                    isAdRemovalActive.value = preferencesManager.isAdRemovalActive()
+                }
+
                 App(
                     modifier = Modifier.weight(1f),
                     databaseDriverFactory = DatabaseDriverFactory(context = context),
-                    preferencesManager = PreferencesManager(context = context),
+                    preferencesManager = preferencesManager,
                     notificationPermissionChecker = NotificationPermissionChecker(context = context),
                     appInfo = appInfo,
                     fileHandler = fileHandler,
@@ -338,10 +349,12 @@ fun StatusBarOverlayScreen(
                     }
                 )
 
-                // 하단 배너 광고
-                BannerAdView(
-                    adUnitId = "ca-app-pub-9195598687879551/3919131534"
-                )
+                // 하단 배너 광고 (광고 제거가 활성화되지 않았을 때만 표시)
+                if (!isAdRemovalActive.value) {
+                    BannerAdView(
+                        adUnitId = "ca-app-pub-9195598687879551/3919131534"
+                    )
+                }
 
                 // 네비게이션 바 영역만큼 여백 추가
                 Spacer(modifier = Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))

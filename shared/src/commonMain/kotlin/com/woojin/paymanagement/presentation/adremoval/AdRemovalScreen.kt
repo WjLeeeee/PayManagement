@@ -1,4 +1,4 @@
-package com.woojin.paymanagement.presentation.tipdonation
+package com.woojin.paymanagement.presentation.adremoval
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -29,10 +31,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,13 +40,13 @@ import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.utils.PlatformBackHandler
 
 /**
- * 팁 주기 화면
- * 개발자를 응원할 수 있는 기부 옵션을 제공합니다.
+ * 광고 제거 화면
+ * 광고를 제거할 수 있는 기간별 옵션을 제공합니다.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TipDonationScreen(
-    viewModel: TipDonationViewModel,
+fun AdRemovalScreen(
+    viewModel: AdRemovalViewModel,
     onNavigateBack: () -> Unit
 ) {
     // Android 뒤로가기 버튼 처리
@@ -59,7 +57,7 @@ fun TipDonationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("팁주기") },
+                title = { Text("광고 제거") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로가기")
@@ -77,13 +75,14 @@ fun TipDonationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // 제목
             Text(
-                text = "개발자 응원하기",
+                text = "광고 없이 사용하기",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -91,53 +90,61 @@ fun TipDonationScreen(
 
             // 설명
             Text(
-                text = "앱이 도움이 되셨나요?\n개발자에게 커피 한 잔 사주세요!",
+                text = "광고 없이 쾌적하게 앱을 사용하세요!\n기간을 선택하시면 해당 기간 동안 광고가 표시되지 않습니다.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
-            // 팁 옵션들
-            TipOption(
-                emoji = "☕",
-                title = "커피 사주기",
-                amount = TipAmount.COFFEE,
-                isSelected = uiState.selectedTipAmount == TipAmount.COFFEE,
-                onClick = { viewModel.selectTipAmount(TipAmount.COFFEE) }
+            // 광고 제거 옵션들
+            AdRemovalOption(
+                emoji = "📅",
+                title = "1일 이용권",
+                period = AdRemovalPeriod.ONE_DAY,
+                isSelected = uiState.selectedPeriod == AdRemovalPeriod.ONE_DAY,
+                onClick = { viewModel.selectAdRemovalPeriod(AdRemovalPeriod.ONE_DAY) }
             )
 
-            TipOption(
-                emoji = "🍱",
-                title = "점심 사주기",
-                amount = TipAmount.LUNCH,
-                isSelected = uiState.selectedTipAmount == TipAmount.LUNCH,
-                onClick = { viewModel.selectTipAmount(TipAmount.LUNCH) }
+            AdRemovalOption(
+                emoji = "📆",
+                title = "3일 이용권",
+                period = AdRemovalPeriod.THREE_DAYS,
+                isSelected = uiState.selectedPeriod == AdRemovalPeriod.THREE_DAYS,
+                onClick = { viewModel.selectAdRemovalPeriod(AdRemovalPeriod.THREE_DAYS) }
             )
 
-            TipOption(
-                emoji = "🍽️",
-                title = "저녁 사주기",
-                amount = TipAmount.DINNER,
-                isSelected = uiState.selectedTipAmount == TipAmount.DINNER,
-                onClick = { viewModel.selectTipAmount(TipAmount.DINNER) }
+            AdRemovalOption(
+                emoji = "🗓️",
+                title = "7일 이용권",
+                period = AdRemovalPeriod.SEVEN_DAYS,
+                isSelected = uiState.selectedPeriod == AdRemovalPeriod.SEVEN_DAYS,
+                onClick = { viewModel.selectAdRemovalPeriod(AdRemovalPeriod.SEVEN_DAYS) }
+            )
+
+            AdRemovalOption(
+                emoji = "📅",
+                title = "30일 이용권",
+                period = AdRemovalPeriod.THIRTY_DAYS,
+                isSelected = uiState.selectedPeriod == AdRemovalPeriod.THIRTY_DAYS,
+                onClick = { viewModel.selectAdRemovalPeriod(AdRemovalPeriod.THIRTY_DAYS) }
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
             // 결제 버튼
             Button(
-                onClick = { viewModel.purchaseTip() },
+                onClick = { viewModel.purchaseAdRemoval() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = uiState.selectedTipAmount != null && !uiState.isPurchasing,
+                enabled = uiState.selectedPeriod != null && !uiState.isPurchasing,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     text = when {
                         uiState.isPurchasing -> "결제 처리 중..."
-                        uiState.selectedTipAmount != null -> "₩${uiState.selectedTipAmount.krw} 결제하기"
-                        else -> "금액을 선택해주세요"
+                        uiState.selectedPeriod != null -> "₩${uiState.selectedPeriod.krw} 결제하기"
+                        else -> "기간을 선택해주세요"
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
@@ -146,33 +153,34 @@ fun TipDonationScreen(
         }
     }
 
-    // 감사 다이얼로그
-    if (uiState.showThankYouDialog) {
+    // 성공 다이얼로그
+    if (uiState.showSuccessDialog) {
         AlertDialog(
             onDismissRequest = {
-                viewModel.dismissThankYouDialog()
+                viewModel.dismissSuccessDialog()
             },
             icon = {
                 Text(
-                    text = "🎉",
+                    text = "✅",
                     style = MaterialTheme.typography.displayMedium
                 )
             },
             title = {
                 Text(
-                    text = "감사합니다!",
+                    text = "구매 완료!",
                     textAlign = TextAlign.Center
                 )
             },
             text = {
                 Text(
-                    text = "개발자를 응원해주셔서 감사합니다.\n더 좋은 앱으로 보답하겠습니다!",
+                    text = "광고 제거가 완료되었습니다.\n쾌적하게 앱을 사용하세요!",
                     textAlign = TextAlign.Center
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.dismissThankYouDialog()
+                    viewModel.dismissSuccessDialog()
+                    onNavigateBack()
                 }) {
                     Text("확인")
                 }
@@ -212,13 +220,13 @@ fun TipDonationScreen(
 }
 
 /**
- * 팁 옵션 카드 컴포넌트
+ * 광고 제거 옵션 카드 컴포넌트
  */
 @Composable
-private fun TipOption(
+private fun AdRemovalOption(
     emoji: String,
     title: String,
-    amount: TipAmount,
+    period: AdRemovalPeriod,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -268,7 +276,7 @@ private fun TipOption(
                 )
             }
             Text(
-                text = "₩${amount.krw}",
+                text = "₩${period.krw}",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = if (isSelected)

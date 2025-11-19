@@ -19,6 +19,11 @@ expect class PreferencesManager {
 
     fun getMonthlySalary(): Double
     fun setMonthlySalary(salary: Double)
+
+    // 광고 제거 관련
+    fun getAdRemovalExpiryTime(): Long // 만료 시간 (밀리초 타임스탬프)
+    fun setAdRemovalExpiryTime(expiryTime: Long)
+    fun isAdRemovalActive(): Boolean // 현재 광고 제거 활성화 여부
 }
 
 enum class PaydayAdjustment {

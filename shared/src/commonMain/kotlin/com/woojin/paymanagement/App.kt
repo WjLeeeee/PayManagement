@@ -1138,18 +1138,25 @@ fun PayManagementApp(
                                 }
                             }
 
-                            // 팁주기 (Android만)
+                            // 인앱 구매 (Android만)
                             if (com.woojin.paymanagement.utils.Platform.isAndroid()) {
+                                var isInAppPurchaseExpanded by remember { mutableStateOf(false) }
+
+                                // 메인 아이템: 인앱 구매
                                 NavigationDrawerItem(
                                     label = {
-                                        Column {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             Text(
-                                                text = "팁주기",
+                                                text = "인앱 구매",
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "개발자 응원하기",
+                                                text = if (isInAppPurchaseExpanded) "▲" else "▼",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1157,17 +1164,83 @@ fun PayManagementApp(
                                     },
                                     selected = false,
                                     onClick = {
-                                        navigateTo(Screen.TipDonation)
-                                        scope.launch { drawerState.close() }
+                                        isInAppPurchaseExpanded = !isInAppPurchaseExpanded
                                     },
                                     icon = {
                                         Text(
-                                            text = "☕",
+                                            text = "💰",
                                             style = MaterialTheme.typography.bodyLarge
                                         )
                                     },
                                     modifier = Modifier.height(48.dp)
                                 )
+
+                                // 서브 아이템들 (확장되었을 때만 표시)
+                                if (isInAppPurchaseExpanded) {
+                                    // 개발자 응원하기
+                                    NavigationDrawerItem(
+                                        label = {
+                                            Column {
+                                                Text(
+                                                    text = "개발자 응원하기",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = "커피, 점심, 저녁 사주기",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        },
+                                        selected = false,
+                                        onClick = {
+                                            navigateTo(Screen.TipDonation)
+                                            scope.launch { drawerState.close() }
+                                        },
+                                        icon = {
+                                            Text(
+                                                text = "☕",
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                        },
+                                        modifier = Modifier
+                                            .height(56.dp)
+                                            .padding(start = 16.dp)
+                                    )
+
+                                    // 광고 제거
+                                    NavigationDrawerItem(
+                                        label = {
+                                            Column {
+                                                Text(
+                                                    text = "광고 제거",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = "1일, 3일, 7일, 30일",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        },
+                                        selected = false,
+                                        onClick = {
+                                            navigateTo(Screen.AdRemoval)
+                                            scope.launch { drawerState.close() }
+                                        },
+                                        icon = {
+                                            Text(
+                                                text = "🚫",
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                        },
+                                        modifier = Modifier
+                                            .height(56.dp)
+                                            .padding(start = 16.dp)
+                                    )
+                                }
                             }
 
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
@@ -1762,6 +1835,15 @@ fun PayManagementApp(
             )
         }
 
+        Screen.AdRemoval -> {
+            val adRemovalViewModel = remember { koinInject<com.woojin.paymanagement.presentation.adremoval.AdRemovalViewModel>() }
+
+            com.woojin.paymanagement.presentation.adremoval.AdRemovalScreen(
+                viewModel = adRemovalViewModel,
+                onNavigateBack = { navigateBack() }
+            )
+        }
+
         Screen.RecurringTransaction -> {
             val recurringTransactionViewModel = remember { koinInject<com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionViewModel>() }
 
@@ -1818,5 +1900,6 @@ enum class Screen {
     BudgetSettings,
     MonthlyComparison,
     TipDonation,
+    AdRemoval,
     RecurringTransaction
 }

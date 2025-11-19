@@ -59,4 +59,18 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setMonthlySalary(salary: Double) {
         prefs.edit().putFloat("monthly_salary", salary.toFloat()).apply()
     }
+
+    // 광고 제거 관련
+    actual fun getAdRemovalExpiryTime(): Long {
+        return prefs.getLong("ad_removal_expiry_time", 0L)
+    }
+
+    actual fun setAdRemovalExpiryTime(expiryTime: Long) {
+        prefs.edit().putLong("ad_removal_expiry_time", expiryTime).apply()
+    }
+
+    actual fun isAdRemovalActive(): Boolean {
+        val expiryTime = getAdRemovalExpiryTime()
+        return expiryTime > System.currentTimeMillis()
+    }
 }

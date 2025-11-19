@@ -86,6 +86,7 @@ actual class BillingClient(
      */
     private fun queryProductDetails() {
         val productList = listOf(
+            // 팁 상품들
             QueryProductDetailsParams.Product.newBuilder()
                 .setProductId(TipProductId.COFFEE.productId)
                 .setProductType(com.android.billingclient.api.BillingClient.ProductType.INAPP)
@@ -96,6 +97,23 @@ actual class BillingClient(
                 .build(),
             QueryProductDetailsParams.Product.newBuilder()
                 .setProductId(TipProductId.DINNER.productId)
+                .setProductType(com.android.billingclient.api.BillingClient.ProductType.INAPP)
+                .build(),
+            // 광고 제거 상품들
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(AdRemovalProductId.ONE_DAY.productId)
+                .setProductType(com.android.billingclient.api.BillingClient.ProductType.INAPP)
+                .build(),
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(AdRemovalProductId.THREE_DAYS.productId)
+                .setProductType(com.android.billingclient.api.BillingClient.ProductType.INAPP)
+                .build(),
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(AdRemovalProductId.SEVEN_DAYS.productId)
+                .setProductType(com.android.billingclient.api.BillingClient.ProductType.INAPP)
+                .build(),
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(AdRemovalProductId.THIRTY_DAYS.productId)
                 .setProductType(com.android.billingclient.api.BillingClient.ProductType.INAPP)
                 .build()
         )
@@ -151,6 +169,60 @@ actual class BillingClient(
                     // 결제 다이얼로그 표시됨
                     // 실제 결과는 purchasesUpdatedListener에서 처리됨
                     // continuation은 여기서 resume하지 않음!
+                }
+                else -> {
+                    // 결제 다이얼로그 표시 실패
+                    pendingPurchaseResult = null
+                    continuation.resume(BillingResult.Error("결제 시작 실패: ${result?.debugMessage}"))
+                }
+            }
+
+            // 취소 시 정리
+            continuation.invokeOnCancellation {
+                pendingPurchaseResult = null
+            }
+        }
+    }
+
+    /**
+     * 광고 제거 구매 시작
+     */
+    actual suspend fun launchPurchaseFlow(productId: AdRemovalProductId): BillingResult {
+        return suspendCancellableCoroutine { continuation ->
+            val activity = activityProvider()
+            if (activity == null) {
+                continuation.resume(BillingResult.Error("Activity not available"))
+                return@suspendCancellableCoroutine
+            }
+
+            val productDetails = productDetailsCache[productId.productId]
+            if (productDetails == null) {
+                continuation.resume(BillingResult.Error("상품 정보를 찾을 수 없습니다"))
+                return@suspendCancellableCoroutine
+            }
+
+            val productDetailsParamsList = listOf(
+                BillingFlowParams.ProductDetailsParams.newBuilder()
+                    .setProductDetails(productDetails)
+                    .build()
+            )
+
+            val billingFlowParams = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(productDetailsParamsList)
+                .build()
+
+            // 결제 결과를 받을 콜백 저장
+            pendingPurchaseResult = { result ->
+                continuation.resume(result)
+            }
+
+            // 결제 시작
+            val result = billingClient?.launchBillingFlow(activity, billingFlowParams)
+
+            when (result?.responseCode) {
+                BillingResponseCode.OK -> {
+                    // 결제 다이얼로그 표시됨
+                    // 실제 결과는 purchasesUpdatedListener에서 처리됨
                 }
                 else -> {
                     // 결제 다이얼로그 표시 실패

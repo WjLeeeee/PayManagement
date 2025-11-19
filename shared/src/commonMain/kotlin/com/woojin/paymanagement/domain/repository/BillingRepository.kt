@@ -1,5 +1,6 @@
 package com.woojin.paymanagement.domain.repository
 
+import com.woojin.paymanagement.utils.AdRemovalProductId
 import com.woojin.paymanagement.utils.BillingClient
 import com.woojin.paymanagement.utils.BillingResult
 import com.woojin.paymanagement.utils.TipProductId
@@ -20,6 +21,11 @@ interface BillingRepository {
     suspend fun purchaseTip(productId: TipProductId): BillingResult
 
     /**
+     * 광고 제거 구매
+     */
+    suspend fun launchPurchaseFlow(productId: AdRemovalProductId): BillingResult
+
+    /**
      * 연결 종료
      */
     fun disconnect()
@@ -38,6 +44,10 @@ class BillingRepositoryImpl(
 
     override suspend fun purchaseTip(productId: TipProductId): BillingResult {
         return billingClient.purchaseTip(productId)
+    }
+
+    override suspend fun launchPurchaseFlow(productId: AdRemovalProductId): BillingResult {
+        return billingClient.launchPurchaseFlow(productId)
     }
 
     override fun disconnect() {

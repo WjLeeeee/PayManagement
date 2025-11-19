@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.di
 
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionViewModel
+import com.woojin.paymanagement.presentation.adremoval.AdRemovalViewModel
 import com.woojin.paymanagement.presentation.budgetsettings.BudgetSettingsViewModel
 import com.woojin.paymanagement.presentation.calendar.CalendarViewModel
 import com.woojin.paymanagement.presentation.cardmanagement.CardManagementViewModel
@@ -39,6 +40,7 @@ val presentationModule = module {
     factory { CardManagementViewModel(get()) }
     factory { BudgetSettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { TipDonationViewModel(get(), get()) }
+    factory { AdRemovalViewModel(get(), get()) }
     factory { MonthlyComparisonViewModel(get(), get(), get(), get()) }
     factory { RecurringTransactionViewModel(get(), get(), get(), get(), get(), get()) }
 }
