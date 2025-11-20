@@ -13,7 +13,7 @@ play {
     track.set("internal")  // internal, alpha, beta, production 중 선택
     defaultToAppBundles.set(true)  // AAB 파일 사용
     releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.DRAFT)  // Draft 상태로 업로드
-    releaseName.set("${android.defaultConfig.versionCode} (${android.defaultConfig.versionName})")
+    releaseName.set(provider { "${android.defaultConfig.versionCode} (${android.defaultConfig.versionName})" })
 }
 
 android {
@@ -23,7 +23,7 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 28
         targetSdk = 35
-        versionCode = 14
+        versionCode = 15
         versionName = "1.8"
     }
 
