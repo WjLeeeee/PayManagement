@@ -18,3 +18,7 @@ keystore.properties
 # API 키 및 시크릿
 google-services.json
 key.properties
+
+# Play Store 배포 인증 키 (절대 커밋하면 안 됨!)
+play-store-credentials.json
+*-credentials.json
