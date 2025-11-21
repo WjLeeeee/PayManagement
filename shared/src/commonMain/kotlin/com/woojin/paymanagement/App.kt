@@ -1,28 +1,13 @@
 package com.woojin.paymanagement
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,56 +17,68 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.isSystemInDarkTheme
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.di.databaseModule
 import com.woojin.paymanagement.di.domainModule
 import com.woojin.paymanagement.di.presentationModule
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.runtime.collectAsState
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
-import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
+import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
 import com.woojin.paymanagement.presentation.monthlycomparison.MonthlyComparisonScreen
-import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionListScreen
+import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.settings.ThemeSettingsDialog
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
+import com.woojin.paymanagement.utils.LifecycleObserverHelper
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.ThemeMode
-import com.woojin.paymanagement.utils.LifecycleObserverHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.datetime.todayIn
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -129,7 +126,8 @@ fun App(
                 onThemeChanged = onThemeChanged,
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 onLaunchSaveFile = onLaunchSaveFile,
-                onLaunchLoadFile = onLaunchLoadFile
+                onLaunchLoadFile = onLaunchLoadFile,
+                fileHandler = fileHandler
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -183,7 +181,8 @@ fun PayManagementApp(
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
-    onLaunchLoadFile: () -> Unit = {}
+    onLaunchLoadFile: () -> Unit = {},
+    fileHandler: com.woojin.paymanagement.utils.FileHandler? = null
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -679,7 +678,7 @@ fun PayManagementApp(
                                 ) {
                                     // 데이터 내보내기
                                     val exportDataUseCase = koinInject<com.woojin.paymanagement.domain.usecase.ExportDataUseCase>()
-                                    val fileHandler = koinInject<com.woojin.paymanagement.utils.FileHandler>()
+                                    // fileHandler는 파라미터로 전달받음 (MainActivity와 동일한 인스턴스 사용)
                                     var showExportMessage by remember { mutableStateOf<String?>(null) }
 
                                     Row(
@@ -691,8 +690,8 @@ fun PayManagementApp(
                                                     val result = exportDataUseCase(com.woojin.paymanagement.domain.model.BackupType.ALL)
                                                     result.onSuccess { jsonString ->
                                                         val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-                                                        val fileName = "paymanagement_backup_${currentDate}.json"
-                                                        fileHandler.setSaveData(
+                                                        val fileName = "backup_${currentDate}.json"
+                                                        fileHandler?.setSaveData(
                                                             fileName = fileName,
                                                             jsonContent = jsonString,
                                                             onSuccess = {
@@ -778,7 +777,7 @@ fun PayManagementApp(
                                             confirmButton = {
                                                 Button(onClick = {
                                                     showReplaceConfirmDialog = false
-                                                    fileHandler.setLoadCallbacks(
+                                                    fileHandler?.setLoadCallbacks(
                                                         onSuccess = { jsonString ->
                                                             scope.launch {
                                                                 val result = importDataUseCase(jsonString, replaceExisting = true)
