@@ -71,7 +71,9 @@ class CardNotificationListenerService : NotificationListenerService() {
             Log.d(TAG, "Notification received - Text: $bigText")
 
             // 승인 알림인지 확인 (일반 승인 또는 자동납부 승인)
+            // 취소 알림은 제외 (title에 "취소"가 포함된 경우)
             if (title.contains("신한카드") &&
+                !title.contains("취소") &&
                 (bigText.contains("승인") || title.contains("자동납부"))) {
                 val parsedTransaction = parseNotification(bigText, title)
 
@@ -175,10 +177,9 @@ class CardNotificationListenerService : NotificationListenerService() {
     /**
      * 삼성페이 알림 처리
      *
-     * 예시 포맷:
-     * Title: Samsung Wallet   오후 6:39
-     * Text: ￦950 결제완료
-     *       (주)세계로데일리웨이
+     * 예시 포맷 (2024년 이후):
+     * Title: ₩1,700 결제 완료
+     * Text: (주)카카오
      */
     private fun handleSamsungPayNotification(sbn: StatusBarNotification) {
         try {
@@ -187,14 +188,14 @@ class CardNotificationListenerService : NotificationListenerService() {
 
             val title = extras.getCharSequence("android.title")?.toString() ?: ""
             val text = extras.getCharSequence("android.text")?.toString() ?: ""
-            val bigText = extras.getCharSequence("android.bigText")?.toString() ?: text
 
             Log.d(TAG, "Samsung Pay Notification - Title: $title")
-            Log.d(TAG, "Samsung Pay Notification - Text: $bigText")
+            Log.d(TAG, "Samsung Pay Notification - Text: $text")
 
-            // Samsung Wallet 알림이고 ￦(금액) 정보가 있는 경우만 처리
-            if (title.contains("Samsung Wallet", ignoreCase = true) && bigText.contains("￦")) {
-                val parsedTransaction = parseSamsungPayNotification(bigText, title)
+            // 새로운 형식: title에 "₩금액 결제 완료"가 있는 경우
+            // ₩ (U+20A9) 또는 ￦ (U+FFE6) 둘 다 처리
+            if (title.contains("결제 완료") && (title.contains("₩") || title.contains("￦"))) {
+                val parsedTransaction = parseSamsungPayNotification(title, text)
 
                 parsedTransaction?.let { transaction ->
                     Log.d(TAG, "Parsed Samsung Pay transaction: $transaction")
@@ -209,23 +210,28 @@ class CardNotificationListenerService : NotificationListenerService() {
     /**
      * 삼성페이 알림 파싱
      *
-     * 예시: "￦950 결제완료\n(주)세계로데일리웨이"
+     * 새로운 형식:
+     * title: "₩1,700 결제 완료"
+     * text: "(주)카카오"
      */
-    private fun parseSamsungPayNotification(text: String, title: String): ParsedTransaction? {
+    private fun parseSamsungPayNotification(title: String, text: String): ParsedTransaction? {
         try {
-            val lines = text.split("\n")
-
-            // 첫 번째 줄에서 금액 파싱: "￦8,700 결제완료" 또는 "￦950 결제완료" -> 8700.0 또는 950.0
-            val amountLine = lines.firstOrNull() ?: return null
-            val amountRegex = """￦([\d,]+)""".toRegex()
-            val amountMatch = amountRegex.find(amountLine)
+            // title에서 금액 파싱: "₩1,700 결제 완료" -> 1700.0
+            // ₩ (U+20A9) 또는 ￦ (U+FFE6) 둘 다 지원
+            val amountRegex = """[₩￦]([\d,]+)""".toRegex()
+            val amountMatch = amountRegex.find(title)
             val amount = amountMatch?.groupValues?.get(1)
                 ?.replace(",", "")
-                ?.toDoubleOrNull() ?: return null
+                ?.toDoubleOrNull()
 
-            // 두 번째 줄에서 가맹점명 파싱
-            val merchantName = lines.getOrNull(1)?.trim()
-            if (merchantName.isNullOrBlank()) {
+            if (amount == null) {
+                Log.w(TAG, "Failed to parse Samsung Pay notification - missing amount")
+                return null
+            }
+
+            // text에서 가맹점명 가져오기
+            val merchantName = text.trim()
+            if (merchantName.isBlank()) {
                 Log.w(TAG, "Failed to parse Samsung Pay notification - missing merchant name")
                 return null
             }
@@ -243,12 +249,15 @@ class CardNotificationListenerService : NotificationListenerService() {
                 return null
             }
 
+            // 고유 ID 생성 (title + text 조합)
+            val rawNotification = "Samsung Pay: $title - $text"
+
             return ParsedTransaction(
-                id = generateNotificationId(text),
+                id = generateNotificationId(rawNotification),
                 amount = amount,
                 merchantName = merchantName,
                 date = transactionDate,
-                rawNotification = text,
+                rawNotification = rawNotification,
                 isProcessed = false,
                 createdAt = System.currentTimeMillis()
             )
