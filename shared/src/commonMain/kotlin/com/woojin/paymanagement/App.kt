@@ -1840,7 +1840,8 @@ fun PayManagementApp(
 
             com.woojin.paymanagement.presentation.adremoval.AdRemovalScreen(
                 viewModel = adRemovalViewModel,
-                onNavigateBack = { navigateBack() }
+                onNavigateBack = { navigateBack() },
+                onRequestRestart = onThemeChanged
             )
         }
 

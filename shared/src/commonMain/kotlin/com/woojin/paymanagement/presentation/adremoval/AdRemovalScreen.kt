@@ -47,7 +47,8 @@ import com.woojin.paymanagement.utils.PlatformBackHandler
 @Composable
 fun AdRemovalScreen(
     viewModel: AdRemovalViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onRequestRestart: (() -> Unit)? = null
 ) {
     // Android 뒤로가기 버튼 처리
     PlatformBackHandler(onBack = onNavigateBack)
@@ -180,7 +181,12 @@ fun AdRemovalScreen(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.dismissSuccessDialog()
-                    onNavigateBack()
+                    // 앱 재시작으로 광고 제거 반영
+                    if (onRequestRestart != null) {
+                        onRequestRestart()
+                    } else {
+                        onNavigateBack()
+                    }
                 }) {
                     Text("확인")
                 }
