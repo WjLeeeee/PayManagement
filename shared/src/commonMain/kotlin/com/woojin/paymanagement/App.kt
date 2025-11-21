@@ -900,7 +900,7 @@ fun PayManagementApp(
                                 },
                                 icon = {
                                     Text(
-                                        text = "💰",
+                                        text = "🛠️",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 },
