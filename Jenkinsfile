@@ -67,7 +67,7 @@ pipeline {
       {"name": "📦 배포 트랙", "value": "Internal Testing", "inline": true},
       {"name": "✨ 상태", "value": "COMPLETED (자동 출시)", "inline": true},
       {"name": "⏰ 배포 시간", "value": "${new Date().format('yyyy-MM-dd HH:mm:ss')}", "inline": false},
-      {"name": "🔗 빌드 로그", "value": "[Jenkins에서 확인](${env.BUILD_URL})", "inline": false}
+      {"name": "📥 앱 다운로드", "value": "[Play Store에서 다운로드](https://play.google.com/apps/internaltest/4701606329859714866)", "inline": false}
     ],
     "footer": {"text": "Jenkins CI/CD"},
     "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")}"
