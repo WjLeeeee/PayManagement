@@ -38,24 +38,21 @@ pipeline {
             steps {
                 echo 'Bumping version code...'
                 script {
-                    def buildFile = 'androidApp/build.gradle.kts'
-                    def content = readFile(buildFile)
+                    // Shell로 현재 versionCode 추출
+                    def currentVersion = sh(
+                        script: "grep 'versionCode = ' androidApp/build.gradle.kts | sed 's/[^0-9]*//g'",
+                        returnStdout: true
+                    ).trim().toInteger()
 
-                    // 현재 versionCode 추출
-                    def matcher = content =~ /versionCode = (\d+)/
-                    if (matcher.find()) {
-                        def currentVersion = matcher[0][1].toInteger()
-                        def newVersion = currentVersion + 1
+                    def newVersion = currentVersion + 1
 
-                        // versionCode 업데이트
-                        content = content.replaceFirst(/versionCode = \d+/, "versionCode = ${newVersion}")
-                        writeFile file: buildFile, text: content
+                    // sed로 versionCode 업데이트
+                    sh "sed -i '' 's/versionCode = ${currentVersion}/versionCode = ${newVersion}/' androidApp/build.gradle.kts"
 
-                        echo "Version code bumped: ${currentVersion} → ${newVersion}"
+                    echo "Version code bumped: ${currentVersion} → ${newVersion}"
 
-                        // 환경 변수로 저장 (디스코드 알림에서 사용)
-                        env.NEW_VERSION_CODE = newVersion.toString()
-                    }
+                    // 환경 변수로 저장
+                    env.NEW_VERSION_CODE = newVersion.toString()
                 }
             }
         }
