@@ -12,7 +12,7 @@ play {
     serviceAccountCredentials.set(file("../play-store-credentials.json"))
     track.set("internal")  // internal, alpha, beta, production 중 선택
     defaultToAppBundles.set(true)  // AAB 파일 사용
-    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.DRAFT)
+    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.COMPLETED)
     releaseName.set(provider { "${android.defaultConfig.versionCode} (${android.defaultConfig.versionName})" })
 }
 
