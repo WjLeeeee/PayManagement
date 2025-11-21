@@ -52,7 +52,7 @@ pipeline {
     post {
         success {
             echo '✅ Deployment successful!'
-            echo 'AAB uploaded to Play Store Internal Track (Draft)'
+            echo 'AAB uploaded to Play Store Internal Track (COMPLETED)'
         }
         failure {
             echo '❌ Deployment failed!'
