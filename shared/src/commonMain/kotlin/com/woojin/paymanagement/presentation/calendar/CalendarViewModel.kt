@@ -17,8 +17,11 @@ import com.woojin.paymanagement.utils.PayPeriodCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 
 class CalendarViewModel(
     private val preferencesRepository: PreferencesRepository,
@@ -80,17 +83,28 @@ class CalendarViewModel(
     }
 
     fun navigateToPreviousPeriod() {
+        val currentSelectedDate = uiState.selectedDate ?: return
         val previousPeriod = PayPeriodCalculator.getPreviousPayPeriod(
             currentPeriod = requireNotNull(uiState.currentPayPeriod),
             payday = payday,
             adjustment = adjustment
         )
 
-        val newSelectedDate = PayPeriodCalculator.getRecommendedDateForPeriod(
-            payPeriod = previousPeriod,
-            payday = payday,
-            adjustment = adjustment
-        )
+        // 현재 선택된 날짜의 일(day)을 유지하면서 월만 이전으로 변경
+        val newSelectedDate = try {
+            // 이전 달로 이동하면서 같은 일(day) 유지
+            val previousMonth = currentSelectedDate.minus(1, DateTimeUnit.MONTH)
+            // 새 급여 기간 내에서 유효한 날짜인지 확인
+            if (previousMonth >= previousPeriod.startDate && previousMonth <= previousPeriod.endDate) {
+                previousMonth
+            } else {
+                // 기간 밖이면 급여일 선택
+                previousPeriod.startDate
+            }
+        } catch (e: Exception) {
+            // 날짜가 유효하지 않으면 (예: 1월 31일 → 2월 31일) 급여일 선택
+            previousPeriod.startDate
+        }
 
         updateState(
             payPeriod = previousPeriod,
@@ -99,17 +113,28 @@ class CalendarViewModel(
     }
 
     fun navigateToNextPeriod() {
+        val currentSelectedDate = uiState.selectedDate ?: return
         val nextPeriod = PayPeriodCalculator.getNextPayPeriod(
             currentPeriod = requireNotNull(uiState.currentPayPeriod),
             payday = payday,
             adjustment = adjustment
         )
 
-        val newSelectedDate = PayPeriodCalculator.getRecommendedDateForPeriod(
-            payPeriod = nextPeriod,
-            payday = payday,
-            adjustment = adjustment
-        )
+        // 현재 선택된 날짜의 일(day)을 유지하면서 월만 다음으로 변경
+        val newSelectedDate = try {
+            // 다음 달로 이동하면서 같은 일(day) 유지
+            val nextMonth = currentSelectedDate.plus(1, DateTimeUnit.MONTH)
+            // 새 급여 기간 내에서 유효한 날짜인지 확인
+            if (nextMonth >= nextPeriod.startDate && nextMonth <= nextPeriod.endDate) {
+                nextMonth
+            } else {
+                // 기간 밖이면 급여일 선택
+                nextPeriod.startDate
+            }
+        } catch (e: Exception) {
+            // 날짜가 유효하지 않으면 (예: 1월 31일 → 2월 31일) 급여일 선택
+            nextPeriod.startDate
+        }
 
         updateState(
             payPeriod = nextPeriod,
