@@ -431,9 +431,9 @@ private fun ChartSection(
     // "기타" 색상을 먼저 가져오기
     val etcColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // 4% 미만 항목들을 "기타"로 묶기
+    // 3% 미만 항목들을 "기타"로 묶기
     val (processedItems, mainItems, smallItems) = remember(items, total, etcColor) {
-        val threshold = 4.0f
+        val threshold = 3.0f
         val mainItems = items.filter { it.percentage >= threshold }
         val smallItems = items.filter { it.percentage < threshold }
 
