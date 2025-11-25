@@ -1151,13 +1151,16 @@ fun PayManagementApp(
                                         ) {
                                             Text(
                                                 text = "인앱 구매",
-                                                style = MaterialTheme.typography.bodyMedium,
+                                                style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.Medium
                                             )
-                                            Text(
-                                                text = if (isInAppPurchaseExpanded) "▲" else "▼",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            Icon(
+                                                imageVector = if (isInAppPurchaseExpanded)
+                                                    Icons.Default.KeyboardArrowUp
+                                                else
+                                                    Icons.Default.KeyboardArrowDown,
+                                                contentDescription = if (isInAppPurchaseExpanded) "접기" else "펼치기",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     },
@@ -1171,14 +1174,38 @@ fun PayManagementApp(
                                             style = MaterialTheme.typography.bodyLarge
                                         )
                                     },
-                                    modifier = Modifier.height(48.dp)
+                                    modifier = Modifier.height(38.dp)
                                 )
 
-                                // 서브 아이템들 (확장되었을 때만 표시)
-                                if (isInAppPurchaseExpanded) {
-                                    // 개발자 응원하기
-                                    NavigationDrawerItem(
-                                        label = {
+                                // 확장된 인앱 구매 항목들
+                                AnimatedVisibility(
+                                    visible = isInAppPurchaseExpanded,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut()
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                    ) {
+                                        // 개발자 응원하기
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    navigateTo(Screen.TipDonation)
+                                                    scope.launch { drawerState.close() }
+                                                }
+                                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                            horizontalArrangement = Arrangement.Start,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "☕",
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Column {
                                                 Text(
                                                     text = "개발자 응원하기",
@@ -1191,26 +1218,28 @@ fun PayManagementApp(
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
-                                        },
-                                        selected = false,
-                                        onClick = {
-                                            navigateTo(Screen.TipDonation)
-                                            scope.launch { drawerState.close() }
-                                        },
-                                        icon = {
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        // 광고 제거
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    navigateTo(Screen.AdRemoval)
+                                                    scope.launch { drawerState.close() }
+                                                }
+                                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                            horizontalArrangement = Arrangement.Start,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             Text(
-                                                text = "☕",
+                                                text = "🚫",
                                                 style = MaterialTheme.typography.bodyLarge
                                             )
-                                        },
-                                        modifier = Modifier
-                                            .height(56.dp)
-                                            .padding(start = 16.dp)
-                                    )
-
-                                    // 광고 제거
-                                    NavigationDrawerItem(
-                                        label = {
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Column {
                                                 Text(
                                                     text = "광고 제거",
@@ -1223,22 +1252,8 @@ fun PayManagementApp(
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
-                                        },
-                                        selected = false,
-                                        onClick = {
-                                            navigateTo(Screen.AdRemoval)
-                                            scope.launch { drawerState.close() }
-                                        },
-                                        icon = {
-                                            Text(
-                                                text = "🚫",
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                        },
-                                        modifier = Modifier
-                                            .height(56.dp)
-                                            .padding(start = 16.dp)
-                                    )
+                                        }
+                                    }
                                 }
                             }
 
