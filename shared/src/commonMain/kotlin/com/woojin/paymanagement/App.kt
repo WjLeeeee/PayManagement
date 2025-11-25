@@ -918,40 +918,6 @@ fun PayManagementApp(
                                         .fillMaxWidth()
                                         .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
                                 ) {
-                                    // 계산기
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable {
-                                                showCalculatorDialog = true
-                                                scope.launch { drawerState.close() }
-                                            }
-                                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                                        horizontalArrangement = Arrangement.Start,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "🔢",
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text(
-                                                text = "계산기",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                text = "소비 패턴 분석 및 계산",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
                                     // 반복 거래 관리
                                     Row(
                                         modifier = Modifier
@@ -1069,6 +1035,40 @@ fun PayManagementApp(
                                         .fillMaxWidth()
                                         .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
                                 ) {
+                                    // 계산기
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showCalculatorDialog = true
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "🔢",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "계산기",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "소비 패턴 분석 및 계산",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
                                     // 예산 설정
                                     Row(
                                         modifier = Modifier
