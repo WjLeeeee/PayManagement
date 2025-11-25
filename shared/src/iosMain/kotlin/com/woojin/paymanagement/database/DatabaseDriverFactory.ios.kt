@@ -106,17 +106,17 @@ actual class DatabaseDriverFactory {
                 "PRAGMA table_info(BudgetPlanEntity)",
                 { cursor ->
                     var hasOldColumn = false
-                    while (cursor.next()) {
+                    while (cursor.next().value) {
                         val columnName = cursor.getString(1)
                         if (columnName == "periodStartDate") {
                             hasOldColumn = true
                             break
                         }
                     }
-                    hasOldColumn
+                    app.cash.sqldelight.db.QueryResult.Value(hasOldColumn)
                 },
                 0
-            )
+            ).value
         } catch (e: Exception) {
             false
         }
@@ -176,7 +176,7 @@ actual class DatabaseDriverFactory {
         val hasMerchantColumn = merchantColumnInfo.first
         val merchantPosition = merchantColumnInfo.second
 
-        if (!hasMerchantColumn) {
+        if (hasMerchantColumn == false) {
             // merchant 컬럼이 없으면 테이블 재생성 (올바른 컬럼 순서로)
             try {
                 driver.execute(
@@ -270,7 +270,7 @@ actual class DatabaseDriverFactory {
 
         // CategoryBudgetEntity 마이그레이션: categoryId -> categoryIds
         // BudgetPlanEntity 마이그레이션에서 이미 삭제되었을 수 있으므로 확인
-        if (!hasOldBudgetSchema) {
+        if (hasOldBudgetSchema == false) {
             // v11 스키마가 아니면 마이그레이션 진행
             val hasOldSchema = try {
                 driver.executeQuery(
@@ -395,7 +395,7 @@ actual class DatabaseDriverFactory {
             false
         }
 
-        if (!hasMemoColumn) {
+        if (hasMemoColumn == false) {
             try {
                 driver.execute(
                     null,

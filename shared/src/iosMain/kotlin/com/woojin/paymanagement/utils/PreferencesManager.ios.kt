@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.utils
 
 import platform.Foundation.NSUserDefaults
+import kotlinx.datetime.Clock
 
 actual class PreferencesManager {
     private val userDefaults = NSUserDefaults.standardUserDefaults
@@ -73,5 +74,20 @@ actual class PreferencesManager {
 
     actual fun setMonthlySalary(salary: Double) {
         userDefaults.setDouble(salary, forKey = "monthly_salary")
+    }
+
+    // 광고 제거 관련
+    actual fun getAdRemovalExpiryTime(): Long {
+        val stringValue = userDefaults.stringForKey("ad_removal_expiry_time")
+        return stringValue?.toLongOrNull() ?: 0L
+    }
+
+    actual fun setAdRemovalExpiryTime(expiryTime: Long) {
+        userDefaults.setObject(expiryTime.toString(), forKey = "ad_removal_expiry_time")
+    }
+
+    actual fun isAdRemovalActive(): Boolean {
+        val expiryTime = getAdRemovalExpiryTime()
+        return expiryTime > Clock.System.now().toEpochMilliseconds()
     }
 }
