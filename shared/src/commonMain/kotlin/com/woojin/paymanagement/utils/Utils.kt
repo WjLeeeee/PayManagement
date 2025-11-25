@@ -90,10 +90,10 @@ object PayPeriodCalculator {
         )
     }
     
-    private fun calculateActualPayday(
-        year: Int, 
-        month: Month, 
-        payday: Int, 
+    fun calculateActualPayday(
+        year: Int,
+        month: Month,
+        payday: Int,
         adjustment: PaydayAdjustment
     ): LocalDate {
         val targetDate = try {

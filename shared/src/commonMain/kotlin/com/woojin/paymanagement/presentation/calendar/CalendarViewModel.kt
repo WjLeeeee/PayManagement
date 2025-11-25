@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.Month
 
 class CalendarViewModel(
     private val preferencesRepository: PreferencesRepository,
@@ -113,6 +114,34 @@ class CalendarViewModel(
         updateState(
             payPeriod = nextPeriod,
             selectedDate = newSelectedDate
+        )
+    }
+
+    /**
+     * 특정 년/월의 급여일로 이동
+     * 예: 2025년 12월 선택 시 → 12월 25일~1월 24일 급여 기간
+     */
+    fun navigateToYearMonth(year: Int, month: Int) {
+        // 선택한 년/월의 실제 급여일 계산 (주말 조정 포함)
+        val targetPayday = PayPeriodCalculator.calculateActualPayday(
+            year = year,
+            month = Month(month),
+            payday = payday,
+            adjustment = adjustment
+        )
+
+        // 해당 급여일을 기준으로 급여 기간 계산
+        // getCurrentPayPeriod는 전달된 날짜가 급여일이면 그날부터 다음 급여일까지의 기간을 반환
+        val targetPayPeriod = PayPeriodCalculator.getCurrentPayPeriod(
+            payday = payday,
+            adjustment = adjustment,
+            currentDate = targetPayday
+        )
+
+        // 급여일을 선택 날짜로 설정
+        updateState(
+            payPeriod = targetPayPeriod,
+            selectedDate = targetPayday
         )
     }
 

@@ -30,13 +30,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.animation.core.animateFloatAsState
@@ -105,6 +109,7 @@ fun CalendarScreen(
     // EdgeToEdge 대응은 CalendarTutorialOverlay에서 처리됩니다
 
     var fabExpanded by remember { mutableStateOf(false) }
+    var showYearMonthPicker by remember { mutableStateOf(false) }
 
     // HorizontalPager 상태 (무한 스크롤을 위해 큰 pageCount 사용)
     val initialPage = Int.MAX_VALUE / 2
@@ -170,6 +175,7 @@ fun CalendarScreen(
                     uiState.selectedDate?.let { selectedDate ->
                         PayPeriodHeader(
                             selectedDate = selectedDate,
+                            onClick = { showYearMonthPicker = true },
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
@@ -299,11 +305,24 @@ fun CalendarScreen(
             )
         }
     }
+
+    // 년/월 선택 다이얼로그
+    if (showYearMonthPicker && uiState.selectedDate != null) {
+        YearMonthPickerDialog(
+            currentYear = uiState.selectedDate.year,
+            currentMonth = uiState.selectedDate.monthNumber,
+            onDismiss = { showYearMonthPicker = false },
+            onConfirm = { year, month ->
+                viewModel.navigateToYearMonth(year, month)
+            }
+        )
+    }
 }
 
 @Composable
 private fun PayPeriodHeader(
     selectedDate: LocalDate,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val year = selectedDate.year
@@ -312,10 +331,10 @@ private fun PayPeriodHeader(
     Text(
         text = "${year}년 ${month}월",
         style = MaterialTheme.typography.titleLarge,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
-        modifier = modifier
+        modifier = modifier.clickable(onClick = onClick)
     )
 }
 
@@ -915,6 +934,157 @@ private fun TransactionItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
+            }
+        }
+    }
+}
+
+/**
+ * 년/월 선택 다이얼로그
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun YearMonthPickerDialog(
+    currentYear: Int,
+    currentMonth: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (year: Int, month: Int) -> Unit
+) {
+    var selectedYear by remember { mutableStateOf(currentYear) }
+    var selectedMonth by remember { mutableStateOf(currentMonth) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                // 제목
+                Text(
+                    text = "급여일 선택",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+
+                // 년도 선택
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "년도",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { selectedYear -= 1 }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowLeft,
+                                contentDescription = "이전 년도",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Text(
+                            text = "${selectedYear}년",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+
+                        IconButton(onClick = { selectedYear += 1 }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowRight,
+                                contentDescription = "다음 년도",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 월 선택
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "월",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+                            selectedMonth = if (selectedMonth == 1) 12 else selectedMonth - 1
+                        }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowLeft,
+                                contentDescription = "이전 월",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Text(
+                            text = "${selectedMonth}월",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+
+                        IconButton(onClick = {
+                            selectedMonth = if (selectedMonth == 12) 1 else selectedMonth + 1
+                        }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowRight,
+                                contentDescription = "다음 월",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 버튼
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("취소")
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    TextButton(onClick = {
+                        onConfirm(selectedYear, selectedMonth)
+                        onDismiss()
+                    }) {
+                        Text("확인")
+                    }
+                }
             }
         }
     }
