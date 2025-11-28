@@ -468,9 +468,11 @@ fun PayManagementApp(
                                 modifier = Modifier.height(38.dp)
                             )
 
+                            // 확장 가능한 메뉴 관리
+                            var expandedMenu by remember { mutableStateOf<ExpandableMenu?>(null) }
+
                             // 푸시 알림 설정 섹션 (확장 가능)
                             val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
-                            var isNotificationExpanded by remember { mutableStateOf(false) }
                             var hasListenerPermission by remember { mutableStateOf(notificationPermissionChecker.hasListenerPermission()) }
                             var hasPostPermission by remember { mutableStateOf(notificationPermissionChecker.hasPostNotificationPermission()) }
 
@@ -505,18 +507,18 @@ fun PayManagementApp(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Icon(
-                                            imageVector = if (isNotificationExpanded)
+                                            imageVector = if (expandedMenu == ExpandableMenu.NOTIFICATION)
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (isNotificationExpanded) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.NOTIFICATION) "접기" else "펼치기",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    isNotificationExpanded = !isNotificationExpanded
+                                    expandedMenu = if (expandedMenu == ExpandableMenu.NOTIFICATION) null else ExpandableMenu.NOTIFICATION
                                 },
                                 icon = {
                                     Text(
@@ -529,7 +531,7 @@ fun PayManagementApp(
 
                             // 확장된 알림 설정 항목들 (애니메이션 적용)
                             AnimatedVisibility(
-                                visible = isNotificationExpanded,
+                                visible = expandedMenu == ExpandableMenu.NOTIFICATION,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut()
                             ) {
@@ -628,8 +630,6 @@ fun PayManagementApp(
                                 }
                             }
 
-                            var isDataManagementExpanded by remember { mutableStateOf(false) }
-
                             NavigationDrawerItem(
                                 label = {
                                     Row(
@@ -643,18 +643,18 @@ fun PayManagementApp(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Icon(
-                                            imageVector = if (isDataManagementExpanded)
+                                            imageVector = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT)
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (isDataManagementExpanded) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT) "접기" else "펼치기",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    isDataManagementExpanded = !isDataManagementExpanded
+                                    expandedMenu = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT) null else ExpandableMenu.DATA_MANAGEMENT
                                 },
                                 icon = {
                                     Text(
@@ -667,7 +667,7 @@ fun PayManagementApp(
 
                             // 확장된 데이터 관리 항목들 (애니메이션 적용)
                             AnimatedVisibility(
-                                visible = isDataManagementExpanded,
+                                visible = expandedMenu == ExpandableMenu.DATA_MANAGEMENT,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut()
                             ) {
@@ -870,8 +870,6 @@ fun PayManagementApp(
                             }
 
                             // 거래 도구 섹션
-                            var isTransactionToolsExpanded by remember { mutableStateOf(false) }
-
                             NavigationDrawerItem(
                                 label = {
                                     Row(
@@ -885,18 +883,18 @@ fun PayManagementApp(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Icon(
-                                            imageVector = if (isTransactionToolsExpanded)
+                                            imageVector = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS)
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (isTransactionToolsExpanded) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS) "접기" else "펼치기",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    isTransactionToolsExpanded = !isTransactionToolsExpanded
+                                    expandedMenu = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS) null else ExpandableMenu.TRANSACTION_TOOLS
                                 },
                                 icon = {
                                     Text(
@@ -909,7 +907,7 @@ fun PayManagementApp(
 
                             // 확장된 거래 도구 항목들
                             AnimatedVisibility(
-                                visible = isTransactionToolsExpanded,
+                                visible = expandedMenu == ExpandableMenu.TRANSACTION_TOOLS,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut()
                             ) {
@@ -987,8 +985,6 @@ fun PayManagementApp(
                             }
 
                             // 분석 & 예산 섹션
-                            var isAnalysisExpanded by remember { mutableStateOf(false) }
-
                             NavigationDrawerItem(
                                 label = {
                                     Row(
@@ -1002,18 +998,18 @@ fun PayManagementApp(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Icon(
-                                            imageVector = if (isAnalysisExpanded)
+                                            imageVector = if (expandedMenu == ExpandableMenu.ANALYSIS)
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (isAnalysisExpanded) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.ANALYSIS) "접기" else "펼치기",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    isAnalysisExpanded = !isAnalysisExpanded
+                                    expandedMenu = if (expandedMenu == ExpandableMenu.ANALYSIS) null else ExpandableMenu.ANALYSIS
                                 },
                                 icon = {
                                     Text(
@@ -1026,7 +1022,7 @@ fun PayManagementApp(
 
                             // 확장된 분석 & 예산 항목들
                             AnimatedVisibility(
-                                visible = isAnalysisExpanded,
+                                visible = expandedMenu == ExpandableMenu.ANALYSIS,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut()
                             ) {
@@ -1139,8 +1135,6 @@ fun PayManagementApp(
 
                             // 인앱 구매 (Android만)
                             if (com.woojin.paymanagement.utils.Platform.isAndroid()) {
-                                var isInAppPurchaseExpanded by remember { mutableStateOf(false) }
-
                                 // 메인 아이템: 인앱 구매
                                 NavigationDrawerItem(
                                     label = {
@@ -1155,18 +1149,18 @@ fun PayManagementApp(
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Icon(
-                                                imageVector = if (isInAppPurchaseExpanded)
+                                                imageVector = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE)
                                                     Icons.Default.KeyboardArrowUp
                                                 else
                                                     Icons.Default.KeyboardArrowDown,
-                                                contentDescription = if (isInAppPurchaseExpanded) "접기" else "펼치기",
+                                                contentDescription = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE) "접기" else "펼치기",
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     },
                                     selected = false,
                                     onClick = {
-                                        isInAppPurchaseExpanded = !isInAppPurchaseExpanded
+                                        expandedMenu = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE) null else ExpandableMenu.IN_APP_PURCHASE
                                     },
                                     icon = {
                                         Text(
@@ -1179,7 +1173,7 @@ fun PayManagementApp(
 
                                 // 확장된 인앱 구매 항목들
                                 AnimatedVisibility(
-                                    visible = isInAppPurchaseExpanded,
+                                    visible = expandedMenu == ExpandableMenu.IN_APP_PURCHASE,
                                     enter = expandVertically() + fadeIn(),
                                     exit = shrinkVertically() + fadeOut()
                                 ) {
@@ -1917,4 +1911,12 @@ enum class Screen {
     TipDonation,
     AdRemoval,
     RecurringTransaction
+}
+
+enum class ExpandableMenu {
+    NOTIFICATION,
+    DATA_MANAGEMENT,
+    TRANSACTION_TOOLS,
+    ANALYSIS,
+    IN_APP_PURCHASE
 }
