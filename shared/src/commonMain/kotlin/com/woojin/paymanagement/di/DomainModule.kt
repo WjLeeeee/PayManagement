@@ -78,7 +78,7 @@ val domainModule = module {
     // AddTransaction Use Cases
     factoryOf(::SaveTransactionUseCase)
     factoryOf(::SaveMultipleTransactionsUseCase)
-    factoryOf(::UpdateTransactionUseCase)
+    factory { UpdateTransactionUseCase(get(), get()) }
     factoryOf(::GetAvailableBalanceCardsUseCase)
     factoryOf(::GetAvailableGiftCardsUseCase)
 

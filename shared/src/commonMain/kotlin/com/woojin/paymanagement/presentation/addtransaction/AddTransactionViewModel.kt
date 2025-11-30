@@ -431,13 +431,14 @@ class AddTransactionViewModel(
             val currentDate = uiState.date!!
 
             val transactions = when {
-                // 잔액권 지출 시 특별 처리
+                // 편집 모드가 아닐 때만 잔액권 지출 특별 처리 (복수 거래 가능)
+                !uiState.isEditMode &&
                 uiState.selectedType == TransactionType.EXPENSE &&
                 uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD &&
                 uiState.selectedBalanceCard != null -> {
 
                     val baseTransaction = Transaction(
-                        id = if (uiState.isEditMode) uiState.editTransaction?.id ?: generateUniqueId() else generateUniqueId(),
+                        id = generateUniqueId(),
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
@@ -458,13 +459,14 @@ class AddTransactionViewModel(
                     result.transactions
                 }
 
-                // 상품권 지출 시 특별 처리
+                // 편집 모드가 아닐 때만 상품권 지출 특별 처리 (복수 거래 가능)
+                !uiState.isEditMode &&
                 uiState.selectedType == TransactionType.EXPENSE &&
                 uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD &&
                 uiState.selectedGiftCard != null -> {
 
                     val baseTransaction = Transaction(
-                        id = if (uiState.isEditMode) uiState.editTransaction?.id ?: generateUniqueId() else generateUniqueId(),
+                        id = generateUniqueId(),
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
@@ -512,9 +514,12 @@ class AddTransactionViewModel(
                             else -> null
                         },
                         giftCardId = when {
-                            // 상품권은 항상 새로 추가
+                            // 수입 - 상품권 새로 추가
                             uiState.selectedType == TransactionType.INCOME &&
                             uiState.selectedIncomeType == IncomeType.GIFT_CARD -> generateUniqueId()
+                            // 지출 - 상품권 사용
+                            uiState.selectedType == TransactionType.EXPENSE &&
+                            uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.id
                             else -> null
                         },
                         cardName = when {
@@ -532,6 +537,9 @@ class AddTransactionViewModel(
                             // 지출 - 잔액권 사용
                             uiState.selectedType == TransactionType.EXPENSE &&
                             uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.name
+                            // 지출 - 상품권 사용
+                            uiState.selectedType == TransactionType.EXPENSE &&
+                            uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.name
                             else -> null
                         },
                         actualAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.actualAmount) else null,

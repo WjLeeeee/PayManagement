@@ -40,10 +40,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.PaymentMethod
+import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.domain.model.DailySummary
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.LocalDate
+
+/**
+ * 결제수단을 한글로 변환합니다.
+ */
+private fun getPaymentMethodText(paymentMethod: PaymentMethod?): String {
+    return when (paymentMethod) {
+        PaymentMethod.CASH -> "현금"
+        PaymentMethod.CARD -> "카드"
+        PaymentMethod.BALANCE_CARD -> "잔액권"
+        PaymentMethod.GIFT_CARD -> "상품권"
+        null -> ""
+    }
+}
+
+/**
+ * 수입유형을 한글로 변환합니다.
+ */
+private fun getIncomeTypeText(incomeType: IncomeType?): String {
+    return when (incomeType) {
+        IncomeType.CASH -> "현금"
+        IncomeType.BALANCE_CARD -> "잔액권"
+        IncomeType.GIFT_CARD -> "상품권"
+        null -> ""
+    }
+}
 
 @Composable
 fun DateDetailHeader(
@@ -272,7 +299,7 @@ fun TransactionDetailItem(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    // 카테고리
+                    // 카테고리와 결제수단
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -287,6 +314,21 @@ fun TransactionDetailItem(
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+
+                        // 결제수단/수입유형 표시
+                        val methodText = if (transaction.type == TransactionType.EXPENSE) {
+                            getPaymentMethodText(transaction.paymentMethod)
+                        } else {
+                            getIncomeTypeText(transaction.incomeType)
+                        }
+
+                        if (methodText.isNotBlank()) {
+                            Text(
+                                text = "($methodText)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
