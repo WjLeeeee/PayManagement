@@ -20,12 +20,14 @@ pipeline {
                 echo 'Setting up credentials...'
                 withCredentials([
                     file(credentialsId: 'keystore-file', variable: 'KEYSTORE_FILE'),
-                    file(credentialsId: 'play-store-credentials', variable: 'PLAY_CREDENTIALS')
+                    file(credentialsId: 'play-store-credentials', variable: 'PLAY_CREDENTIALS'),
+                    file(credentialsId: 'google-services-json', variable: 'GOOGLE_SERVICES')
                 ]) {
                     sh '''
                         # Copy credentials
                         cp $KEYSTORE_FILE KeyStorePath.jks
                         cp $PLAY_CREDENTIALS play-store-credentials.json
+                        cp $GOOGLE_SERVICES androidApp/google-services.json
 
                         # Create local.properties with Android SDK path
                         echo "sdk.dir=/Users/leewoojin/Library/Android/sdk" > local.properties
@@ -156,6 +158,7 @@ pipeline {
             sh '''
                 rm -f KeyStorePath.jks
                 rm -f play-store-credentials.json
+                rm -f androidApp/google-services.json
                 rm -f local.properties
             '''
         }
