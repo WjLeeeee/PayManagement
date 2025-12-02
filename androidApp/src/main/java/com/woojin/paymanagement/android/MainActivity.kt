@@ -35,12 +35,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.ads.MobileAds
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.woojin.paymanagement.App
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.AppInfo
 import com.woojin.paymanagement.utils.FileHandler
 import com.woojin.paymanagement.utils.NotificationPermissionChecker
 import com.woojin.paymanagement.utils.PreferencesManager
+import com.woojin.paymanagement.analytics.Analytics
 
 class MainActivity : ComponentActivity() {
 
@@ -49,6 +51,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Firebase Analytics 초기화
+        val firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        val analyticsLogger = Analytics.getInstance()
+        analyticsLogger.initialize(firebaseAnalytics)
 
         // Intent로부터 네비게이션 플래그 확인
         handleIntent(intent)

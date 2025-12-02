@@ -205,6 +205,32 @@ fun PayManagementApp(
     var navigationStack by remember { mutableStateOf(listOf(initialScreen)) }
     val currentScreen = navigationStack.last()
 
+    // 화면 변경 시 Analytics 로깅
+    LaunchedEffect(currentScreen) {
+        val analyticsLogger = com.woojin.paymanagement.analytics.Analytics.getInstance()
+        val screenName = when (currentScreen) {
+            Screen.PaydaySetup -> "월급날_설정"
+            Screen.Calendar -> "홈_캘린더"
+            Screen.Statistics -> "분석_통계"
+            Screen.AddTransaction -> "거래_추가"
+            Screen.DateDetail -> "날짜_상세"
+            Screen.EditTransaction -> "거래_수정"
+            Screen.ParsedTransactionList -> "파싱_거래_목록"
+            Screen.CategoryManagement -> "카테고리_관리"
+            Screen.CardManagement -> "카드_관리"
+            Screen.BudgetSettings -> "예산_설정"
+            Screen.MonthlyComparison -> "월별_비교"
+            Screen.TipDonation -> "팁_후원"
+            Screen.AdRemoval -> "광고_제거"
+            Screen.RecurringTransaction -> "반복_거래"
+        }
+
+        analyticsLogger.logScreenView(
+            screenName = screenName,
+            screenClass = currentScreen.name
+        )
+    }
+
     // 네비게이션 헬퍼 함수들
     fun navigateTo(screen: Screen) {
         navigationStack = navigationStack + screen

@@ -15,6 +15,8 @@ mpandroidchart = "3.1.0"
 uuid = "0.8.4"
 billing = "7.1.1"
 play-publisher = "3.10.1"
+firebase-bom = "33.7.0"
+google-services = "4.4.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -44,6 +46,8 @@ koin-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = 
 mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpandroidchart" }
 uuid = { module = "com.benasher44:uuid", version.ref = "uuid" }
 billing = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics-ktx" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -55,3 +59,4 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 play-publisher = { id = "com.github.triplet.play", version.ref = "play-publisher" }
+google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }

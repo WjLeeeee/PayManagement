@@ -57,6 +57,8 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.mpandroidchart)
             implementation(libs.billing)
+
+            implementation("com.google.firebase:firebase-analytics-ktx:22.1.2")
         }
         
         iosMain.dependencies {
