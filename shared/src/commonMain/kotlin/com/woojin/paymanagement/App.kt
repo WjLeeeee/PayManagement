@@ -100,8 +100,10 @@ fun App(
     billingClient: com.woojin.paymanagement.utils.BillingClient,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
+    shouldNavigateToAdRemoval: Boolean = false,
     onParsedTransactionsNavigationHandled: () -> Unit = {},
     onRecurringTransactionsNavigationHandled: () -> Unit = {},
+    onAdRemovalNavigationHandled: () -> Unit = {},
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
@@ -121,8 +123,10 @@ fun App(
                 modifier = modifier,
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                 shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
+                shouldNavigateToAdRemoval = shouldNavigateToAdRemoval,
                 onParsedTransactionsNavigationHandled = onParsedTransactionsNavigationHandled,
                 onRecurringTransactionsNavigationHandled = onRecurringTransactionsNavigationHandled,
+                onAdRemovalNavigationHandled = onAdRemovalNavigationHandled,
                 onThemeChanged = onThemeChanged,
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 onLaunchSaveFile = onLaunchSaveFile,
@@ -176,8 +180,10 @@ fun PayManagementApp(
     modifier: Modifier = Modifier,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
+    shouldNavigateToAdRemoval: Boolean = false,
     onParsedTransactionsNavigationHandled: () -> Unit = {},
     onRecurringTransactionsNavigationHandled: () -> Unit = {},
+    onAdRemovalNavigationHandled: () -> Unit = {},
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
@@ -274,6 +280,17 @@ fun PayManagementApp(
                 navigateTo(Screen.RecurringTransaction)
             }
             onRecurringTransactionsNavigationHandled()
+        }
+    }
+
+    // 광고 제거 화면으로 이동
+    LaunchedEffect(shouldNavigateToAdRemoval) {
+        if (shouldNavigateToAdRemoval) {
+            // Payday가 설정되어 있을 때만 네비게이션 수행
+            if (preferencesManager.isPaydaySet()) {
+                navigateTo(Screen.AdRemoval)
+            }
+            onAdRemovalNavigationHandled()
         }
     }
     

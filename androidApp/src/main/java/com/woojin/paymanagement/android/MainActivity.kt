@@ -200,6 +200,9 @@ fun StatusBarOverlayScreen(
     val view = LocalView.current
     var permissionResultCallback by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
 
+    // 광고 제거 화면으로 이동하기 위한 상태
+    var shouldNavigateToAdRemoval by remember { mutableStateOf(false) }
+
     // FileHandler 초기화
     val fileHandler = remember { FileHandler() }
 
@@ -295,8 +298,10 @@ fun StatusBarOverlayScreen(
                     billingClient = billingClient,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
+                    shouldNavigateToAdRemoval = shouldNavigateToAdRemoval,
                     onParsedTransactionsNavigationHandled = onParsedTransactionsNavigationHandled,
                     onRecurringTransactionsNavigationHandled = onRecurringTransactionsNavigationHandled,
+                    onAdRemovalNavigationHandled = { shouldNavigateToAdRemoval = false },
                     onThemeChanged = { onThemeChanged() },
                     onRequestPostNotificationPermission = { callback ->
                         // 콜백 저장
@@ -359,7 +364,10 @@ fun StatusBarOverlayScreen(
                 // 하단 배너 광고 (광고 제거가 활성화되지 않았을 때만 표시)
                 if (!isAdRemovalActive.value) {
                     BannerAdView(
-                        adUnitId = "ca-app-pub-9195598687879551/3919131534"
+                        adUnitId = "ca-app-pub-9195598687879551/3919131534",
+                        onNavigateToAdRemoval = {
+                            shouldNavigateToAdRemoval = true
+                        }
                     )
                 }
 
