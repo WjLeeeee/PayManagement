@@ -97,6 +97,8 @@ dependencies {
 
     // AdMob
     implementation("com.google.android.gms:play-services-ads:23.0.0")
+    //Meta Audience Network 어뎁터
+    implementation("com.google.ads.mediation:facebook:6.21.0.0")
 
     // Firebase
     implementation(platform(libs.firebase.bom))
