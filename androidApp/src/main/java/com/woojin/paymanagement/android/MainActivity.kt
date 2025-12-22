@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
@@ -289,7 +290,9 @@ fun StatusBarOverlayScreen(
                 }
 
                 App(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .imePadding(),
                     databaseDriverFactory = DatabaseDriverFactory(context = context),
                     preferencesManager = preferencesManager,
                     notificationPermissionChecker = NotificationPermissionChecker(context = context),
