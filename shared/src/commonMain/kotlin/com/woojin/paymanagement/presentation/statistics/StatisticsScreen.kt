@@ -141,6 +141,29 @@ fun StatisticsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Investment Summary Card
+        // 전체 transactions에서 투자 관련 카테고리 데이터 계산
+        val investmentTransactions = statisticsData.transactions.filter { it.category == "투자" }
+        val lossCutTransactions = statisticsData.transactions.filter { it.category == "손절" }
+        val profitTransactions = statisticsData.transactions.filter { it.category == "익절" }
+        val dividendTransactions = statisticsData.transactions.filter { it.category == "배당금" }
+
+        val investmentAmount = investmentTransactions.sumOf { it.amount }
+        val lossCutAmount = lossCutTransactions.sumOf { it.amount }
+        val profitAmount = profitTransactions.sumOf { it.amount }
+        val dividendAmount = dividendTransactions.sumOf { it.amount }
+
+        if (investmentAmount > 0 || lossCutAmount > 0 || profitAmount > 0 || dividendAmount > 0) {
+            InvestmentSummaryCard(
+                investmentAmount = investmentAmount,
+                lossCutAmount = lossCutAmount,
+                profitAmount = profitAmount,
+                dividendAmount = dividendAmount
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
         // Income Chart
         statisticsData.chartData?.let { chartData ->
             if (chartData.incomeItems.isNotEmpty()) {
@@ -375,6 +398,126 @@ private fun SummaryCard(
                                 balance < 0 -> MaterialTheme.colorScheme.error
                                 else -> MaterialTheme.colorScheme.onSurface
                             }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InvestmentSummaryCard(
+    investmentAmount: Double,
+    lossCutAmount: Double,
+    profitAmount: Double,
+    dividendAmount: Double
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "📈 투자 활동 요약",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 한 줄로 표시
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // 투자
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "💹 투자",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${Utils.formatAmount(investmentAmount)}원",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // 손절
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "📉 손절",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            text = "-${Utils.formatAmount(lossCutAmount)}원",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    // 익절
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "📈 익절",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(profitAmount)}원",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // 배당금
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "💰 배당금",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(dividendAmount)}원",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
