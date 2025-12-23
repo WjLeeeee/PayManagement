@@ -840,15 +840,16 @@ private fun ChartLegendItem(
             ) {
                 transactions.forEach { transaction ->
                     val dateText = "${transaction.date.monthNumber}/${transaction.date.dayOfMonth.toString().padStart(2, '0')}"
+                    val amountText = Utils.formatAmount(transaction.amount)
 
                     // 실제 거래 타입에 따라 표시 (transactionType 파라미터가 아닌 transaction.type 사용)
                     when (transaction.type) {
                         TransactionType.INCOME -> {
-                            // 수입: 날짜 + 메모 (있으면)
+                            // 수입: 날짜 + 메모 (있으면) + 금액
                             val displayText = if (transaction.memo.isNotBlank()) {
-                                "• $dateText - ${transaction.memo}"
+                                "• $dateText - ${transaction.memo} (${amountText}원)"
                             } else {
-                                "• $dateText"
+                                "• $dateText (${amountText}원)"
                             }
                             Text(
                                 text = displayText,
@@ -857,12 +858,12 @@ private fun ChartLegendItem(
                             )
                         }
                         TransactionType.EXPENSE -> {
-                            // 지출: 날짜 + 사용처 + 메모 (있으면)
+                            // 지출: 날짜 + 사용처 + 메모 (있으면) + 금액
                             val merchant = transaction.merchant ?: ""
                             val displayText = if (transaction.memo.isNotBlank()) {
-                                "• $dateText - $merchant (${transaction.memo})"
+                                "• $dateText - $merchant (${transaction.memo}) (${amountText}원)"
                             } else {
-                                "• $dateText - $merchant"
+                                "• $dateText - $merchant (${amountText}원)"
                             }
                             Text(
                                 text = displayText,
