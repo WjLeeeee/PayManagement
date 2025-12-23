@@ -21,5 +21,6 @@ expect fun PieChart(
     showLegend: Boolean = true,
     labelTextColor: Color = Color.Black,
     valueLineColor: Color = Color.Gray,
+    selectedCategory: String? = null,
     onItemSelected: (String?) -> Unit = {}
 )

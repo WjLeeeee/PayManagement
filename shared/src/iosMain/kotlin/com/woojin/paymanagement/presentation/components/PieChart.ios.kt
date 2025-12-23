@@ -19,6 +19,7 @@ actual fun PieChart(
     showLegend: Boolean,
     labelTextColor: Color,
     valueLineColor: Color,
+    selectedCategory: String?,
     onItemSelected: (String?) -> Unit
 ) {
     // iOS에서는 기존 Canvas 기반 구현 사용
@@ -29,6 +30,7 @@ actual fun PieChart(
         chartSize = chartSize,
         showLegend = showLegend,
         labelTextColor = labelTextColor,
-        valueLineColor = valueLineColor
+        valueLineColor = valueLineColor,
+        selectedCategory = selectedCategory
     )
 }

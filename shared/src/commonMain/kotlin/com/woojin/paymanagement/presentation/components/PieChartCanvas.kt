@@ -50,7 +50,8 @@ internal fun PieChartCanvas(
     chartSize: Dp = 200.dp,
     showLegend: Boolean = true,
     labelTextColor: Color = Color.Black,
-    valueLineColor: Color = Color.Gray
+    valueLineColor: Color = Color.Gray,
+    selectedCategory: String? = null
 ) {
     if (items.isEmpty()) {
         EmptyChart(modifier, chartSize)
@@ -69,7 +70,7 @@ internal fun PieChartCanvas(
                 .size(chartSize * 2.5f)
                 .padding(16.dp)
         ) {
-            drawPieChartWithLabels(items, textMeasurer, labelTextColor, valueLineColor)
+            drawPieChartWithLabels(items, textMeasurer, labelTextColor, valueLineColor, selectedCategory)
         }
 
         if (showLegend) {
@@ -110,7 +111,8 @@ private fun DrawScope.drawPieChartWithLabels(
     items: List<ChartItem>,
     textMeasurer: TextMeasurer,
     labelTextColor: Color,
-    valueLineColor: Color
+    valueLineColor: Color,
+    selectedCategory: String? = null
 ) {
     val total = items.sumOf { it.percentage.toDouble() }.toFloat()
     if (total == 0f) return
@@ -156,15 +158,19 @@ private fun DrawScope.drawPieChartWithLabels(
     items.forEach { item ->
         val sweepAngle = (item.percentage / total) * 360f
 
+        // 선택된 카테고리는 약간 크게 그리기
+        val isSelected = item.category == selectedCategory
+        val radius = if (isSelected) chartRadius * 1.1f else chartRadius
+
         drawArc(
             color = item.color,
             startAngle = currentAngle,
             sweepAngle = sweepAngle,
             useCenter = true,
-            size = Size(chartRadius * 2, chartRadius * 2),
+            size = Size(radius * 2, radius * 2),
             topLeft = Offset(
-                x = center.x - chartRadius,
-                y = center.y - chartRadius
+                x = center.x - radius,
+                y = center.y - radius
             )
         )
 

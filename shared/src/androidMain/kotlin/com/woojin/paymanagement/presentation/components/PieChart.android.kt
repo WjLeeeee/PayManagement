@@ -39,6 +39,7 @@ actual fun PieChart(
     showLegend: Boolean,
     labelTextColor: androidx.compose.ui.graphics.Color,
     valueLineColor: androidx.compose.ui.graphics.Color,
+    selectedCategory: String?,
     onItemSelected: (String?) -> Unit
 ) {
     val entries = remember(items) {
@@ -131,6 +132,19 @@ actual fun PieChart(
             }
 
             chart.data = data
+
+            // 선택된 카테고리가 있으면 해당 항목을 하이라이트
+            if (selectedCategory != null) {
+                val selectedIndex = entries.indexOfFirst { it.label == selectedCategory }
+                if (selectedIndex >= 0) {
+                    chart.highlightValue(selectedIndex.toFloat(), 0)
+                } else {
+                    chart.highlightValue(null)
+                }
+            } else {
+                chart.highlightValue(null)
+            }
+
             chart.invalidate()
         },
         modifier = modifier

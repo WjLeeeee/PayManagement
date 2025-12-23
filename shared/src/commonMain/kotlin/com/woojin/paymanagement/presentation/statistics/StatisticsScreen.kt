@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.presentation.statistics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.components.PieChart
 import com.woojin.paymanagement.utils.BackHandler
@@ -171,7 +173,9 @@ fun StatisticsScreen(
                     title = "수입 분석",
                     items = chartData.incomeItems,
                     total = chartData.totalIncome,
-                    availableCategories = uiState.availableCategories
+                    availableCategories = uiState.availableCategories,
+                    transactions = statisticsData.transactions,
+                    transactionType = TransactionType.INCOME
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -185,7 +189,9 @@ fun StatisticsScreen(
                     title = "지출 분석",
                     items = chartData.expenseItems,
                     total = chartData.totalExpense,
-                    availableCategories = uiState.availableCategories
+                    availableCategories = uiState.availableCategories,
+                    transactions = statisticsData.transactions,
+                    transactionType = TransactionType.EXPENSE
                 )
             }
         }
@@ -566,7 +572,9 @@ private fun ChartSection(
     title: String,
     items: List<com.woojin.paymanagement.data.ChartItem>,
     total: Double,
-    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
+    transactions: List<Transaction> = emptyList(),
+    transactionType: TransactionType
 ) {
     // 선택된 카테고리 상태
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -622,6 +630,7 @@ private fun ChartSection(
                     showLegend = false,
                     labelTextColor = MaterialTheme.colorScheme.onSurface,
                     valueLineColor = MaterialTheme.colorScheme.onSurface,
+                    selectedCategory = selectedCategory,
                     onItemSelected = { category ->
                         selectedCategory = category
                     }
@@ -635,11 +644,18 @@ private fun ChartSection(
                 ) {
                     // 주요 항목들 표시
                     mainItems.forEach { item ->
+                        val categoryTransactions = transactions.filter {
+                            it.category == item.category && it.type == transactionType
+                        }.sortedBy { it.date }
+
                         ChartLegendItem(
                             item = item,
                             isSubItem = false,
                             isSelected = selectedCategory == item.category,
-                            availableCategories = availableCategories
+                            availableCategories = availableCategories,
+                            onClick = { selectedCategory = if (selectedCategory == item.category) null else item.category },
+                            transactions = categoryTransactions,
+                            transactionType = transactionType
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -659,18 +675,28 @@ private fun ChartSection(
                             ),
                             isSubItem = false,
                             isSelected = selectedCategory == "기타",
-                            availableCategories = availableCategories
+                            availableCategories = availableCategories,
+                            onClick = { selectedCategory = if (selectedCategory == "기타") null else "기타" },
+                            transactions = emptyList(),
+                            transactionType = transactionType
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // 기타 내부 항목들 (들여쓰기)
                         smallItems.forEach { item ->
+                            val categoryTransactions = transactions.filter {
+                                it.category == item.category && it.type == transactionType
+                            }.sortedBy { it.date }
+
                             ChartLegendItem(
                                 item = item,
                                 isSubItem = true,
                                 isSelected = selectedCategory == item.category,
-                                availableCategories = availableCategories
+                                availableCategories = availableCategories,
+                                onClick = { selectedCategory = if (selectedCategory == item.category) null else item.category },
+                                transactions = categoryTransactions,
+                                transactionType = transactionType
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -686,20 +712,27 @@ private fun ChartLegendItem(
     item: com.woojin.paymanagement.data.ChartItem,
     isSubItem: Boolean = false,
     isSelected: Boolean = false,
-    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
+    onClick: () -> Unit = {},
+    transactions: List<Transaction> = emptyList(),
+    transactionType: TransactionType
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = if (isSubItem) 24.dp else 0.dp)
-            .background(
-                color = if (isSelected) item.color.copy(alpha = 0.15f) else Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(vertical = if (isSelected) 8.dp else 0.dp, horizontal = if (isSelected) 8.dp else 0.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = if (isSubItem) 24.dp else 0.dp)
+                .clickable { onClick() }
+                .background(
+                    color = if (isSelected) item.color.copy(alpha = 0.15f) else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(vertical = if (isSelected) 8.dp else 0.dp, horizontal = if (isSelected) 8.dp else 0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
@@ -748,12 +781,67 @@ private fun ChartLegendItem(
             }
         }
 
-        Text(
-            text = "${(item.percentage * 10).toInt() / 10.0}%",
-            style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-            fontWeight = if (isSelected) FontWeight.ExtraBold else if (isSubItem) FontWeight.Normal else FontWeight.Bold,
-            color = if (isSubItem) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-        )
+            Text(
+                text = "${(item.percentage * 10).toInt() / 10.0}%",
+                style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.ExtraBold else if (isSubItem) FontWeight.Normal else FontWeight.Bold,
+                color = if (isSubItem) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        // 거래 내역 확장 표시
+        androidx.compose.animation.AnimatedVisibility(
+            visible = isSelected && transactions.isNotEmpty()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = if (isSubItem) 48.dp else 24.dp, top = 8.dp, end = 8.dp, bottom = 4.dp)
+                    .background(
+                        color = item.color.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(12.dp)
+            ) {
+                transactions.forEach { transaction ->
+                    val dateText = "${transaction.date.monthNumber}/${transaction.date.dayOfMonth.toString().padStart(2, '0')}"
+
+                    when (transactionType) {
+                        TransactionType.INCOME -> {
+                            // 수입: 날짜 + 메모 (있으면)
+                            val displayText = if (transaction.memo.isNotBlank()) {
+                                "• $dateText - ${transaction.memo}"
+                            } else {
+                                "• $dateText"
+                            }
+                            Text(
+                                text = displayText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TransactionType.EXPENSE -> {
+                            // 지출: 날짜 + 사용처 + 메모 (있으면)
+                            val merchant = transaction.merchant ?: ""
+                            val displayText = if (transaction.memo.isNotBlank()) {
+                                "• $dateText - $merchant (${transaction.memo})"
+                            } else {
+                                "• $dateText - $merchant"
+                            }
+                            Text(
+                                text = displayText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (transaction != transactions.last()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+            }
+        }
     }
 }
 
