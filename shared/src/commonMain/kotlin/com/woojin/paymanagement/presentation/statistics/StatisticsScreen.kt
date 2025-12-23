@@ -193,6 +193,26 @@ fun StatisticsScreen(
                     transactions = statisticsData.transactions,
                     transactionType = TransactionType.EXPENSE
                 )
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+
+        // Investment Activity Chart (moved after Expense Chart)
+        if (investmentAmount > 0 || lossCutAmount > 0 || profitAmount > 0 || dividendAmount > 0) {
+            statisticsData.chartData?.let { chartData ->
+                if (chartData.investmentItems.isNotEmpty()) {
+                    ChartSection(
+                        title = "투자 활동 분석",
+                        items = chartData.investmentItems,
+                        total = chartData.totalInvestment,
+                        availableCategories = uiState.availableCategories,
+                        transactions = statisticsData.transactions,
+                        transactionType = TransactionType.INCOME, // 투자는 수입/지출 혼합 (더미값)
+                        groupSmallItems = false, // 투자 활동은 기타로 묶지 않고 모두 표시
+                        filterByType = false // 투자 활동은 타입 필터링 하지 않음 (수입/지출 모두 포함)
+                    )
+                }
             }
         }
 
@@ -574,7 +594,9 @@ private fun ChartSection(
     total: Double,
     availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
     transactions: List<Transaction> = emptyList(),
-    transactionType: TransactionType
+    transactionType: TransactionType,
+    groupSmallItems: Boolean = true, // 기본값은 true (기타로 묶음)
+    filterByType: Boolean = true // 기본값은 true (타입으로 필터링)
 ) {
     // 선택된 카테고리 상태
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -582,26 +604,31 @@ private fun ChartSection(
     // "기타" 색상을 먼저 가져오기
     val etcColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // 3% 미만 항목들을 "기타"로 묶기
-    val (processedItems, mainItems, smallItems) = remember(items, total, etcColor) {
-        val threshold = 3.0f
-        val mainItems = items.filter { it.percentage >= threshold }
-        val smallItems = items.filter { it.percentage < threshold }
-
-        if (smallItems.isEmpty()) {
+    // 3% 미만 항목들을 "기타"로 묶기 (groupSmallItems가 true일 때만)
+    val (processedItems, mainItems, smallItems) = remember(items, total, etcColor, groupSmallItems) {
+        if (!groupSmallItems) {
+            // 기타로 묶지 않고 모든 항목 표시
             Triple(items, items, emptyList())
         } else {
-            val etcAmount = smallItems.sumOf { it.amount.toDouble() }
-            val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
+            val threshold = 3.0f
+            val mainItems = items.filter { it.percentage >= threshold }
+            val smallItems = items.filter { it.percentage < threshold }
 
-            val etcItem = com.woojin.paymanagement.data.ChartItem(
-                category = "기타",
-                amount = etcAmount,
-                percentage = etcPercentage,
-                color = etcColor
-            )
+            if (smallItems.isEmpty()) {
+                Triple(items, items, emptyList())
+            } else {
+                val etcAmount = smallItems.sumOf { it.amount.toDouble() }
+                val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
 
-            Triple(mainItems + etcItem, mainItems, smallItems)
+                val etcItem = com.woojin.paymanagement.data.ChartItem(
+                    category = "기타",
+                    amount = etcAmount,
+                    percentage = etcPercentage,
+                    color = etcColor
+                )
+
+                Triple(mainItems + etcItem, mainItems, smallItems)
+            }
         }
     }
 
@@ -645,7 +672,11 @@ private fun ChartSection(
                     // 주요 항목들 표시
                     mainItems.forEach { item ->
                         val categoryTransactions = transactions.filter {
-                            it.category == item.category && it.type == transactionType
+                            if (filterByType) {
+                                it.category == item.category && it.type == transactionType
+                            } else {
+                                it.category == item.category
+                            }
                         }.sortedBy { it.date }
 
                         ChartLegendItem(
@@ -686,7 +717,11 @@ private fun ChartSection(
                         // 기타 내부 항목들 (들여쓰기)
                         smallItems.forEach { item ->
                             val categoryTransactions = transactions.filter {
-                                it.category == item.category && it.type == transactionType
+                                if (filterByType) {
+                                    it.category == item.category && it.type == transactionType
+                                } else {
+                                    it.category == item.category
+                                }
                             }.sortedBy { it.date }
 
                             ChartLegendItem(
@@ -806,7 +841,8 @@ private fun ChartLegendItem(
                 transactions.forEach { transaction ->
                     val dateText = "${transaction.date.monthNumber}/${transaction.date.dayOfMonth.toString().padStart(2, '0')}"
 
-                    when (transactionType) {
+                    // 실제 거래 타입에 따라 표시 (transactionType 파라미터가 아닌 transaction.type 사용)
+                    when (transaction.type) {
                         TransactionType.INCOME -> {
                             // 수입: 날짜 + 메모 (있으면)
                             val displayText = if (transaction.memo.isNotBlank()) {

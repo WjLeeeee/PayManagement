@@ -13,8 +13,10 @@ data class ChartItem(
 data class ChartData(
     val incomeItems: List<ChartItem>,
     val expenseItems: List<ChartItem>,
+    val investmentItems: List<ChartItem>,
     val totalIncome: Double,
-    val totalExpense: Double
+    val totalExpense: Double,
+    val totalInvestment: Double
 )
 
 object ChartDataCalculator {
@@ -31,27 +33,36 @@ object ChartDataCalculator {
             it.type == TransactionType.EXPENSE && it.category !in INVESTMENT_CATEGORIES
         }
 
+        // 투자 관련 거래만 추출
+        val investmentTransactions = transactions.filter {
+            it.category in INVESTMENT_CATEGORIES
+        }
+
         val totalIncome = incomeTransactions.sumOf { it.amount }
         val totalExpense = expenseTransactions.sumOf { it.amount }
+        val totalInvestment = investmentTransactions.sumOf { it.amount }
 
         val incomeItems = calculateChartItems(incomeTransactions, totalIncome)
         val expenseItems = calculateChartItems(expenseTransactions, totalExpense)
+        val investmentItems = calculateInvestmentChartItems(investmentTransactions)
 
         return ChartData(
             incomeItems = incomeItems,
             expenseItems = expenseItems,
+            investmentItems = investmentItems,
             totalIncome = totalIncome,
-            totalExpense = totalExpense
+            totalExpense = totalExpense,
+            totalInvestment = totalInvestment
         )
     }
     
     private fun calculateChartItems(transactions: List<Transaction>, total: Double): List<ChartItem> {
         if (total == 0.0) return emptyList()
-        
+
         val groupedByCategory = transactions.groupBy { it.category }
         val items = mutableListOf<ChartItem>()
         var colorIndex = 0
-        
+
         groupedByCategory.forEach { (category, categoryTransactions) ->
             val amount = categoryTransactions.sumOf { it.amount }
             val percentage = (amount / total * 100).toFloat()
@@ -68,7 +79,40 @@ object ChartDataCalculator {
                 )
             )
         }
-        
+
+        // 퍼센티지 기준으로 내림차순 정렬
+        return items.sortedByDescending { it.percentage }
+    }
+
+    private fun calculateInvestmentChartItems(transactions: List<Transaction>): List<ChartItem> {
+        if (transactions.isEmpty()) return emptyList()
+
+        // 전체 투자 활동 금액의 절대값 합계 계산
+        val totalAbsoluteAmount = transactions.sumOf { kotlin.math.abs(it.amount) }
+        if (totalAbsoluteAmount == 0.0) return emptyList()
+
+        val groupedByCategory = transactions.groupBy { it.category }
+        val items = mutableListOf<ChartItem>()
+        var colorIndex = 0
+
+        groupedByCategory.forEach { (category, categoryTransactions) ->
+            val amount = categoryTransactions.sumOf { it.amount }
+            val absoluteAmount = kotlin.math.abs(amount)
+            val percentage = (absoluteAmount / totalAbsoluteAmount * 100).toFloat()
+
+            val color = CategoryColors.getColor(category, colorIndex)
+            colorIndex++
+
+            items.add(
+                ChartItem(
+                    category = category,
+                    amount = amount,
+                    percentage = percentage,
+                    color = color
+                )
+            )
+        }
+
         // 퍼센티지 기준으로 내림차순 정렬
         return items.sortedByDescending { it.percentage }
     }
