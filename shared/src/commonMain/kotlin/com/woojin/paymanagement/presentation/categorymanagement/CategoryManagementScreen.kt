@@ -81,7 +81,7 @@ fun CategoryManagementScreen(
                     CategoryItem(
                         category = category,
                         onEdit = { viewModel.showEditDialog(category) },
-                        onDelete = { viewModel.deleteCategory(category.id) }
+                        onDelete = { viewModel.showDeleteConfirmDialog(category) }
                     )
                 }
             }
@@ -118,6 +118,18 @@ fun CategoryManagementScreen(
                 onConfirm = { viewModel.showConfirmDialogForUpdate() },
                 onDismiss = { viewModel.hideConfirmDialog() }
             )
+        }
+
+        // 삭제 확인 다이얼로그
+        if (uiState.isDeleteDialogVisible) {
+            uiState.deletingCategory?.let { category ->
+                DeleteConfirmDialog(
+                    categoryName = category.name,
+                    categoryEmoji = category.emoji,
+                    onConfirm = { viewModel.confirmDelete() },
+                    onDismiss = { viewModel.hideDeleteConfirmDialog() }
+                )
+            }
         }
 
         // 에러 표시
@@ -358,6 +370,37 @@ private fun ConfirmDialog(
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text("계속")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("취소")
+            }
+        }
+    )
+}
+
+@Composable
+private fun DeleteConfirmDialog(
+    categoryName: String,
+    categoryEmoji: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("카테고리 삭제") },
+        text = {
+            Text("$categoryEmoji $categoryName 카테고리를 정말 삭제하시겠습니까?")
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("삭제")
             }
         },
         dismissButton = {

@@ -16,6 +16,8 @@ data class CategoryManagementUiState(
     val showConfirmDialog: Boolean = false,
     val confirmDialogMessage: String = "",
     val pendingUpdate: (() -> Unit)? = null,
+    val isDeleteDialogVisible: Boolean = false,
+    val deletingCategory: Category? = null,
     val isLoading: Boolean = false,
     val error: String? = null
 )
