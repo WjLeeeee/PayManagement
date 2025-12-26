@@ -374,6 +374,16 @@ fun StatusBarOverlayScreen(
                     },
                     onAppExit = {
                         (context as? ComponentActivity)?.finish()
+                    },
+                    onContactSupport = {
+                        val emailHelper = com.woojin.paymanagement.utils.EmailHelper(context)
+                        emailHelper.sendSupportEmail(
+                            email = "dldnwls0115@naver.com",
+                            subject = "편한 가계부-월급 기반 관리 시스템",
+                            appVersion = "${appInfo.getVersionName()}(${appInfo.getVersionCode()})",
+                            osVersion = android.os.Build.VERSION.RELEASE,
+                            deviceModel = android.os.Build.MODEL
+                        )
                     }
                 )
 

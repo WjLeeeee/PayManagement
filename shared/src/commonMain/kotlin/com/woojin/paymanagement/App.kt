@@ -109,7 +109,8 @@ fun App(
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
     onLaunchLoadFile: () -> Unit = {},
-    onAppExit: () -> Unit = {}
+    onAppExit: () -> Unit = {},
+    onContactSupport: () -> Unit = {}
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -135,7 +136,8 @@ fun App(
                 onLaunchSaveFile = onLaunchSaveFile,
                 onLaunchLoadFile = onLaunchLoadFile,
                 fileHandler = fileHandler,
-                onAppExit = onAppExit
+                onAppExit = onAppExit,
+                onContactSupport = onContactSupport
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -194,7 +196,8 @@ fun PayManagementApp(
     onLaunchSaveFile: (String) -> Unit = {},
     onLaunchLoadFile: () -> Unit = {},
     fileHandler: com.woojin.paymanagement.utils.FileHandler? = null,
-    onAppExit: () -> Unit = {}
+    onAppExit: () -> Unit = {},
+    onContactSupport: () -> Unit = {}
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -1299,6 +1302,29 @@ fun PayManagementApp(
                                     }
                                 }
                             }
+
+                            // 관리자에게 문의
+                            NavigationDrawerItem(
+                                label = {
+                                    Text(
+                                        text = "관리자에게 문의",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                },
+                                selected = false,
+                                onClick = {
+                                    onContactSupport()
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "📧",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                modifier = Modifier.height(48.dp)
+                            )
 
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
                             NavigationDrawerItem(
