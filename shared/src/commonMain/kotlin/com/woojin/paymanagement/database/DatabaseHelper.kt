@@ -640,4 +640,30 @@ class DatabaseHelper(
             lastExecutedDate = this.lastExecutedDate
         )
     }
+
+    // Holiday 관련 메서드들
+    suspend fun insertHoliday(locdate: String, dateName: String, isHoliday: String, year: Long) {
+        queries.insertHoliday(
+            locdate = locdate,
+            dateName = dateName,
+            isHoliday = isHoliday,
+            year = year
+        )
+    }
+
+    suspend fun getHolidayByDate(date: String): HolidayEntity? {
+        return queries.selectHolidayByDate(date).executeAsOneOrNull()
+    }
+
+    suspend fun getHolidaysByYear(year: Long): List<HolidayEntity> {
+        return queries.selectHolidaysByYear(year).executeAsList()
+    }
+
+    suspend fun deleteHolidaysByYear(year: Long) {
+        queries.deleteHolidaysByYear(year)
+    }
+
+    suspend fun getLatestHolidayDate(): String? {
+        return queries.selectLatestHolidayDate().executeAsOneOrNull()
+    }
 }

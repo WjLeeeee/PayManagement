@@ -408,6 +408,48 @@ actual class DatabaseDriverFactory {
             }
         }
 
+        // RecurringTransactionEntity 테이블이 없으면 생성
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS RecurringTransactionEntity (
+                id TEXT NOT NULL PRIMARY KEY,
+                type TEXT NOT NULL,
+                category TEXT NOT NULL,
+                amount REAL NOT NULL,
+                merchant TEXT NOT NULL,
+                memo TEXT NOT NULL DEFAULT '',
+                paymentMethod TEXT NOT NULL,
+                balanceCardId TEXT,
+                giftCardId TEXT,
+                pattern TEXT NOT NULL,
+                dayOfMonth INTEGER,
+                dayOfWeek INTEGER,
+                weekendHandling TEXT NOT NULL DEFAULT 'AS_IS',
+                isActive INTEGER NOT NULL DEFAULT 1,
+                createdAt INTEGER NOT NULL,
+                lastExecutedDate TEXT
+            )
+            """.trimIndent(),
+            0,
+            null
+        )
+
+        // HolidayEntity 테이블이 없으면 생성
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS HolidayEntity (
+                locdate TEXT NOT NULL PRIMARY KEY,
+                dateName TEXT NOT NULL,
+                isHoliday TEXT NOT NULL,
+                year INTEGER NOT NULL
+            )
+            """.trimIndent(),
+            0,
+            null
+        )
+
         return driver
     }
 }

@@ -4,10 +4,12 @@ import com.woojin.paymanagement.data.repository.TransactionRepositoryImpl
 import com.woojin.paymanagement.data.repository.CategoryRepositoryImpl
 import com.woojin.paymanagement.data.repository.BudgetRepositoryImpl
 import com.woojin.paymanagement.data.repository.RecurringTransactionRepositoryImpl
+import com.woojin.paymanagement.data.repository.HolidayRepositoryImpl
 import com.woojin.paymanagement.domain.repository.TransactionRepository
 import com.woojin.paymanagement.domain.repository.CategoryRepository
 import com.woojin.paymanagement.domain.repository.BudgetRepository
 import com.woojin.paymanagement.domain.repository.RecurringTransactionRepository
+import com.woojin.paymanagement.domain.repository.HolidayRepository
 import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
@@ -51,8 +53,10 @@ import com.woojin.paymanagement.domain.usecase.SaveRecurringTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteRecurringTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.CheckTodayRecurringTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.MarkRecurringTransactionExecutedUseCase
+import com.woojin.paymanagement.domain.usecase.FetchHolidaysUseCase
 import com.woojin.paymanagement.domain.repository.BillingRepository
 import com.woojin.paymanagement.domain.repository.BillingRepositoryImpl
+import com.woojin.paymanagement.utils.PayPeriodCalculator
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -66,9 +70,13 @@ val domainModule = module {
     singleOf(::BudgetRepositoryImpl) bind BudgetRepository::class
     singleOf(::RecurringTransactionRepositoryImpl) bind RecurringTransactionRepository::class
     singleOf(::BillingRepositoryImpl) bind BillingRepository::class
+    singleOf(::HolidayRepositoryImpl) bind HolidayRepository::class
     single<com.woojin.paymanagement.domain.repository.PreferencesRepository> {
         com.woojin.paymanagement.data.repository.PreferencesRepositoryImpl(get())
     }
+
+    // Utils
+    single { PayPeriodCalculator(get()) }
 
     // Use Cases
     factory { GetPayPeriodSummaryUseCase() }
@@ -95,6 +103,7 @@ val domainModule = module {
     factoryOf(::GetPaydaySetupUseCase)
     factoryOf(::SavePaydaySetupUseCase)
     factoryOf(::ValidatePaydaySetupUseCase)
+    factoryOf(::FetchHolidaysUseCase)
 
     // Money Visibility Use Cases
     factoryOf(::GetMoneyVisibilityUseCase)

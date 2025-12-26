@@ -31,6 +31,8 @@ class CalendarViewModel(
     private val setMoneyVisibilityUseCase: SetMoneyVisibilityUseCase,
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val payPeriodCalculator: PayPeriodCalculator,
+    private val holidayRepository: com.woojin.paymanagement.domain.repository.HolidayRepository,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(CalendarUiState())
@@ -38,6 +40,10 @@ class CalendarViewModel(
 
     private val payday: Int get() = preferencesRepository.getPayday()
     private val adjustment: com.woojin.paymanagement.utils.PaydayAdjustment get() = preferencesRepository.getPaydayAdjustment()
+
+    companion object {
+        private val HOLIDAY_API_KEY = com.woojin.paymanagement.BuildKonfig.HOLIDAY_API_KEY
+    }
 
     init {
         // 카테고리 목록을 로드하여 UiState에 반영
@@ -58,20 +64,22 @@ class CalendarViewModel(
         initialPayPeriod: PayPeriod? = null,
         selectedDate: LocalDate? = null
     ) {
-        val currentPayPeriod = initialPayPeriod
-            ?: PayPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
+        coroutineScope.launch {
+            val currentPayPeriod = initialPayPeriod
+                ?: payPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
 
-        val recommendedDate = selectedDate
-            ?: PayPeriodCalculator.getRecommendedDateForPeriod(currentPayPeriod, payday, adjustment)
+            val recommendedDate = selectedDate
+                ?: payPeriodCalculator.getRecommendedDateForPeriod(currentPayPeriod, payday, adjustment)
 
-        val isMoneyVisible = getMoneyVisibilityUseCase()
+            val isMoneyVisible = getMoneyVisibilityUseCase()
 
-        updateState(
-            transactions = transactions,
-            payPeriod = currentPayPeriod,
-            selectedDate = recommendedDate,
-            isMoneyVisible = isMoneyVisible
-        )
+            updateState(
+                transactions = transactions,
+                payPeriod = currentPayPeriod,
+                selectedDate = recommendedDate,
+                isMoneyVisible = isMoneyVisible
+            )
+        }
     }
 
     fun updateTransactions(transactions: List<Transaction>) {
@@ -84,11 +92,12 @@ class CalendarViewModel(
 
     fun navigateToPreviousPeriod() {
         val currentSelectedDate = uiState.selectedDate ?: return
-        val previousPeriod = PayPeriodCalculator.getPreviousPayPeriod(
-            currentPeriod = requireNotNull(uiState.currentPayPeriod),
-            payday = payday,
-            adjustment = adjustment
-        )
+        coroutineScope.launch {
+            val previousPeriod = payPeriodCalculator.getPreviousPayPeriod(
+                currentPeriod = requireNotNull(uiState.currentPayPeriod),
+                payday = payday,
+                adjustment = adjustment
+            )
 
         // 현재 선택된 날짜의 일(day)을 유지하면서 월만 이전으로 변경
         val newSelectedDate = try {
@@ -106,19 +115,24 @@ class CalendarViewModel(
             previousPeriod.startDate
         }
 
-        updateState(
-            payPeriod = previousPeriod,
-            selectedDate = newSelectedDate
-        )
+            updateState(
+                payPeriod = previousPeriod,
+                selectedDate = newSelectedDate
+            )
+        }
     }
 
     fun navigateToNextPeriod() {
         val currentSelectedDate = uiState.selectedDate ?: return
-        val nextPeriod = PayPeriodCalculator.getNextPayPeriod(
-            currentPeriod = requireNotNull(uiState.currentPayPeriod),
-            payday = payday,
-            adjustment = adjustment
-        )
+        coroutineScope.launch {
+            val nextPeriod = payPeriodCalculator.getNextPayPeriod(
+                currentPeriod = requireNotNull(uiState.currentPayPeriod),
+                payday = payday,
+                adjustment = adjustment
+            )
+
+            // 공휴일 자동 로딩 체크
+            checkAndLoadHolidays(nextPeriod.endDate)
 
         // 현재 선택된 날짜의 일(day)을 유지하면서 월만 다음으로 변경
         val newSelectedDate = try {
@@ -136,10 +150,11 @@ class CalendarViewModel(
             nextPeriod.startDate
         }
 
-        updateState(
-            payPeriod = nextPeriod,
-            selectedDate = newSelectedDate
-        )
+            updateState(
+                payPeriod = nextPeriod,
+                selectedDate = newSelectedDate
+            )
+        }
     }
 
     /**
@@ -147,27 +162,29 @@ class CalendarViewModel(
      * 예: 2025년 12월 선택 시 → 12월 25일~1월 24일 급여 기간
      */
     fun navigateToYearMonth(year: Int, month: Int) {
-        // 선택한 년/월의 실제 급여일 계산 (주말 조정 포함)
-        val targetPayday = PayPeriodCalculator.calculateActualPayday(
-            year = year,
-            month = Month(month),
-            payday = payday,
-            adjustment = adjustment
-        )
+        coroutineScope.launch {
+            // 선택한 년/월의 실제 급여일 계산 (주말 조정 포함)
+            val targetPayday = payPeriodCalculator.calculateActualPayday(
+                year = year,
+                month = Month(month),
+                payday = payday,
+                adjustment = adjustment
+            )
 
-        // 해당 급여일을 기준으로 급여 기간 계산
-        // getCurrentPayPeriod는 전달된 날짜가 급여일이면 그날부터 다음 급여일까지의 기간을 반환
-        val targetPayPeriod = PayPeriodCalculator.getCurrentPayPeriod(
-            payday = payday,
-            adjustment = adjustment,
-            currentDate = targetPayday
-        )
+            // 해당 급여일을 기준으로 급여 기간 계산
+            // getCurrentPayPeriod는 전달된 날짜가 급여일이면 그날부터 다음 급여일까지의 기간을 반환
+            val targetPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
+                payday = payday,
+                adjustment = adjustment,
+                currentDate = targetPayday
+            )
 
-        // 급여일을 선택 날짜로 설정
-        updateState(
-            payPeriod = targetPayPeriod,
-            selectedDate = targetPayday
-        )
+            // 급여일을 선택 날짜로 설정
+            updateState(
+                payPeriod = targetPayPeriod,
+                selectedDate = targetPayday
+            )
+        }
     }
 
     fun toggleMoneyVisibility() {
@@ -217,24 +234,71 @@ class CalendarViewModel(
 
     private fun updateState(
         transactions: List<Transaction> = uiState.transactions,
-        payPeriod: PayPeriod = uiState.currentPayPeriod ?: PayPeriodCalculator.getCurrentPayPeriod(
-            payday,
-            adjustment
-        ),
-        selectedDate: LocalDate = uiState.selectedDate
-            ?: PayPeriodCalculator.getRecommendedDateForPeriod(payPeriod, payday, adjustment),
+        payPeriod: PayPeriod? = null,
+        selectedDate: LocalDate? = null,
         isMoneyVisible: Boolean = uiState.isMoneyVisible
     ) {
-        val payPeriodSummary = getPayPeriodSummaryUseCase(transactions, payPeriod)
-        val dailyTransactions = getDailyTransactionsUseCase(transactions, selectedDate)
+        coroutineScope.launch {
+            val actualPayPeriod = payPeriod ?: uiState.currentPayPeriod ?: payPeriodCalculator.getCurrentPayPeriod(
+                payday,
+                adjustment
+            )
+            val actualSelectedDate = selectedDate ?: uiState.selectedDate
+                ?: payPeriodCalculator.getRecommendedDateForPeriod(actualPayPeriod, payday, adjustment)
 
-        uiState = uiState.copy(
-            currentPayPeriod = payPeriod,
-            selectedDate = selectedDate,
-            transactions = transactions,
-            payPeriodSummary = payPeriodSummary,
-            dailyTransactions = dailyTransactions,
-            isMoneyVisible = isMoneyVisible
-        )
+            val payPeriodSummary = getPayPeriodSummaryUseCase(transactions, actualPayPeriod)
+            val dailyTransactions = getDailyTransactionsUseCase(transactions, actualSelectedDate)
+
+            uiState = uiState.copy(
+                currentPayPeriod = actualPayPeriod,
+                selectedDate = actualSelectedDate,
+                transactions = transactions,
+                payPeriodSummary = payPeriodSummary,
+                dailyTransactions = dailyTransactions,
+                isMoneyVisible = isMoneyVisible
+            )
+        }
+    }
+
+    /**
+     * 공휴일 자동 로딩 체크
+     * 현재 보는 날짜가 마지막 저장 날짜 - 2개월 이내면 6개월치 추가 로드
+     */
+    private fun checkAndLoadHolidays(currentViewDate: LocalDate) {
+        coroutineScope.launch {
+            try {
+                // DB에서 마지막 저장된 공휴일 날짜 조회
+                val latestDateStr = holidayRepository.getLatestHolidayDate() ?: return@launch
+
+                // YYYYMMDD 형식을 LocalDate로 변환
+                val latestYear = latestDateStr.substring(0, 4).toInt()
+                val latestMonth = latestDateStr.substring(4, 6).toInt()
+                val latestDay = latestDateStr.substring(6, 8).toInt()
+                val latestDate = LocalDate(latestYear, latestMonth, latestDay)
+
+                // 마지막 저장 날짜 - 2개월
+                val thresholdDate = latestDate.minus(2, DateTimeUnit.MONTH)
+
+                // 현재 보는 날짜가 임계값 이후면 추가 로딩
+                if (currentViewDate >= thresholdDate) {
+                    println("공휴일 자동 로딩: 현재 날짜 $currentViewDate, 마지막 저장 $latestDate")
+
+                    // 마지막 저장 날짜의 다음 달부터 6개월치 로드
+                    val nextMonth = latestDate.plus(1, DateTimeUnit.MONTH)
+                    holidayRepository.fetchAndSaveHolidaysForMonths(
+                        serviceKey = HOLIDAY_API_KEY,
+                        startYear = nextMonth.year,
+                        startMonth = nextMonth.monthNumber,
+                        monthCount = 6
+                    ).onSuccess {
+                        println("공휴일 6개월치 추가 로딩 완료")
+                    }.onFailure { error ->
+                        println("공휴일 자동 로딩 실패: ${error.message}")
+                    }
+                }
+            } catch (e: Exception) {
+                println("공휴일 자동 로딩 체크 중 오류: ${e.message}")
+            }
+        }
     }
 }

@@ -404,6 +404,20 @@ actual class DatabaseDriverFactory(private val context: Context) {
             0
         )
 
+        // HolidayEntity 테이블이 없으면 생성
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS HolidayEntity (
+                locdate TEXT NOT NULL PRIMARY KEY,
+                dateName TEXT NOT NULL,
+                isHoliday TEXT NOT NULL,
+                year INTEGER NOT NULL
+            )
+            """.trimIndent(),
+            0
+        )
+
         return driver
     }
 }

@@ -1,4 +1,4 @@
--- Schema version 12
+-- Schema version 13
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -94,6 +94,13 @@ CREATE TABLE RecurringTransactionEntity (
     isActive INTEGER NOT NULL DEFAULT 1,
     createdAt INTEGER NOT NULL,
     lastExecutedDate TEXT  -- 마지막 실행 날짜 (YYYY-MM-DD)
+);
+
+CREATE TABLE HolidayEntity (
+    locdate TEXT NOT NULL PRIMARY KEY,  -- YYYYMMDD 형식
+    dateName TEXT NOT NULL,              -- 공휴일 이름
+    isHoliday TEXT NOT NULL,             -- Y 또는 N
+    year INTEGER NOT NULL                -- 빠른 조회를 위한 연도
 );
 
 insertTransaction:
@@ -370,3 +377,29 @@ WHERE id = ?;
 
 deleteAllRecurringTransactions:
 DELETE FROM RecurringTransactionEntity;
+
+-- Holiday 관련 쿼리들
+insertHoliday:
+INSERT OR REPLACE INTO HolidayEntity(locdate, dateName, isHoliday, year)
+VALUES (?, ?, ?, ?);
+
+selectHolidayByDate:
+SELECT * FROM HolidayEntity
+WHERE locdate = ?;
+
+selectHolidaysByYear:
+SELECT * FROM HolidayEntity
+WHERE year = ?
+ORDER BY locdate ASC;
+
+deleteHolidaysByYear:
+DELETE FROM HolidayEntity
+WHERE year = ?;
+
+deleteAllHolidays:
+DELETE FROM HolidayEntity;
+
+selectLatestHolidayDate:
+SELECT locdate FROM HolidayEntity
+ORDER BY locdate DESC
+LIMIT 1;

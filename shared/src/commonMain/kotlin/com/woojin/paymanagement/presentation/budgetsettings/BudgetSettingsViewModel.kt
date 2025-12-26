@@ -46,7 +46,8 @@ class BudgetSettingsViewModel(
     private val deleteCategoryBudgetUseCase: DeleteCategoryBudgetUseCase,
     private val getSpentAmountByCategoryUseCase: GetSpentAmountByCategoryUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
-    private val getOldestTransactionDateUseCase: GetOldestTransactionDateUseCase
+    private val getOldestTransactionDateUseCase: GetOldestTransactionDateUseCase,
+    private val payPeriodCalculator: PayPeriodCalculator
 ) : ViewModel() {
 
     var uiState by mutableStateOf(BudgetSettingsUiState())
@@ -72,7 +73,7 @@ class BudgetSettingsViewModel(
                 val adjustment = preferencesRepository.getPaydayAdjustment()
 
                 // 현재 급여 사이클 계산 (사용 현황 탭용)
-                val currentPeriod = PayPeriodCalculator.getCurrentPayPeriod(
+                val currentPeriod = payPeriodCalculator.getCurrentPayPeriod(
                     payday = payday,
                     adjustment = adjustment
                 )
@@ -81,7 +82,7 @@ class BudgetSettingsViewModel(
                 val oldestTransactionDate = getOldestTransactionDateUseCase()
                 val canNavigatePrevious = if (oldestTransactionDate != null) {
                     // 가장 오래된 거래 내역이 속한 급여 기간 계산
-                    val oldestPayPeriod = PayPeriodCalculator.getCurrentPayPeriod(
+                    val oldestPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
                         currentDate = oldestTransactionDate,
                         payday = payday,
                         adjustment = adjustment
@@ -679,19 +680,19 @@ class BudgetSettingsViewModel(
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()
 
-        val previousPeriod = PayPeriodCalculator.getPreviousPayPeriod(
-            currentPeriod = currentViewingPeriod,
-            payday = payday,
-            adjustment = adjustment
-        )
-
-        // 가장 오래된 거래 내역이 속한 급여 기간 확인
         viewModelScope.launch {
+            val previousPeriod = payPeriodCalculator.getPreviousPayPeriod(
+                currentPeriod = currentViewingPeriod,
+                payday = payday,
+                adjustment = adjustment
+            )
+
+            // 가장 오래된 거래 내역이 속한 급여 기간 확인
             val oldestTransactionDate = getOldestTransactionDateUseCase()
             // 이동한 후의 이전 기간이 가장 오래된 기간과 비교하여 더 이전으로 갈 수 있는지 확인
             val canNavigatePrevious = if (oldestTransactionDate != null) {
                 // 가장 오래된 거래 내역이 속한 급여 기간 계산
-                val oldestPayPeriod = PayPeriodCalculator.getCurrentPayPeriod(
+                val oldestPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
                     currentDate = oldestTransactionDate,
                     payday = payday,
                     adjustment = adjustment
@@ -720,18 +721,18 @@ class BudgetSettingsViewModel(
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()
 
-        val nextPeriod = PayPeriodCalculator.getNextPayPeriod(
-            currentPeriod = currentViewingPeriod,
-            payday = payday,
-            adjustment = adjustment
-        )
-
-        // 가장 오래된 거래 내역이 속한 급여 기간 확인
         viewModelScope.launch {
+            val nextPeriod = payPeriodCalculator.getNextPayPeriod(
+                currentPeriod = currentViewingPeriod,
+                payday = payday,
+                adjustment = adjustment
+            )
+
+            // 가장 오래된 거래 내역이 속한 급여 기간 확인
             val oldestTransactionDate = getOldestTransactionDateUseCase()
             val canNavigatePrevious = if (oldestTransactionDate != null) {
                 // 가장 오래된 거래 내역이 속한 급여 기간 계산
-                val oldestPayPeriod = PayPeriodCalculator.getCurrentPayPeriod(
+                val oldestPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
                     currentDate = oldestTransactionDate,
                     payday = payday,
                     adjustment = adjustment

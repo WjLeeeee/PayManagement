@@ -5,6 +5,7 @@ pipeline {
         KEYSTORE_PASSWORD = credentials('keystore-password')
         KEY_ALIAS = credentials('key-alias')
         KEY_PASSWORD = credentials('key-password')
+        HOLIDAY_API_KEY = credentials('HOLIDAY_API_KEY')
     }
 
     stages {
@@ -29,8 +30,9 @@ pipeline {
                         cp $PLAY_CREDENTIALS play-store-credentials.json
                         cp $GOOGLE_SERVICES androidApp/google-services.json
 
-                        # Create local.properties with Android SDK path
+                        # Create local.properties with Android SDK path and API keys
                         echo "sdk.dir=/Users/leewoojin/Library/Android/sdk" > local.properties
+                        echo "HOLIDAY_API_KEY=$HOLIDAY_API_KEY" >> local.properties
                     '''
                 }
             }

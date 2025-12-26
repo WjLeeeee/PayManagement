@@ -1916,24 +1916,29 @@ fun PayManagementApp(
     if (showCalculatorDialog) {
         val categoryRepository = remember { koinInject<com.woojin.paymanagement.domain.repository.CategoryRepository>() }
         val categories by categoryRepository.getAllCategories().collectAsState(initial = emptyList())
+        val payPeriodCalculator = remember { koinInject<com.woojin.paymanagement.utils.PayPeriodCalculator>() }
 
-        val currentPayPeriod = remember {
+        var currentPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
+
+        LaunchedEffect(Unit) {
             val payday = preferencesManager.getPayday()
             val adjustment = preferencesManager.getPaydayAdjustment()
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            com.woojin.paymanagement.utils.PayPeriodCalculator.getCurrentPayPeriod(
+            currentPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
                 currentDate = today,
                 payday = payday,
                 adjustment = adjustment
             )
         }
 
-        CalculatorDialog(
-            transactions = transactions,
-            onDismiss = { showCalculatorDialog = false },
-            initialPayPeriod = currentPayPeriod,
-            allCategories = categories
-        )
+        currentPayPeriod?.let { period ->
+            CalculatorDialog(
+                transactions = transactions,
+                onDismiss = { showCalculatorDialog = false },
+                initialPayPeriod = period,
+                allCategories = categories
+            )
+        }
     }
     } // BoxWithConstraints 닫기
     }
