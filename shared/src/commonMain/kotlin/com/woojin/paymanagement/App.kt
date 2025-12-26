@@ -98,6 +98,7 @@ fun App(
     appInfo: com.woojin.paymanagement.utils.AppInfo,
     fileHandler: com.woojin.paymanagement.utils.FileHandler,
     billingClient: com.woojin.paymanagement.utils.BillingClient,
+    interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
     shouldNavigateToAdRemoval: Boolean = false,
@@ -107,7 +108,8 @@ fun App(
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
-    onLaunchLoadFile: () -> Unit = {}
+    onLaunchLoadFile: () -> Unit = {},
+    onAppExit: () -> Unit = {}
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -121,6 +123,7 @@ fun App(
         if (isKoinInitialized) {
             PayManagementApp(
                 modifier = modifier,
+                interstitialAdManager = interstitialAdManager,
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                 shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
                 shouldNavigateToAdRemoval = shouldNavigateToAdRemoval,
@@ -131,7 +134,8 @@ fun App(
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 onLaunchSaveFile = onLaunchSaveFile,
                 onLaunchLoadFile = onLaunchLoadFile,
-                fileHandler = fileHandler
+                fileHandler = fileHandler,
+                onAppExit = onAppExit
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -178,6 +182,7 @@ private fun initializeKoin(
 @Composable
 fun PayManagementApp(
     modifier: Modifier = Modifier,
+    interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
     shouldNavigateToAdRemoval: Boolean = false,
@@ -188,7 +193,8 @@ fun PayManagementApp(
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
     onLaunchLoadFile: () -> Unit = {},
-    fileHandler: com.woojin.paymanagement.utils.FileHandler? = null
+    fileHandler: com.woojin.paymanagement.utils.FileHandler? = null,
+    onAppExit: () -> Unit = {}
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -1514,6 +1520,7 @@ fun PayManagementApp(
             CalendarScreen(
                 viewModel = calendarViewModel,
                 tutorialViewModel = tutorialViewModel,
+                interstitialAdManager = interstitialAdManager,
                 onOpenDrawer = {
                     scope.launch {
                         drawerState.open()
@@ -1547,7 +1554,8 @@ fun PayManagementApp(
                         // 알림 리스너 권한이 없으면 요청
                         showListenerPermissionDialog = true
                     }
-                }
+                },
+                onAppExit = onAppExit
             )
         }
         

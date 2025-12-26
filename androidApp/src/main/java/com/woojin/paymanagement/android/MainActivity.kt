@@ -289,6 +289,15 @@ fun StatusBarOverlayScreen(
                     isAdRemovalActive.value = preferencesManager.isAdRemovalActive()
                 }
 
+                // Interstitial Ad Manager 생성
+                val interstitialAdManager = remember {
+                    com.woojin.paymanagement.utils.InterstitialAdManager(
+                        context = context,
+                        activityProvider = { context as? ComponentActivity },
+                        adUnitId = "ca-app-pub-9195598687879551/6004614996"
+                    )
+                }
+
                 App(
                     modifier = Modifier
                         .weight(1f)
@@ -299,6 +308,7 @@ fun StatusBarOverlayScreen(
                     appInfo = appInfo,
                     fileHandler = fileHandler,
                     billingClient = billingClient,
+                    interstitialAdManager = interstitialAdManager,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
                     shouldNavigateToAdRemoval = shouldNavigateToAdRemoval,
@@ -361,6 +371,9 @@ fun StatusBarOverlayScreen(
                             type = "application/json"
                         }
                         loadFileLauncher.launch(intent)
+                    },
+                    onAppExit = {
+                        (context as? ComponentActivity)?.finish()
                     }
                 )
 

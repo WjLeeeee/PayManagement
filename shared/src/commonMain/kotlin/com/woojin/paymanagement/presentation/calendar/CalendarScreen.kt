@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -83,15 +84,20 @@ import kotlinx.datetime.todayIn
 fun CalendarScreen(
     viewModel: CalendarViewModel,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel,
+    interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     onOpenDrawer: () -> Unit = {},
     onDateDetailClick: (LocalDate) -> Unit = {},
     onStatisticsClick: (PayPeriod) -> Unit = {},
     onAddTransactionClick: () -> Unit = {},
     onPayPeriodChanged: (PayPeriod) -> Unit = {},
-    onParsedTransactionsClick: () -> Unit = {}
+    onParsedTransactionsClick: () -> Unit = {},
+    onAppExit: () -> Unit = {}
 ) {
     val uiState = viewModel.uiState
     val tutorialUiState = tutorialViewModel.uiState
+
+    // 뒤로가기 핸들링을 위한 상태
+    var showExitDialog by remember { mutableStateOf(false) }
 
     // 네비게이션바 높이 계산
     val density = LocalDensity.current
@@ -104,6 +110,16 @@ fun CalendarScreen(
         uiState.currentPayPeriod?.let { payPeriod ->
             onPayPeriodChanged(payPeriod)
         }
+    }
+
+    // 전면광고 미리 로드
+    LaunchedEffect(interstitialAdManager) {
+        interstitialAdManager?.loadAd()
+    }
+
+    // 뒤로가기 핸들링 - 앱 종료 시 전면광고 표시
+    com.woojin.paymanagement.utils.BackHandler {
+        showExitDialog = true
     }
 
     // EdgeToEdge 대응은 CalendarTutorialOverlay에서 처리됩니다
@@ -316,6 +332,34 @@ fun CalendarScreen(
             onDismiss = { showYearMonthPicker = false },
             onConfirm = { year, month ->
                 viewModel.navigateToYearMonth(year, month)
+            }
+        )
+    }
+
+    // 앱 종료 확인 다이얼로그
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("앱 종료") },
+            text = { Text("앱을 종료하시겠습니까?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExitDialog = false
+                        // 전면광고 표시 후 앱 종료
+                        interstitialAdManager?.showAd {
+                            // 광고 닫힌 후 앱 종료 콜백 호출
+                            onAppExit()
+                        }
+                    }
+                ) {
+                    Text("종료")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("취소")
+                }
             }
         )
     }
