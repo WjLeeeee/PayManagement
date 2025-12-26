@@ -217,6 +217,7 @@ fun CalendarScreen(
                     payPeriod = uiState.currentPayPeriod,
                     transactions = uiState.transactions,
                     selectedDate = uiState.selectedDate,
+                    holidays = uiState.holidays,
                     isMoveMode = uiState.isMoveMode,
                     onDateSelected = { date ->
                         if (uiState.isMoveMode) {
@@ -526,6 +527,7 @@ private fun CalendarGrid(
     payPeriod: PayPeriod,
     transactions: List<Transaction>,
     selectedDate: LocalDate?,
+    holidays: Set<LocalDate> = emptySet(),
     isMoveMode: Boolean = false,
     onDateSelected: (LocalDate) -> Unit,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
@@ -587,6 +589,7 @@ private fun CalendarGrid(
                 val hasExpense = dayTransactions.any { it.type == TransactionType.EXPENSE }
                 val isInCurrentPeriod = date >= payPeriod.startDate && date <= payPeriod.endDate
                 val dayOfWeek = date.dayOfWeek.ordinal // 0=Monday, 6=Sunday
+                val isHoliday = holidays.contains(date)
 
                 CalendarDay(
                     day = date.dayOfMonth,
@@ -596,6 +599,7 @@ private fun CalendarGrid(
                     isInCurrentPeriod = isInCurrentPeriod,
                     isToday = date == today,
                     dayOfWeek = dayOfWeek,
+                    isHoliday = isHoliday,
                     onClick = { onDateSelected(date) }
                 )
             }
@@ -623,22 +627,23 @@ private fun CalendarDay(
     isInCurrentPeriod: Boolean = true,
     isToday: Boolean = false,
     dayOfWeek: Int, // 0=Monday, 5=Saturday, 6=Sunday
+    isHoliday: Boolean = false,
     onClick: () -> Unit
 ) {
     // 다크모드 확인: onSurface 색상이 밝으면 다크모드
     val isDarkMode = MaterialTheme.colorScheme.onSurface.red > 0.5f
 
-    // 주말 배경색 계산 (토요일: 파랑, 일요일: 빨강)
-    val weekendBackground = when (dayOfWeek) {
-        5 -> if (isDarkMode) {
+    // 주말 및 공휴일 배경색 계산 (토요일: 파랑, 일요일/공휴일: 빨강)
+    val weekendBackground = when {
+        isHoliday || dayOfWeek == 6 -> if (isDarkMode) {
+            Color(0xFFC62828).copy(alpha = 0.2f) // 일요일/공휴일 - 다크모드에서는 어두운 빨강 + 낮은 투명도
+        } else {
+            Color(0xFFFFEBEE).copy(alpha = 0.5f) // 일요일/공휴일 - 라이트모드: 연한 빨강
+        }
+        dayOfWeek == 5 -> if (isDarkMode) {
             Color(0xFF1565C0).copy(alpha = 0.2f) // 토요일 - 다크모드에서는 어두운 파랑 + 낮은 투명도
         } else {
             Color(0xFFE3F2FD).copy(alpha = 0.5f) // 토요일 - 라이트모드: 연한 파랑
-        }
-        6 -> if (isDarkMode) {
-            Color(0xFFC62828).copy(alpha = 0.2f) // 일요일 - 다크모드에서는 어두운 빨강 + 낮은 투명도
-        } else {
-            Color(0xFFFFEBEE).copy(alpha = 0.5f) // 일요일 - 라이트모드: 연한 빨강
         }
         else -> Color.Transparent
     }

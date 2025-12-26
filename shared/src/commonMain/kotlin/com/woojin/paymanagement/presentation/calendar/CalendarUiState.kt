@@ -16,7 +16,8 @@ data class CalendarUiState(
     val error: String? = null,
     val isMoveMode: Boolean = false,
     val transactionToMove: Transaction? = null,
-    val availableCategories: List<Category> = emptyList()
+    val availableCategories: List<Category> = emptyList(),
+    val holidays: Set<LocalDate> = emptySet()
 )
 
 data class PayPeriodSummary(

@@ -249,14 +249,53 @@ class CalendarViewModel(
             val payPeriodSummary = getPayPeriodSummaryUseCase(transactions, actualPayPeriod)
             val dailyTransactions = getDailyTransactionsUseCase(transactions, actualSelectedDate)
 
+            // 공휴일 정보 가져오기
+            val holidays = getHolidaysForPayPeriod(actualPayPeriod)
+
             uiState = uiState.copy(
                 currentPayPeriod = actualPayPeriod,
                 selectedDate = actualSelectedDate,
                 transactions = transactions,
                 payPeriodSummary = payPeriodSummary,
                 dailyTransactions = dailyTransactions,
-                isMoneyVisible = isMoneyVisible
+                isMoneyVisible = isMoneyVisible,
+                holidays = holidays
             )
+        }
+    }
+
+    /**
+     * 급여 기간에 해당하는 공휴일 목록 가져오기
+     */
+    private suspend fun getHolidaysForPayPeriod(payPeriod: PayPeriod): Set<LocalDate> {
+        return try {
+            // 급여 기간에 포함된 연도 추출
+            val years = setOf(payPeriod.startDate.year, payPeriod.endDate.year)
+
+            // 각 연도의 공휴일 가져오기
+            val allHolidays = years.flatMap { year ->
+                holidayRepository.getHolidaysByYear(year)
+            }
+
+            // YYYYMMDD 형식을 LocalDate로 변환하고 급여 기간 내에 있는 것만 필터링
+            allHolidays.mapNotNull { holiday ->
+                try {
+                    val year = holiday.locdate.substring(0, 4).toInt()
+                    val month = holiday.locdate.substring(4, 6).toInt()
+                    val day = holiday.locdate.substring(6, 8).toInt()
+                    val date = LocalDate(year, month, day)
+
+                    if (date >= payPeriod.startDate && date <= payPeriod.endDate && holiday.isHoliday) {
+                        date
+                    } else {
+                        null
+                    }
+                } catch (e: Exception) {
+                    null
+                }
+            }.toSet()
+        } catch (e: Exception) {
+            emptySet()
         }
     }
 
