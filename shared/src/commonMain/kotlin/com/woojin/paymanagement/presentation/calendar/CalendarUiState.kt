@@ -17,7 +17,8 @@ data class CalendarUiState(
     val isMoveMode: Boolean = false,
     val transactionToMove: Transaction? = null,
     val availableCategories: List<Category> = emptyList(),
-    val holidays: Set<LocalDate> = emptySet()
+    val holidays: Set<LocalDate> = emptySet(),
+    val holidayNames: Map<LocalDate, String> = emptyMap()
 )
 
 data class PayPeriodSummary(

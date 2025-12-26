@@ -250,7 +250,7 @@ class CalendarViewModel(
             val dailyTransactions = getDailyTransactionsUseCase(transactions, actualSelectedDate)
 
             // 공휴일 정보 가져오기
-            val holidays = getHolidaysForPayPeriod(actualPayPeriod)
+            val holidayInfo = getHolidaysForPayPeriod(actualPayPeriod)
 
             uiState = uiState.copy(
                 currentPayPeriod = actualPayPeriod,
@@ -259,7 +259,8 @@ class CalendarViewModel(
                 payPeriodSummary = payPeriodSummary,
                 dailyTransactions = dailyTransactions,
                 isMoneyVisible = isMoneyVisible,
-                holidays = holidays
+                holidays = holidayInfo.dates,
+                holidayNames = holidayInfo.names
             )
         }
     }
@@ -267,7 +268,7 @@ class CalendarViewModel(
     /**
      * 급여 기간에 해당하는 공휴일 목록 가져오기
      */
-    private suspend fun getHolidaysForPayPeriod(payPeriod: PayPeriod): Set<LocalDate> {
+    private suspend fun getHolidaysForPayPeriod(payPeriod: PayPeriod): HolidayInfo {
         return try {
             // 급여 기간에 포함된 연도 추출
             val years = setOf(payPeriod.startDate.year, payPeriod.endDate.year)
@@ -278,7 +279,7 @@ class CalendarViewModel(
             }
 
             // YYYYMMDD 형식을 LocalDate로 변환하고 급여 기간 내에 있는 것만 필터링
-            allHolidays.mapNotNull { holiday ->
+            val holidayMap = allHolidays.mapNotNull { holiday ->
                 try {
                     val year = holiday.locdate.substring(0, 4).toInt()
                     val month = holiday.locdate.substring(4, 6).toInt()
@@ -286,18 +287,28 @@ class CalendarViewModel(
                     val date = LocalDate(year, month, day)
 
                     if (date >= payPeriod.startDate && date <= payPeriod.endDate && holiday.isHoliday) {
-                        date
+                        date to holiday.dateName
                     } else {
                         null
                     }
                 } catch (e: Exception) {
                     null
                 }
-            }.toSet()
+            }
+
+            HolidayInfo(
+                dates = holidayMap.map { it.first }.toSet(),
+                names = holidayMap.toMap()
+            )
         } catch (e: Exception) {
-            emptySet()
+            HolidayInfo(emptySet(), emptyMap())
         }
     }
+
+    private data class HolidayInfo(
+        val dates: Set<LocalDate>,
+        val names: Map<LocalDate, String>
+    )
 
     /**
      * 공휴일 자동 로딩 체크

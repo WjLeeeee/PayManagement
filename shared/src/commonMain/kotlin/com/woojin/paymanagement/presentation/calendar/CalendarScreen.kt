@@ -235,6 +235,7 @@ fun CalendarScreen(
                 DailyTransactionCard(
                     selectedDate = uiState.selectedDate,
                     transactions = uiState.transactions,
+                    holidayNames = uiState.holidayNames,
                     isMoveMode = uiState.isMoveMode,
                     transactionToMove = uiState.transactionToMove,
                     availableCategories = uiState.availableCategories,
@@ -707,6 +708,7 @@ private fun CalendarDay(
 private fun DailyTransactionCard(
     selectedDate: LocalDate?,
     transactions: List<Transaction>,
+    holidayNames: Map<LocalDate, String> = emptyMap(),
     isMoveMode: Boolean = false,
     transactionToMove: Transaction? = null,
     availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
@@ -783,11 +785,11 @@ private fun DailyTransactionCard(
                         Text(
                             text = if (selectedDate != null) {
                                 val count = dayTransactions.size
-                                if (count > 0) {
-                                    "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역 (${count}건)"
-                                } else {
-                                    "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
-                                }
+                                val holidayName = holidayNames[selectedDate]
+                                val baseText = "${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
+                                val holidayText = if (holidayName != null) " ($holidayName)" else ""
+                                val countText = if (count > 0) " (${count}건)" else ""
+                                "📝 $baseText$holidayText$countText"
                             } else {
                                 "📝 날짜를 선택해서 메모 보기"
                             },
