@@ -3,6 +3,7 @@ package com.woojin.paymanagement.android.service
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import com.woojin.paymanagement.android.BuildConfig
 import com.woojin.paymanagement.android.util.TransactionNotificationHelper
 import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.data.FailedNotification
@@ -84,15 +85,17 @@ class CardNotificationListenerService : NotificationListenerService() {
                     Log.d(TAG, "Parsed transaction: $parsedTransaction")
                     saveParsedTransaction(parsedTransaction)
                 } else {
-                    // 파싱 실패 시 원본 알림 저장
+                    // 파싱 실패 시 원본 알림 저장 (Debug 모드에서만)
                     Log.w(TAG, "Failed to parse Shinhan Card notification")
-                    saveFailedNotification(
-                        packageName = sbn.packageName,
-                        title = title,
-                        text = text,
-                        bigText = bigText,
-                        failureReason = "파싱 실패 (필수 필드 누락)"
-                    )
+                    if (BuildConfig.DEBUG) {
+                        saveFailedNotification(
+                            packageName = sbn.packageName,
+                            title = title,
+                            text = text,
+                            bigText = bigText,
+                            failureReason = "파싱 실패 (필수 필드 누락)"
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -214,15 +217,17 @@ class CardNotificationListenerService : NotificationListenerService() {
                     Log.d(TAG, "Parsed Samsung Pay transaction: $parsedTransaction")
                     saveParsedTransaction(parsedTransaction)
                 } else {
-                    // 파싱 실패 시 원본 알림 저장
+                    // 파싱 실패 시 원본 알림 저장 (Debug 모드에서만)
                     Log.w(TAG, "Failed to parse Samsung Pay notification")
-                    saveFailedNotification(
-                        packageName = sbn.packageName,
-                        title = title,
-                        text = text,
-                        bigText = null,
-                        failureReason = "파싱 실패 (금액 또는 가맹점명 누락)"
-                    )
+                    if (BuildConfig.DEBUG) {
+                        saveFailedNotification(
+                            packageName = sbn.packageName,
+                            title = title,
+                            text = text,
+                            bigText = null,
+                            failureReason = "파싱 실패 (금액 또는 가맹점명 누락)"
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -332,8 +337,8 @@ class CardNotificationListenerService : NotificationListenerService() {
     }
 
     /**
-     * 파싱에 실패한 알림을 저장
-     * 나중에 패턴 분석 및 파싱 로직 개선에 활용
+     * 파싱에 실패한 알림을 저장 (Debug 빌드에서만 호출됨)
+     * 개발/유지보수 용으로 패턴 분석 및 파싱 로직 개선에 활용
      */
     private fun saveFailedNotification(
         packageName: String,
@@ -352,7 +357,7 @@ class CardNotificationListenerService : NotificationListenerService() {
                     failureReason = failureReason
                 )
                 databaseHelper.insertFailedNotification(failedNotification)
-                Log.d(TAG, "Failed notification saved for analysis: $title")
+                Log.d(TAG, "[DEBUG] Failed notification saved for analysis: $title")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save failed notification", e)
             }
