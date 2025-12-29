@@ -25,7 +25,7 @@ class CardNotificationListenerService : NotificationListenerService() {
         private const val TAG = "CardNotificationListener"
         private const val SHINHAN_CARD_PACKAGE = "com.shcard.smartpay" // 신한카드 앱 패키지명
         private const val SAMSUNG_PAY_PACKAGE = "com.samsung.android.spay" // 삼성페이 앱 패키지명
-        private const val DUPLICATE_CHECK_WINDOW_MS = 1 * 60 * 1000L // 1분
+        private const val DUPLICATE_CHECK_WINDOW_MS = 5 * 1000L // 5초
 
         /**
          * 알림 텍스트의 SHA-256 해시를 생성하여 고유 ID로 사용
@@ -270,12 +270,12 @@ class CardNotificationListenerService : NotificationListenerService() {
 
     /**
      * 파싱된 거래를 저장
-     * 중복 체크: 최근 5분 이내 같은 금액의 거래가 있으면 저장하지 않음
+     * 중복 체크: 최근 5초 이내 같은 금액의 거래가 있으면 저장하지 않음
      */
     private fun saveParsedTransaction(transaction: ParsedTransaction) {
         serviceScope.launch {
             try {
-                // 중복 체크: 최근 5분 이내 같은 금액의 거래가 있는지 확인
+                // 중복 체크: 최근 5초 이내 같은 금액의 거래가 있는지 확인
                 val currentTime = System.currentTimeMillis()
                 val startTime = currentTime - DUPLICATE_CHECK_WINDOW_MS
                 val isDuplicate = parsedTransactionRepository.hasRecentTransactionWithAmount(
@@ -285,7 +285,7 @@ class CardNotificationListenerService : NotificationListenerService() {
                 )
 
                 if (isDuplicate) {
-                    Log.d(TAG, "Duplicate transaction detected (same amount within 5 minutes): ${transaction.merchantName} - ${transaction.amount}원")
+                    Log.d(TAG, "Duplicate transaction detected (same amount within 5 seconds): ${transaction.merchantName} - ${transaction.amount}원")
                     Log.d(TAG, "Skipping save to prevent duplicate entries")
                     return@launch
                 }
