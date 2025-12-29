@@ -5,8 +5,10 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import com.woojin.paymanagement.android.util.TransactionNotificationHelper
 import com.woojin.paymanagement.data.ParsedTransaction
+import com.woojin.paymanagement.data.FailedNotification
 import com.woojin.paymanagement.domain.usecase.InsertParsedTransactionUseCase
 import com.woojin.paymanagement.domain.repository.ParsedTransactionRepository
+import com.woojin.paymanagement.database.DatabaseHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,6 +41,7 @@ class CardNotificationListenerService : NotificationListenerService() {
 
     private val insertParsedTransactionUseCase: InsertParsedTransactionUseCase by inject()
     private val parsedTransactionRepository: ParsedTransactionRepository by inject()
+    private val databaseHelper: DatabaseHelper by inject()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
@@ -77,9 +80,19 @@ class CardNotificationListenerService : NotificationListenerService() {
                 (bigText.contains("승인") || title.contains("자동납부"))) {
                 val parsedTransaction = parseNotification(bigText, title)
 
-                parsedTransaction?.let { transaction ->
-                    Log.d(TAG, "Parsed transaction: $transaction")
-                    saveParsedTransaction(transaction)
+                if (parsedTransaction != null) {
+                    Log.d(TAG, "Parsed transaction: $parsedTransaction")
+                    saveParsedTransaction(parsedTransaction)
+                } else {
+                    // 파싱 실패 시 원본 알림 저장
+                    Log.w(TAG, "Failed to parse Shinhan Card notification")
+                    saveFailedNotification(
+                        packageName = sbn.packageName,
+                        title = title,
+                        text = text,
+                        bigText = bigText,
+                        failureReason = "파싱 실패 (필수 필드 누락)"
+                    )
                 }
             }
         } catch (e: Exception) {
@@ -197,9 +210,19 @@ class CardNotificationListenerService : NotificationListenerService() {
             if (title.contains("결제 완료") && (title.contains("₩") || title.contains("￦"))) {
                 val parsedTransaction = parseSamsungPayNotification(title, text)
 
-                parsedTransaction?.let { transaction ->
-                    Log.d(TAG, "Parsed Samsung Pay transaction: $transaction")
-                    saveParsedTransaction(transaction)
+                if (parsedTransaction != null) {
+                    Log.d(TAG, "Parsed Samsung Pay transaction: $parsedTransaction")
+                    saveParsedTransaction(parsedTransaction)
+                } else {
+                    // 파싱 실패 시 원본 알림 저장
+                    Log.w(TAG, "Failed to parse Samsung Pay notification")
+                    saveFailedNotification(
+                        packageName = sbn.packageName,
+                        title = title,
+                        text = text,
+                        bigText = null,
+                        failureReason = "파싱 실패 (금액 또는 가맹점명 누락)"
+                    )
                 }
             }
         } catch (e: Exception) {
@@ -304,6 +327,34 @@ class CardNotificationListenerService : NotificationListenerService() {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save parsed transaction", e)
+            }
+        }
+    }
+
+    /**
+     * 파싱에 실패한 알림을 저장
+     * 나중에 패턴 분석 및 파싱 로직 개선에 활용
+     */
+    private fun saveFailedNotification(
+        packageName: String,
+        title: String,
+        text: String,
+        bigText: String?,
+        failureReason: String?
+    ) {
+        serviceScope.launch {
+            try {
+                val failedNotification = FailedNotification(
+                    packageName = packageName,
+                    title = title,
+                    text = text,
+                    bigText = bigText,
+                    failureReason = failureReason
+                )
+                databaseHelper.insertFailedNotification(failedNotification)
+                Log.d(TAG, "Failed notification saved for analysis: $title")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save failed notification", e)
             }
         }
     }

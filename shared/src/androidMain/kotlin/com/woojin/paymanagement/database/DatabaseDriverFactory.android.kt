@@ -418,6 +418,23 @@ actual class DatabaseDriverFactory(private val context: Context) {
             0
         )
 
+        // FailedNotificationEntity 테이블이 없으면 생성 (Schema v14)
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS FailedNotificationEntity (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                packageName TEXT NOT NULL,
+                title TEXT NOT NULL,
+                text TEXT NOT NULL,
+                bigText TEXT,
+                failureReason TEXT,
+                createdAt INTEGER NOT NULL
+            )
+            """.trimIndent(),
+            0
+        )
+
         return driver
     }
 }

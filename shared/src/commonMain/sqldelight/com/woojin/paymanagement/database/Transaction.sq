@@ -1,4 +1,4 @@
--- Schema version 13
+-- Schema version 14
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -19,6 +19,17 @@ CREATE TABLE ParsedTransactionEntity (
     rawNotification TEXT NOT NULL,
     isProcessed INTEGER NOT NULL DEFAULT 0,
     createdAt INTEGER NOT NULL
+);
+
+-- 파싱 실패한 알림을 저장하는 테이블
+CREATE TABLE FailedNotificationEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    packageName TEXT NOT NULL,  -- 알림을 보낸 앱 패키지명
+    title TEXT NOT NULL,         -- 알림 제목
+    text TEXT NOT NULL,          -- 알림 내용
+    bigText TEXT,                -- 확장된 알림 내용
+    failureReason TEXT,          -- 실패 원인
+    createdAt INTEGER NOT NULL   -- 받은 시간
 );
 
 CREATE TABLE TransactionEntity (
@@ -407,3 +418,28 @@ selectLatestHolidayDate:
 SELECT locdate FROM HolidayEntity
 ORDER BY locdate DESC
 LIMIT 1;
+
+-- FailedNotification 관련 쿼리들
+insertFailedNotification:
+INSERT INTO FailedNotificationEntity(packageName, title, text, bigText, failureReason, createdAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectAllFailedNotifications:
+SELECT * FROM FailedNotificationEntity
+ORDER BY createdAt DESC;
+
+selectRecentFailedNotifications:
+SELECT * FROM FailedNotificationEntity
+ORDER BY createdAt DESC
+LIMIT ?;
+
+deleteFailedNotification:
+DELETE FROM FailedNotificationEntity
+WHERE id = ?;
+
+deleteAllFailedNotifications:
+DELETE FROM FailedNotificationEntity;
+
+deleteOldFailedNotifications:
+DELETE FROM FailedNotificationEntity
+WHERE createdAt < ?;

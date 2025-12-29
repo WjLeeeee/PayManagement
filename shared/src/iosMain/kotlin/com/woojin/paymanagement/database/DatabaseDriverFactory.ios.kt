@@ -11,7 +11,7 @@ actual class DatabaseDriverFactory {
                 name = "PayManagementDatabase.db",
                 onConfiguration = { config ->
                     config.copy(
-                        version = 11
+                        version = 14
                     )
                 }
             )
@@ -22,7 +22,7 @@ actual class DatabaseDriverFactory {
                 name = "PayManagementDatabase.db",
                 onConfiguration = { config ->
                     config.copy(
-                        version = 11
+                        version = 14
                     )
                 }
             )
@@ -444,6 +444,24 @@ actual class DatabaseDriverFactory {
                 dateName TEXT NOT NULL,
                 isHoliday TEXT NOT NULL,
                 year INTEGER NOT NULL
+            )
+            """.trimIndent(),
+            0,
+            null
+        )
+
+        // FailedNotificationEntity 테이블이 없으면 생성 (Schema v14)
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS FailedNotificationEntity (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                packageName TEXT NOT NULL,
+                title TEXT NOT NULL,
+                text TEXT NOT NULL,
+                bigText TEXT,
+                failureReason TEXT,
+                createdAt INTEGER NOT NULL
             )
             """.trimIndent(),
             0,

@@ -9,6 +9,7 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.ParsedTransaction
+import com.woojin.paymanagement.data.FailedNotification
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.BudgetPlan
 import com.woojin.paymanagement.data.CategoryBudget
@@ -676,5 +677,56 @@ class DatabaseHelper(
 
     suspend fun getLatestHolidayDate(): String? {
         return queries.selectLatestHolidayDate().executeAsOneOrNull()
+    }
+
+    // FailedNotification 관련 메서드들
+    suspend fun insertFailedNotification(failedNotification: FailedNotification) {
+        queries.insertFailedNotification(
+            packageName = failedNotification.packageName,
+            title = failedNotification.title,
+            text = failedNotification.text,
+            bigText = failedNotification.bigText,
+            failureReason = failedNotification.failureReason,
+            createdAt = failedNotification.createdAt
+        )
+    }
+
+    fun getAllFailedNotifications(): Flow<List<FailedNotification>> {
+        return queries.selectAllFailedNotifications()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toFailedNotification() }
+            }
+    }
+
+    suspend fun getRecentFailedNotifications(limit: Long): List<FailedNotification> {
+        return queries.selectRecentFailedNotifications(limit)
+            .executeAsList()
+            .map { it.toFailedNotification() }
+    }
+
+    suspend fun deleteFailedNotification(id: Long) {
+        queries.deleteFailedNotification(id)
+    }
+
+    suspend fun deleteAllFailedNotifications() {
+        queries.deleteAllFailedNotifications()
+    }
+
+    suspend fun deleteOldFailedNotifications(beforeTimestamp: Long) {
+        queries.deleteOldFailedNotifications(beforeTimestamp)
+    }
+
+    private fun FailedNotificationEntity.toFailedNotification(): FailedNotification {
+        return FailedNotification(
+            id = this.id,
+            packageName = this.packageName,
+            title = this.title,
+            text = this.text,
+            bigText = this.bigText,
+            failureReason = this.failureReason,
+            createdAt = this.createdAt
+        )
     }
 }
