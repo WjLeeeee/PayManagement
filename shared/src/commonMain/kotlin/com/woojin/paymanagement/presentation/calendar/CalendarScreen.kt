@@ -403,10 +403,10 @@ private fun PayPeriodSummaryCard(
     // 투자 관련 항목 제외하고 계산
     val income = periodTransactions
         .filter { it.type == TransactionType.INCOME && it.category !in investmentCategories }
-        .sumOf { it.amount }
+        .sumOf { it.displayAmount }
     val expense = periodTransactions
         .filter { it.type == TransactionType.EXPENSE && it.category !in investmentCategories }
-        .sumOf { it.amount }
+        .sumOf { it.displayAmount }
     val balance = income - expense
 
     Card(
@@ -947,7 +947,7 @@ private fun TransactionItem(
                 Text(
                     text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
                         Utils.formatAmount(
-                            transaction.amount
+                            transaction.displayAmount
                         )
                     }원",
                     style = MaterialTheme.typography.bodySmall,

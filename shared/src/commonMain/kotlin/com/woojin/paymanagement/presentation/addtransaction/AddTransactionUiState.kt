@@ -25,8 +25,6 @@ data class AddTransactionUiState(
 
     // 더치페이 관련
     val isSettlement: Boolean = false,
-    val actualAmount: String = "",
-    val splitCount: String = "",
     val settlementAmount: String = "",
 
     // 카드 목록

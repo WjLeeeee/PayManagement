@@ -336,7 +336,7 @@ fun TransactionDetailItem(
                     // 금액
                     Text(
                         text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
-                            Utils.formatAmount(transaction.amount)
+                            Utils.formatAmount(transaction.displayAmount)
                         }원",
                         style = MaterialTheme.typography.bodyLarge,
                         color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,

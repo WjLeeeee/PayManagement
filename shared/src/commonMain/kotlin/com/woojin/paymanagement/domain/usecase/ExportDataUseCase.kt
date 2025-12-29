@@ -94,7 +94,7 @@ class ExportDataUseCase(
         giftCardId = giftCardId,
         cardName = cardName,
         merchant = merchant,
-        actualAmount = actualAmount,
+        actualAmount = null, // actualAmount 필드는 더 이상 사용하지 않음
         settlementAmount = settlementAmount,
         isSettlement = isSettlement
     )

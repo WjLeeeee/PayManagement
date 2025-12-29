@@ -38,9 +38,9 @@ object ChartDataCalculator {
             it.category in INVESTMENT_CATEGORIES
         }
 
-        val totalIncome = incomeTransactions.sumOf { it.amount }
-        val totalExpense = expenseTransactions.sumOf { it.amount }
-        val totalInvestment = investmentTransactions.sumOf { it.amount }
+        val totalIncome = incomeTransactions.sumOf { it.displayAmount }
+        val totalExpense = expenseTransactions.sumOf { it.displayAmount }
+        val totalInvestment = investmentTransactions.sumOf { it.displayAmount }
 
         val incomeItems = calculateChartItems(incomeTransactions, totalIncome)
         val expenseItems = calculateChartItems(expenseTransactions, totalExpense)
@@ -64,7 +64,7 @@ object ChartDataCalculator {
         var colorIndex = 0
 
         groupedByCategory.forEach { (category, categoryTransactions) ->
-            val amount = categoryTransactions.sumOf { it.amount }
+            val amount = categoryTransactions.sumOf { it.displayAmount }
             val percentage = (amount / total * 100).toFloat()
 
             val color = CategoryColors.getColor(category, colorIndex)
@@ -88,7 +88,7 @@ object ChartDataCalculator {
         if (transactions.isEmpty()) return emptyList()
 
         // 전체 투자 활동 금액의 절대값 합계 계산
-        val totalAbsoluteAmount = transactions.sumOf { kotlin.math.abs(it.amount) }
+        val totalAbsoluteAmount = transactions.sumOf { kotlin.math.abs(it.displayAmount) }
         if (totalAbsoluteAmount == 0.0) return emptyList()
 
         val groupedByCategory = transactions.groupBy { it.category }
@@ -96,7 +96,7 @@ object ChartDataCalculator {
         var colorIndex = 0
 
         groupedByCategory.forEach { (category, categoryTransactions) ->
-            val amount = categoryTransactions.sumOf { it.amount }
+            val amount = categoryTransactions.sumOf { it.displayAmount }
             val absoluteAmount = kotlin.math.abs(amount)
             val percentage = (absoluteAmount / totalAbsoluteAmount * 100).toFloat()
 

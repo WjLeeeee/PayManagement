@@ -8,11 +8,11 @@ class CalculateDailySummaryUseCase {
     operator fun invoke(transactions: List<Transaction>): DailySummary {
         val totalIncome = transactions
             .filter { it.type == TransactionType.INCOME }
-            .sumOf { it.amount }
+            .sumOf { it.displayAmount }
 
         val totalExpense = transactions
             .filter { it.type == TransactionType.EXPENSE }
-            .sumOf { it.amount }
+            .sumOf { it.displayAmount }
 
         val dailyBalance = totalIncome - totalExpense
 

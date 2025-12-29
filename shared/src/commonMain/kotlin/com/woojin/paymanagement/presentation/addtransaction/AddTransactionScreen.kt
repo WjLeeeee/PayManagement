@@ -149,13 +149,8 @@ fun AddTransactionScreen(
             SettlementSection(
                 isSettlement = uiState.isSettlement,
                 onSettlementChange = viewModel::updateSettlement,
-                actualAmount = uiState.actualAmount,
-                onActualAmountChange = viewModel::updateActualAmount,
-                splitCount = uiState.splitCount,
-                onSplitCountChange = viewModel::updateSplitCount,
                 settlementAmount = uiState.settlementAmount,
-                onSettlementAmountChange = viewModel::updateSettlementAmount,
-                myAmount = uiState.amount.text
+                onSettlementAmountChange = viewModel::updateSettlementAmount
             )
         }
 

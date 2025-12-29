@@ -1,4 +1,4 @@
--- Schema version 14
+-- Schema version 15
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -45,7 +45,6 @@ CREATE TABLE TransactionEntity (
     balanceCardId TEXT,
     giftCardId TEXT,
     cardName TEXT,
-    actualAmount REAL,
     settlementAmount REAL,
     isSettlement INTEGER NOT NULL DEFAULT 0
 );
@@ -115,8 +114,8 @@ CREATE TABLE HolidayEntity (
 );
 
 insertTransaction:
-INSERT INTO TransactionEntity(id, amount, type, category, merchant, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName, actualAmount, settlementAmount, isSettlement)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO TransactionEntity(id, amount, type, category, merchant, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName, settlementAmount, isSettlement)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllTransactions:
 SELECT * FROM TransactionEntity
@@ -137,7 +136,7 @@ SELECT MIN(date) AS oldestDate FROM TransactionEntity;
 
 updateTransaction:
 UPDATE TransactionEntity
-SET amount = ?, type = ?, category = ?, merchant = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, actualAmount = ?, settlementAmount = ?, isSettlement = ?
+SET amount = ?, type = ?, category = ?, merchant = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, settlementAmount = ?, isSettlement = ?
 WHERE id = ?;
 
 deleteTransaction:

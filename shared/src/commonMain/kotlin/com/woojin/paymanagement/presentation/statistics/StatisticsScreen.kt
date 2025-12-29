@@ -150,10 +150,10 @@ fun StatisticsScreen(
         val profitTransactions = statisticsData.transactions.filter { it.category == "익절" }
         val dividendTransactions = statisticsData.transactions.filter { it.category == "배당금" }
 
-        val investmentAmount = investmentTransactions.sumOf { it.amount }
-        val lossCutAmount = lossCutTransactions.sumOf { it.amount }
-        val profitAmount = profitTransactions.sumOf { it.amount }
-        val dividendAmount = dividendTransactions.sumOf { it.amount }
+        val investmentAmount = investmentTransactions.sumOf { it.displayAmount }
+        val lossCutAmount = lossCutTransactions.sumOf { it.displayAmount }
+        val profitAmount = profitTransactions.sumOf { it.displayAmount }
+        val dividendAmount = dividendTransactions.sumOf { it.displayAmount }
 
         if (investmentAmount > 0 || lossCutAmount > 0 || profitAmount > 0 || dividendAmount > 0) {
             InvestmentSummaryCard(
@@ -840,7 +840,7 @@ private fun ChartLegendItem(
             ) {
                 transactions.forEach { transaction ->
                     val dateText = "${transaction.date.monthNumber}/${transaction.date.dayOfMonth.toString().padStart(2, '0')}"
-                    val amountText = Utils.formatAmount(transaction.amount)
+                    val amountText = Utils.formatAmount(transaction.displayAmount)
 
                     // 실제 거래 타입에 따라 표시 (transactionType 파라미터가 아닌 transaction.type 사용)
                     when (transaction.type) {

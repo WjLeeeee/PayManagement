@@ -573,13 +573,8 @@ private fun GiftCardUsageInfo(
 fun SettlementSection(
     isSettlement: Boolean,
     onSettlementChange: (Boolean) -> Unit,
-    actualAmount: String,
-    onActualAmountChange: (String) -> Unit,
-    splitCount: String,
-    onSplitCountChange: (String) -> Unit,
     settlementAmount: String,
     onSettlementAmountChange: (String) -> Unit,
-    myAmount: String,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -616,9 +611,9 @@ fun SettlementSection(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = actualAmount,
-                    onValueChange = onActualAmountChange,
-                    label = { Text("실제 결제 금액", color = MaterialTheme.colorScheme.onSurface) },
+                    value = settlementAmount,
+                    onValueChange = onSettlementAmountChange,
+                    label = { Text("정산받을 금액", color = MaterialTheme.colorScheme.onSurface) },
                     suffix = { Text("원", color = MaterialTheme.colorScheme.onSurface) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
@@ -628,49 +623,14 @@ fun SettlementSection(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedTextField(
-                        value = splitCount,
-                        onValueChange = onSplitCountChange,
-                        label = { Text("분할 인원", color = MaterialTheme.colorScheme.onSurface) },
-                        suffix = { Text("명", color = MaterialTheme.colorScheme.onSurface) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = settlementAmount,
-                        onValueChange = onSettlementAmountChange,
-                        label = { Text("정산받을 금액", color = MaterialTheme.colorScheme.onSurface) },
-                        suffix = { Text("원", color = MaterialTheme.colorScheme.onSurface) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (myAmount.isNotBlank()) {
-                    Text(
-                        text = "💡 내 부담액: ${myAmount}원",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-                }
+                Text(
+                    text = "💡 결제 금액에서 정산받을 금액을 뺀 나머지가 실제 내 부담액으로 표시됩니다",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
             }
         }
     }

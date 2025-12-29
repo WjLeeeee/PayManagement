@@ -112,7 +112,6 @@ class AddTransactionViewModel(
                 memo = editTransaction.memo,
                 date = initialDate,
                 isSettlement = editTransaction.isSettlement,
-                actualAmount = editTransaction.actualAmount?.toLong()?.toString() ?: "",
                 settlementAmount = editTransaction.settlementAmount?.toLong()?.toString() ?: "",
                 availableBalanceCards = availableBalanceCards,
                 availableGiftCards = availableGiftCards,
@@ -232,18 +231,6 @@ class AddTransactionViewModel(
                 )
             )
 
-            // 더치페이 활성화 시 정산받을 금액 자동 계산
-            if (uiState.isSettlement && uiState.actualAmount.isNotBlank()) {
-                val actual = parseAmountToDouble(uiState.actualAmount)
-                val myAmount = digitsOnly.toDoubleOrNull() ?: 0.0
-                if (actual > myAmount) {
-                    val settlementValue = (actual - myAmount).toLong()
-                    uiState = uiState.copy(
-                        settlementAmount = formatWithCommas(settlementValue)
-                    )
-                }
-            }
-
             validateInput()
         }
     }
@@ -322,15 +309,13 @@ class AddTransactionViewModel(
         } else {
             uiState.copy(
                 isSettlement = false,
-                actualAmount = "",
-                splitCount = "",
                 settlementAmount = ""
             )
         }
         validateInput()
     }
 
-    fun updateActualAmount(newValue: String) {
+    fun updateSettlementAmount(newValue: String) {
         val digitsOnly = removeCommas(newValue)
 
         if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
@@ -341,59 +326,7 @@ class AddTransactionViewModel(
                 ""
             }
 
-            uiState = uiState.copy(actualAmount = formattedAmount)
-
-            val actual = digitsOnly.toDoubleOrNull() ?: 0.0
-            val split = uiState.splitCount.toIntOrNull() ?: 0
-            if (actual > 0 && split > 0) {
-                val myShare = actual / split
-                val myShareText = formatWithCommas(myShare.toLong())
-                uiState = uiState.copy(
-                    amount = TextFieldValue(
-                        text = myShareText,
-                        selection = TextRange(myShareText.length)
-                    ),
-                    settlementAmount = formatWithCommas((actual - myShare).toLong())
-                )
-            }
-        }
-    }
-
-    fun updateSplitCount(newValue: String) {
-        if (newValue.isEmpty() || newValue.matches(Regex("^\\d+$"))) {
-            uiState = uiState.copy(splitCount = newValue)
-
-            val actual = parseAmountToDouble(uiState.actualAmount)
-            val split = newValue.toIntOrNull() ?: 0
-            if (actual > 0 && split > 0) {
-                val myShare = actual / split
-                val myShareText = formatWithCommas(myShare.toLong())
-                uiState = uiState.copy(
-                    amount = TextFieldValue(
-                        text = myShareText,
-                        selection = TextRange(myShareText.length)
-                    ),
-                    settlementAmount = formatWithCommas((actual - myShare).toLong())
-                )
-            }
-        }
-    }
-
-    fun updateSettlementAmount(newValue: String) {
-        if (newValue.isEmpty() || newValue.matches(Regex("^\\d+\\.?\\d*$"))) {
-            uiState = uiState.copy(settlementAmount = newValue)
-
-            val actual = uiState.actualAmount.toDoubleOrNull() ?: 0.0
-            val settlement = newValue.toDoubleOrNull() ?: 0.0
-            if (actual > settlement) {
-                val newAmountText = (actual - settlement).toInt().toString()
-                uiState = uiState.copy(
-                    amount = TextFieldValue(
-                        text = newAmountText,
-                        selection = TextRange(newAmountText.length)
-                    )
-                )
-            }
+            uiState = uiState.copy(settlementAmount = formattedAmount)
         }
     }
 
@@ -542,7 +475,6 @@ class AddTransactionViewModel(
                             uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.name
                             else -> null
                         },
-                        actualAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.actualAmount) else null,
                         settlementAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount) else null,
                         isSettlement = uiState.isSettlement
                     )

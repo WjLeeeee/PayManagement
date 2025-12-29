@@ -83,10 +83,10 @@ class MonthlyComparisonViewModel(
             // 총 지출 계산
             val totalCurrent = currentPeriodTransactions
                 .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+                .sumOf { it.displayAmount }
             val totalPrevious = previousPeriodTransactions
                 .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+                .sumOf { it.displayAmount }
             val totalDiff = totalCurrent - totalPrevious
             val totalDiffPercentage = if (totalPrevious > 0) {
                 ((totalDiff / totalPrevious) * 100).toFloat()
@@ -122,8 +122,8 @@ class MonthlyComparisonViewModel(
         val allCategories = (currentByCategory.keys + previousByCategory.keys).distinct()
 
         return allCategories.map { category ->
-            val currentAmount = currentByCategory[category]?.sumOf { it.amount } ?: 0.0
-            val previousAmount = previousByCategory[category]?.sumOf { it.amount } ?: 0.0
+            val currentAmount = currentByCategory[category]?.sumOf { it.displayAmount } ?: 0.0
+            val previousAmount = previousByCategory[category]?.sumOf { it.displayAmount } ?: 0.0
             val difference = currentAmount - previousAmount
             val differencePercentage = if (previousAmount > 0) {
                 ((difference / previousAmount) * 100).toFloat()

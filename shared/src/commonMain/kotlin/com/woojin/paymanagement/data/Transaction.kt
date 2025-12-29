@@ -17,10 +17,20 @@ data class Transaction(
     val balanceCardId: String? = null,   // 잔액권 ID (수입 시 생성, 지출 시 사용)
     val giftCardId: String? = null,      // 상품권 ID (수입 시 생성, 지출 시 사용)
     val cardName: String? = null,        // 잔액권/상품권 이름
-    val actualAmount: Double? = null,    // 실제 결제액 (더치페이 시)
-    val settlementAmount: Double? = null, // 정산받은 금액 (더치페이 시)
+    val settlementAmount: Double? = null, // 정산받을 금액 (더치페이 시)
     val isSettlement: Boolean = false    // 더치페이 여부
-)
+) {
+    /**
+     * 화면에 표시할 금액 (정산금액 제외)
+     * 예: 50,000원 결제, 40,000원 정산받으면 → 10,000원 표시
+     */
+    val displayAmount: Double
+        get() = if (isSettlement && settlementAmount != null) {
+            amount - settlementAmount
+        } else {
+            amount
+        }
+}
 
 @Serializable
 enum class TransactionType {
@@ -322,26 +332,22 @@ object PaymentMethodAnalyzer {
                 (it.incomeType == IncomeType.CASH || it.incomeType == null) &&
                 it.category != "상품권 환급" // 상품권 환급으로 인한 현금 수입 제외
             }
-            .sumOf { it.amount }
+            .sumOf { it.displayAmount }
 
         val cashExpense = transactions
             .filter { it.type == TransactionType.EXPENSE && (it.paymentMethod == PaymentMethod.CASH || it.paymentMethod == null) }
-            .sumOf { it.amount }
+            .sumOf { it.displayAmount }
 
         val cardExpense = transactions
             .filter { it.type == TransactionType.EXPENSE && it.paymentMethod == PaymentMethod.CARD }
-            .sumOf { it.amount }
+            .sumOf { it.displayAmount }
 
         // 더치페이 관련 분석
         val cardTransactions = transactions.filter { it.type == TransactionType.EXPENSE && it.paymentMethod == PaymentMethod.CARD }
 
         val cardActualExpense = cardTransactions
             .sumOf { transaction ->
-                if (transaction.isSettlement && transaction.actualAmount != null) {
-                    transaction.actualAmount
-                } else {
-                    transaction.amount
-                }
+                transaction.displayAmount
             }
 
         val settlementIncome = transactions
@@ -366,11 +372,11 @@ object PaymentMethodAnalyzer {
 
             val income = cardTransactions
                 .filter { it.type == TransactionType.INCOME }
-                .sumOf { it.amount }
+                .sumOf { it.displayAmount }
 
             val expense = cardTransactions
                 .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+                .sumOf { it.displayAmount }
 
             val currentCard = availableBalanceCards.find { it.name == cardName }
             val currentBalance = currentCard?.currentBalance ?: 0.0
@@ -402,11 +408,11 @@ object PaymentMethodAnalyzer {
 
             val income = cardTransactions
                 .filter { it.type == TransactionType.INCOME }
-                .sumOf { it.amount }
+                .sumOf { it.displayAmount }
 
             val expense = cardTransactions
                 .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+                .sumOf { it.displayAmount }
 
             val currentCard = availableGiftCards.find { it.name == cardName }
             val currentBalance = currentCard?.remainingAmount ?: 0.0
@@ -448,11 +454,11 @@ data class MonthlySummary(
             
             val income = monthTransactions
                 .filter { it.type == TransactionType.INCOME }
-                .sumOf { it.amount }
-            
+                .sumOf { it.displayAmount }
+
             val expense = monthTransactions
                 .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.amount }
+                .sumOf { it.displayAmount }
             
             return MonthlySummary(
                 year = year,

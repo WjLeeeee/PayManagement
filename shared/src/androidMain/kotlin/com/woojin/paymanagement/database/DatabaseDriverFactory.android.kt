@@ -435,6 +435,72 @@ actual class DatabaseDriverFactory(private val context: Context) {
             0
         )
 
+        // actualAmount 컬럼 제거 마이그레이션 (Schema v15)
+        val hasActualAmountColumn = try {
+            driver.executeQuery(
+                null,
+                "PRAGMA table_info(TransactionEntity)",
+                { cursor ->
+                    var hasColumn = false
+                    while (cursor.next().value) {
+                        val columnName = cursor.getString(1)
+                        if (columnName == "actualAmount") {
+                            hasColumn = true
+                            break
+                        }
+                    }
+                    app.cash.sqldelight.db.QueryResult.Value(hasColumn)
+                },
+                0
+            ).value
+        } catch (e: Exception) {
+            false
+        }
+
+        if (hasActualAmountColumn) {
+            // actualAmount 컬럼이 있으면 테이블 재생성 (컬럼 제거)
+            try {
+                driver.execute(
+                    null,
+                    """
+                    CREATE TABLE TransactionEntity_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        amount REAL NOT NULL,
+                        type TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        merchant TEXT,
+                        memo TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        incomeType TEXT,
+                        paymentMethod TEXT,
+                        balanceCardId TEXT,
+                        giftCardId TEXT,
+                        cardName TEXT,
+                        settlementAmount REAL,
+                        isSettlement INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                    0
+                )
+
+                driver.execute(
+                    null,
+                    """
+                    INSERT INTO TransactionEntity_new
+                    SELECT id, amount, type, category, merchant, memo, date, incomeType, paymentMethod,
+                           balanceCardId, giftCardId, cardName, settlementAmount, isSettlement
+                    FROM TransactionEntity
+                    """.trimIndent(),
+                    0
+                )
+
+                driver.execute(null, "DROP TABLE TransactionEntity", 0)
+                driver.execute(null, "ALTER TABLE TransactionEntity_new RENAME TO TransactionEntity", 0)
+            } catch (e: Exception) {
+                // 오류 무시
+            }
+        }
+
         return driver
     }
 }
