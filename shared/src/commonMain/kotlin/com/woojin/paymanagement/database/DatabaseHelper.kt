@@ -282,7 +282,15 @@ class DatabaseHelper(
             }
     }
 
-    suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction) {
+    suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction): Boolean {
+        // INSERT OR IGNORE는 중복 시 무시하므로, 실제로 삽입되었는지 확인
+        val existingTransaction = queries.selectParsedTransactionById(parsedTransaction.id).executeAsOneOrNull()
+
+        if (existingTransaction != null) {
+            // 이미 존재하는 경우 삽입 실패
+            return false
+        }
+
         queries.insertParsedTransaction(
             id = parsedTransaction.id,
             amount = parsedTransaction.amount,
@@ -292,6 +300,9 @@ class DatabaseHelper(
             isProcessed = if (parsedTransaction.isProcessed) 1L else 0L,
             createdAt = parsedTransaction.createdAt
         )
+
+        // 삽입 성공
+        return true
     }
 
     suspend fun markParsedTransactionAsProcessed(id: String) {

@@ -290,12 +290,18 @@ class CardNotificationListenerService : NotificationListenerService() {
                     return@launch
                 }
 
-                // 중복이 아니면 저장
-                insertParsedTransactionUseCase(transaction)
-                Log.d(TAG, "Parsed transaction saved: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
+                // 저장 시도 및 결과 확인
+                val wasInserted = insertParsedTransactionUseCase(transaction)
 
-                // 파싱 성공 시 사용자에게 알림 전송
-                TransactionNotificationHelper.sendTransactionNotification(this@CardNotificationListenerService, transaction)
+                if (wasInserted) {
+                    // 실제로 DB에 저장되었을 때만 로그 및 알림 전송
+                    Log.d(TAG, "Parsed transaction saved: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
+                    TransactionNotificationHelper.sendTransactionNotification(this@CardNotificationListenerService, transaction)
+                } else {
+                    // 이미 존재하는 거래 (중복 ID)
+                    Log.d(TAG, "Duplicate transaction ID detected: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
+                    Log.d(TAG, "Skipping notification to prevent duplicate push")
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to save parsed transaction", e)
             }

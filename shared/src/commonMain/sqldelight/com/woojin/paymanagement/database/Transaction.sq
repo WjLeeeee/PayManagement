@@ -240,6 +240,10 @@ SELECT * FROM ParsedTransactionEntity
 WHERE isProcessed = 0
 ORDER BY createdAt DESC;
 
+selectParsedTransactionById:
+SELECT * FROM ParsedTransactionEntity
+WHERE id = ?;
+
 updateParsedTransactionProcessed:
 UPDATE ParsedTransactionEntity
 SET isProcessed = 1
