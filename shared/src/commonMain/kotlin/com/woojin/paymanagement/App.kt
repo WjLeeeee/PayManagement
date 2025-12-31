@@ -35,6 +35,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -269,6 +273,27 @@ fun PayManagementApp(
     var selectedRecurringTransaction by remember { mutableStateOf<com.woojin.paymanagement.data.RecurringTransaction?>(null) }
     var showListenerPermissionDialog by remember { mutableStateOf(false) }
     var showPostPermissionDialog by remember { mutableStateOf(false) }
+    var budgetExceededMessage by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // 예산 초과 스낵바 표시
+    LaunchedEffect(budgetExceededMessage) {
+        budgetExceededMessage?.let { message ->
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "확인",
+                    withDismissAction = true
+                )
+                if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                    // 확인 버튼 클릭 시 예산 설정 화면으로 이동
+                    navigateTo(Screen.BudgetSettings)
+                }
+                // 스낵바가 사라지면 메시지 초기화
+                budgetExceededMessage = null
+            }
+        }
+    }
 
     // Deep link 처리: 푸시 알림에서 카드 결제 내역 화면으로 이동
     LaunchedEffect(shouldNavigateToParsedTransactions) {
@@ -1494,8 +1519,11 @@ fun PayManagementApp(
                 }
             }
     ) {
-        when (currentScreen) {
-        Screen.PaydaySetup -> {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { paddingValues ->
+            when (currentScreen) {
+            Screen.PaydaySetup -> {
             // Koin에서 ViewModel 주입 (remember로 상태 유지)
             val paydaySetupViewModel = remember { koinInject<com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupViewModel>() }
 
@@ -1610,7 +1638,7 @@ fun PayManagementApp(
                 parsedTransaction = selectedParsedTransaction,
                 recurringTransaction = selectedRecurringTransaction,
                 viewModel = addTransactionViewModel,
-                onSave = { newTransactions ->
+                onSave = { newTransactions, budgetMessage ->
                     scope.launch {
                         if (editTransaction != null) {
                             // 편집 모드: 거래 업데이트는 이미 UseCase에서 처리됨
@@ -1712,6 +1740,9 @@ fun PayManagementApp(
                         // 상태 초기화
                         selectedParsedTransaction = null
                         selectedRecurringTransaction = null
+
+                        // 예산 초과 메시지 설정
+                        budgetExceededMessage = budgetMessage
                     }
                     navigateBack()
                 },
@@ -1758,7 +1789,7 @@ fun PayManagementApp(
                 editTransaction = editTransaction,
                 recurringTransaction = null,
                 viewModel = editTransactionViewModel,
-                onSave = { newTransactions ->
+                onSave = { newTransactions, budgetMessage ->
                     scope.launch {
                         if (editTransaction != null) {
                             // 편집 모드: 거래 업데이트는 이미 UseCase에서 처리됨
@@ -1843,6 +1874,9 @@ fun PayManagementApp(
                                 // 거래 저장은 이미 UseCase에서 처리됨
                             }
                         }
+
+                        // 예산 초과 메시지 설정
+                        budgetExceededMessage = budgetMessage
                     }
                     navigateBack()
                 },
@@ -1944,7 +1978,8 @@ fun PayManagementApp(
                 }
             )
         }
-    }
+        }
+    } // Scaffold 닫기
 
     // 계산기 다이얼로그
     if (showCalculatorDialog) {

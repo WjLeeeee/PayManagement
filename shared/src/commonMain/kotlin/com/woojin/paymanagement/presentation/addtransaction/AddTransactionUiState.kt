@@ -46,7 +46,10 @@ data class AddTransactionUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isValidInput: Boolean = false,
-    val saveEnabled: Boolean = false
+    val saveEnabled: Boolean = false,
+
+    // 예산 초과 알림
+    val budgetExceededMessage: String? = null
 )
 
 val AddTransactionUiState.categories: List<String>

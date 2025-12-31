@@ -354,8 +354,13 @@ class AddTransactionViewModel(
         )
     }
 
-    suspend fun saveTransaction(): List<Transaction> {
-        if (!uiState.isValidInput || uiState.date == null) return emptyList()
+    data class SaveResult(
+        val transactions: List<Transaction>,
+        val budgetExceededMessage: String?
+    )
+
+    suspend fun saveTransaction(): SaveResult {
+        if (!uiState.isValidInput || uiState.date == null) return SaveResult(emptyList(), null)
 
         try {
             uiState = uiState.copy(isLoading = true, error = null)
@@ -484,6 +489,7 @@ class AddTransactionViewModel(
             }
 
             // 저장 실행
+            var budgetExceededResult: com.woojin.paymanagement.domain.usecase.BudgetExceededResult? = null
             if (uiState.isEditMode && uiState.editTransaction != null) {
                 // 편집 모드에서는 단일 거래만 업데이트
                 if (transactions.size == 1) {
@@ -492,25 +498,45 @@ class AddTransactionViewModel(
             } else {
                 // 새 거래 추가
                 if (transactions.size == 1) {
-                    saveTransactionUseCase(transactions.first())
+                    budgetExceededResult = saveTransactionUseCase(transactions.first())
+                    println("AddTransactionViewModel: budgetExceededResult = $budgetExceededResult")
                 } else {
-                    saveMultipleTransactionsUseCase(transactions)
+                    budgetExceededResult = saveMultipleTransactionsUseCase(transactions)
+                    println("AddTransactionViewModel: budgetExceededResult (multiple) = $budgetExceededResult")
                 }
             }
 
+            // 예산 초과 메시지 생성
+            val budgetMessage = budgetExceededResult?.let { result ->
+                val percentage = (result.usageRate * 100).toInt()
+                val message = "${result.categoryBudget.categoryName} 예산 ${result.threshold}% 초과! (${percentage}% 사용)"
+                println("AddTransactionViewModel: budgetMessage = $message")
+                message
+            }
+            println("AddTransactionViewModel: budgetMessage (final) = $budgetMessage")
+
             uiState = uiState.copy(
                 isLoading = false,
-                error = null
+                error = null,
+                budgetExceededMessage = budgetMessage
             )
+            println("AddTransactionViewModel: uiState.budgetExceededMessage = ${uiState.budgetExceededMessage}")
 
-            return transactions
+            return SaveResult(transactions, budgetMessage)
 
         } catch (e: Exception) {
             uiState = uiState.copy(
                 isLoading = false,
                 error = e.message ?: "알 수 없는 오류가 발생했습니다."
             )
-            return emptyList()
+            return SaveResult(emptyList(), null)
         }
+    }
+
+    /**
+     * 예산 초과 메시지 초기화
+     */
+    fun clearBudgetExceededMessage() {
+        uiState = uiState.copy(budgetExceededMessage = null)
     }
 }
