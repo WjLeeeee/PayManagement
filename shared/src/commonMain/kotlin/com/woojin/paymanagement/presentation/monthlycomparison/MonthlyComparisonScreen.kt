@@ -43,11 +43,19 @@ import kotlin.math.round
 @Composable
 fun MonthlyComparisonScreen(
     viewModel: MonthlyComparisonViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    showPreviousPeriodComparison: Boolean = false
 ) {
     BackHandler(onBack = onBack)
 
     val uiState = viewModel.uiState
+
+    // 스낵바에서 진입한 경우 이전 급여 기간 비교 모드로 시작
+    androidx.compose.runtime.LaunchedEffect(showPreviousPeriodComparison) {
+        if (showPreviousPeriodComparison) {
+            viewModel.startWithPreviousPeriod()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(

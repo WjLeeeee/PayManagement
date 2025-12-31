@@ -33,6 +33,21 @@ class MonthlyComparisonViewModel(
         loadData()
     }
 
+    /**
+     * 이전 급여 기간 비교로 시작 (직직전 vs 직전)
+     * 스낵바에서 진입 시 사용
+     */
+    fun startWithPreviousPeriod() {
+        coroutineScope.launch {
+            // 초기 로드가 완료될 때까지 대기
+            while (currentPeriod == null || previousPeriod == null) {
+                kotlinx.coroutines.delay(50)
+            }
+            // 한 기간 뒤로 이동
+            moveToPreviousPeriod()
+        }
+    }
+
     private fun loadData() {
         coroutineScope.launch {
             uiState = uiState.copy(isLoading = true)
@@ -41,22 +56,29 @@ class MonthlyComparisonViewModel(
             val adjustment = preferencesRepository.getPaydayAdjustment()
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
-            // 현재 급여 기간 계산
-            val currentPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
-                currentDate = today,
-                payday = payday,
-                adjustment = adjustment
-            )
+            // currentPeriod가 null인 경우에만 초기화 (첫 로드)
+            if (currentPeriod == null || previousPeriod == null) {
+                // 현재 급여 기간 계산
+                val currentPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
+                    currentDate = today,
+                    payday = payday,
+                    adjustment = adjustment
+                )
 
-            // 이전 급여 기간 계산
-            val previousPayPeriod = payPeriodCalculator.getPreviousPayPeriod(
-                currentPeriod = currentPayPeriod,
-                payday = payday,
-                adjustment = adjustment
-            )
+                // 이전 급여 기간 계산
+                val previousPayPeriod = payPeriodCalculator.getPreviousPayPeriod(
+                    currentPeriod = currentPayPeriod,
+                    payday = payday,
+                    adjustment = adjustment
+                )
 
-            currentPeriod = currentPayPeriod
-            previousPeriod = previousPayPeriod
+                currentPeriod = currentPayPeriod
+                previousPeriod = previousPayPeriod
+            }
+
+            // 이미 설정된 기간 사용
+            val currentPayPeriod = currentPeriod!!
+            val previousPayPeriod = previousPeriod!!
 
             // 카테고리 정보 로드
             val categories = categoryRepository.getAllCategories().firstOrNull() ?: emptyList()
@@ -96,6 +118,14 @@ class MonthlyComparisonViewModel(
                 0f
             }
 
+            // 다음 기간으로 이동 가능한지 체크
+            val nextPeriod = payPeriodCalculator.getNextPayPeriod(
+                currentPeriod = currentPayPeriod,
+                payday = payday,
+                adjustment = adjustment
+            )
+            val canNavigateNext = nextPeriod.startDate <= today
+
             uiState = uiState.copy(
                 currentMonth = currentPayPeriod.displayText,
                 previousMonth = previousPayPeriod.displayText,
@@ -105,7 +135,8 @@ class MonthlyComparisonViewModel(
                 totalDifference = totalDiff,
                 totalDifferencePercentage = totalDiffPercentage,
                 isLoading = false,
-                availableCategories = categories
+                availableCategories = categories,
+                canNavigateNext = canNavigateNext
             )
         }
     }
@@ -147,17 +178,20 @@ class MonthlyComparisonViewModel(
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()
 
-        currentPeriod?.let { current ->
+        previousPeriod?.let { prev ->
             coroutineScope.launch {
-                // 현재를 이전으로
-                currentPeriod = previousPeriod
+                // 새로운 현재 = 이전 previousPeriod
+                val newCurrent = prev
 
-                // 새로운 이전 기간 계산
-                previousPeriod = payPeriodCalculator.getPreviousPayPeriod(
-                    currentPeriod = current,
+                // 새로운 이전 = newCurrent의 이전 기간
+                val newPrevious = payPeriodCalculator.getPreviousPayPeriod(
+                    currentPeriod = newCurrent,
                     payday = payday,
                     adjustment = adjustment
                 )
+
+                currentPeriod = newCurrent
+                previousPeriod = newPrevious
 
                 loadData()
             }
@@ -180,8 +214,13 @@ class MonthlyComparisonViewModel(
 
                 // 미래 급여 기간으로는 이동 불가
                 if (nextPeriod.startDate <= today) {
-                    previousPeriod = currentPeriod
-                    currentPeriod = nextPeriod
+                    // 새로운 이전 = 현재 currentPeriod
+                    // 새로운 현재 = nextPeriod
+                    val newPrevious = current
+                    val newCurrent = nextPeriod
+
+                    previousPeriod = newPrevious
+                    currentPeriod = newCurrent
                     loadData()
                 }
             }
@@ -189,23 +228,6 @@ class MonthlyComparisonViewModel(
     }
 
     fun canNavigateNext(): Boolean {
-        val payday = preferencesRepository.getPayday()
-        val adjustment = preferencesRepository.getPaydayAdjustment()
-        val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-
-        // This needs to be calculated asynchronously, but for now we'll use a blocking approach
-        // In a real scenario, you'd want to make this a suspend function or use a different pattern
-        var canNavigate = false
-        currentPeriod?.let { current ->
-            coroutineScope.launch {
-                val nextPeriod = payPeriodCalculator.getNextPayPeriod(
-                    currentPeriod = current,
-                    payday = payday,
-                    adjustment = adjustment
-                )
-                canNavigate = nextPeriod.startDate <= today
-            }
-        }
-        return canNavigate
+        return uiState.canNavigateNext
     }
 }

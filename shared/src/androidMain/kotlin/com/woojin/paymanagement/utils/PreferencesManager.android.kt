@@ -73,4 +73,13 @@ actual class PreferencesManager(private val context: Context) {
         val expiryTime = getAdRemovalExpiryTime()
         return expiryTime > System.currentTimeMillis()
     }
+
+    // 마지막으로 체크한 급여 기간 시작일
+    actual fun getLastCheckedPayPeriodStartDate(): String? {
+        return prefs.getString("last_checked_pay_period_start_date", null)
+    }
+
+    actual fun setLastCheckedPayPeriodStartDate(date: String) {
+        prefs.edit().putString("last_checked_pay_period_start_date", date).apply()
+    }
 }

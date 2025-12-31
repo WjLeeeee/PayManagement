@@ -274,6 +274,8 @@ fun PayManagementApp(
     var showListenerPermissionDialog by remember { mutableStateOf(false) }
     var showPostPermissionDialog by remember { mutableStateOf(false) }
     var budgetExceededMessage by remember { mutableStateOf<String?>(null) }
+    var payPeriodChangedMessage by remember { mutableStateOf<String?>(null) }
+    var shouldShowPreviousPeriodComparison by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     // 예산 초과 스낵바 표시
@@ -283,7 +285,8 @@ fun PayManagementApp(
                 val result = snackbarHostState.showSnackbar(
                     message = message,
                     actionLabel = "확인",
-                    withDismissAction = true
+                    withDismissAction = false,
+                    duration = androidx.compose.material3.SnackbarDuration.Short
                 )
                 if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
                     // 확인 버튼 클릭 시 예산 설정 화면으로 이동
@@ -292,6 +295,49 @@ fun PayManagementApp(
                 // 스낵바가 사라지면 메시지 초기화
                 budgetExceededMessage = null
             }
+        }
+    }
+
+    // 급여 기간 변경 스낵바 표시
+    LaunchedEffect(payPeriodChangedMessage) {
+        payPeriodChangedMessage?.let { message ->
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "확인",
+                    withDismissAction = false,
+                    duration = androidx.compose.material3.SnackbarDuration.Short
+                )
+                if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                    // 확인 버튼 클릭 시 급여 기간 비교 화면으로 이동 (직직전 vs 직전)
+                    shouldShowPreviousPeriodComparison = true
+                    navigateTo(Screen.MonthlyComparison)
+                }
+                // 스낵바가 사라지면 메시지 초기화
+                payPeriodChangedMessage = null
+            }
+        }
+    }
+
+    // 앱 시작 시 급여 기간 변경 체크
+    LaunchedEffect(Unit) {
+        if (preferencesManager.isPaydaySet()) {
+            val payPeriodCalculator = koinInject<com.woojin.paymanagement.utils.PayPeriodCalculator>()
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            val payday = preferencesManager.getPayday()
+            val adjustment = preferencesManager.getPaydayAdjustment()
+            val currentPayPeriod = payPeriodCalculator.getCurrentPayPeriod(payday, adjustment, today)
+
+            val lastChecked = preferencesManager.getLastCheckedPayPeriodStartDate()
+            val currentStartDate = "${currentPayPeriod.startDate}"
+
+            if (lastChecked != null && lastChecked != currentStartDate) {
+                // 급여 기간이 변경됨!
+                payPeriodChangedMessage = "새로운 급여일이 시작됐어요! 지난 달과 비교해보세요 📊"
+            }
+
+            // 현재 기간 저장
+            preferencesManager.setLastCheckedPayPeriodStartDate(currentStartDate)
         }
     }
 
@@ -1941,7 +1987,11 @@ fun PayManagementApp(
 
             MonthlyComparisonScreen(
                 viewModel = monthlyComparisonViewModel,
-                onBack = { navigateBack() }
+                onBack = {
+                    shouldShowPreviousPeriodComparison = false
+                    navigateBack()
+                },
+                showPreviousPeriodComparison = shouldShowPreviousPeriodComparison
             )
         }
 
