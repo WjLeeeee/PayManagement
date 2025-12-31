@@ -116,6 +116,18 @@ class DatabaseHelper(
         queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName)
     }
 
+    /**
+     * merchant로 가장 많이 사용된 카테고리를 제안
+     * 카드 파싱된 거래에서 자동 카테고리 선택에 사용
+     */
+    suspend fun getSuggestedCategory(merchant: String): String? {
+        return try {
+            queries.getSuggestedCategoryByMerchant(merchant).executeAsOneOrNull()?.category
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     // BalanceCard 관련 메서드들
     fun getAllBalanceCards(): Flow<List<BalanceCard>> {
         return queries.selectAllBalanceCards()

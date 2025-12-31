@@ -20,6 +20,7 @@ import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import com.woojin.paymanagement.database.DatabaseHelper
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -40,7 +41,8 @@ class AddTransactionViewModel(
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getAvailableBalanceCardsUseCase: GetAvailableBalanceCardsUseCase,
     private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase,
-    private val getCategoriesUseCase: GetCategoriesUseCase
+    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val databaseHelper: DatabaseHelper
 ) : ViewModel() {
     var uiState by mutableStateOf(AddTransactionUiState())
         private set
@@ -163,6 +165,14 @@ class AddTransactionViewModel(
 
         // 최신 카테고리 로드
         loadCategories()
+
+        // merchant로 자동 카테고리 제안
+        viewModelScope.launch {
+            val suggestedCategory = databaseHelper.getSuggestedCategory(parsedTransaction.merchantName)
+            if (suggestedCategory != null) {
+                uiState = uiState.copy(category = suggestedCategory)
+            }
+        }
 
         validateInput()
     }

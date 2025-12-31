@@ -32,7 +32,7 @@ val presentationModule = module {
             coroutineScope = get()
         )
     }
-    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get()) }
+    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get()) }
     factory { DateDetailViewModel(get(), get(), get(), get(), get()) }
     factory { PaydaySetupViewModel(get(), get(), get(), get()) }
     factory { StatisticsViewModel(get(), get(), get(), get(), get(), get(), get()) }

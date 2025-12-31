@@ -151,6 +151,14 @@ UPDATE TransactionEntity
 SET category = ?
 WHERE category = ?;
 
+getSuggestedCategoryByMerchant:
+SELECT category, COUNT(*)
+FROM TransactionEntity
+WHERE merchant = ? AND type = 'EXPENSE'
+GROUP BY category
+ORDER BY COUNT(*) DESC
+LIMIT 1;
+
 -- BalanceCard 관련 쿼리들
 insertBalanceCard:
 INSERT INTO BalanceCardEntity(id, name, initialAmount, currentBalance, createdDate, isActive)
