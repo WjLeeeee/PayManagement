@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -204,6 +205,29 @@ fun StatusBarOverlayScreen(
     // 광고 제거 화면으로 이동하기 위한 상태
     var shouldNavigateToAdRemoval by remember { mutableStateOf(false) }
 
+    // 네이티브 광고 상태 관리
+    var nativeAdState by remember { mutableStateOf<com.woojin.paymanagement.android.ads.NativeAdState>(com.woojin.paymanagement.android.ads.NativeAdState.Loading) }
+    val nativeAdManager = remember { com.woojin.paymanagement.android.ads.NativeAdManager(context) }
+
+    // 광고 미리 로딩
+    LaunchedEffect(Unit) {
+        nativeAdManager.loadAd(
+            onAdLoaded = { ad ->
+                nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Success(ad)
+            },
+            onAdFailed = { error ->
+                nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+            }
+        )
+    }
+
+    // 정리
+    DisposableEffect(Unit) {
+        onDispose {
+            nativeAdManager.destroy()
+        }
+    }
+
     // FileHandler 초기화
     val fileHandler = remember { FileHandler() }
 
@@ -316,6 +340,14 @@ fun StatusBarOverlayScreen(
                     onRecurringTransactionsNavigationHandled = onRecurringTransactionsNavigationHandled,
                     onAdRemovalNavigationHandled = { shouldNavigateToAdRemoval = false },
                     onThemeChanged = { onThemeChanged() },
+                    nativeAdContent = {
+                        // 광고 로딩 성공 시에만 표시
+                        if (nativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
+                            val ad = (nativeAdState as com.woojin.paymanagement.android.ads.NativeAdState.Success).ad
+                            com.woojin.paymanagement.android.ads.NativeAdItem(nativeAd = ad)
+                        }
+                    },
+                    hasNativeAd = nativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success,
                     onRequestPostNotificationPermission = { callback ->
                         // 콜백 저장
                         permissionResultCallback = callback

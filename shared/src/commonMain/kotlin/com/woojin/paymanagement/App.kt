@@ -114,7 +114,9 @@ fun App(
     onLaunchSaveFile: (String) -> Unit = {},
     onLaunchLoadFile: () -> Unit = {},
     onAppExit: () -> Unit = {},
-    onContactSupport: () -> Unit = {}
+    onContactSupport: () -> Unit = {},
+    nativeAdContent: @Composable () -> Unit = {},
+    hasNativeAd: Boolean = false
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -141,7 +143,9 @@ fun App(
                 onLaunchLoadFile = onLaunchLoadFile,
                 fileHandler = fileHandler,
                 onAppExit = onAppExit,
-                onContactSupport = onContactSupport
+                onContactSupport = onContactSupport,
+                nativeAdContent = nativeAdContent,
+                hasNativeAd = hasNativeAd
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -201,7 +205,9 @@ fun PayManagementApp(
     onLaunchLoadFile: () -> Unit = {},
     fileHandler: com.woojin.paymanagement.utils.FileHandler? = null,
     onAppExit: () -> Unit = {},
-    onContactSupport: () -> Unit = {}
+    onContactSupport: () -> Unit = {},
+    nativeAdContent: @Composable () -> Unit = {},
+    hasNativeAd: Boolean = false
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -1821,7 +1827,9 @@ fun PayManagementApp(
                 onAddTransaction = {
                     editTransaction = null
                     navigateTo(Screen.AddTransaction)
-                }
+                },
+                nativeAdContent = nativeAdContent,
+                hasNativeAd = hasNativeAd
             )
         }
         

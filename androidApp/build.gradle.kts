@@ -101,6 +101,9 @@ dependencies {
     //Meta Audience Network 어뎁터
     implementation("com.google.ads.mediation:facebook:6.21.0.0")
 
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
