@@ -308,7 +308,7 @@ fun StatusBarOverlayScreen(
                 // 광고 제거 상태 확인
                 val isAdRemovalActive = remember { mutableStateOf(preferencesManager.isAdRemovalActive()) }
 
-                // 화면이 다시 보일 때마다 광고 제거 상태 업데이트
+                // 화면이 다시 보일 때마다 광고 제거 상태 update
                 LaunchedEffect(Unit) {
                     isAdRemovalActive.value = preferencesManager.isAdRemovalActive()
                 }
