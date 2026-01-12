@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -253,6 +254,7 @@ fun TransactionDetailItem(
     onClick: () -> Unit = {},
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onSaveAsRecurring: () -> Unit,
     availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
 ) {
     Card(
@@ -389,12 +391,32 @@ fun TransactionDetailItem(
                         )
                     }
 
-                    // 편집/삭제 버튼
+                    // 반복/편집/삭제 버튼
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Button(
+                            onClick = onSaveAsRecurring,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "반복거래로 저장",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("반복", style = MaterialTheme.typography.bodySmall)
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
                         Button(
                             onClick = onEdit,
                             colors = ButtonDefaults.buttonColors(

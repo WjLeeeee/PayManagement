@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionDialog
 import com.woojin.paymanagement.utils.BackHandler
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -115,6 +116,7 @@ fun DateDetailScreen(
                             // 삭제 확인 다이얼로그 표시
                             viewModel.showDeleteConfirmation(transaction)
                         },
+                        onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
                         availableCategories = uiState.availableCategories
                     )
                 }
@@ -136,6 +138,7 @@ fun DateDetailScreen(
                             // 삭제 확인 다이얼로그 표시
                             viewModel.showDeleteConfirmation(transaction)
                         },
+                        onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
                         availableCategories = uiState.availableCategories
                     )
                 }
@@ -151,6 +154,7 @@ fun DateDetailScreen(
                             // 삭제 확인 다이얼로그 표시
                             viewModel.showDeleteConfirmation(transaction)
                         },
+                        onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
                         availableCategories = uiState.availableCategories
                     )
                 }
@@ -199,6 +203,18 @@ fun DateDetailScreen(
                 TextButton(onClick = { viewModel.clearError() }) {
                     Text("확인")
                 }
+            }
+        )
+    }
+
+    // 반복거래 저장 다이얼로그
+    if (uiState.showRecurringDialog && uiState.recurringTransactionBase != null) {
+        RecurringTransactionDialog(
+            transaction = uiState.recurringTransactionBase,
+            categories = uiState.availableCategories,
+            onDismiss = { viewModel.hideRecurringTransactionDialog() },
+            onSave = { recurringTransaction ->
+                viewModel.saveRecurringTransaction(recurringTransaction)
             }
         )
     }
