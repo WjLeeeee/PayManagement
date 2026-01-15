@@ -173,7 +173,6 @@ class ImportDataUseCase(
         giftCardId = giftCardId,
         cardName = cardName,
         merchant = merchant,
-        actualAmount = actualAmount,
         settlementAmount = settlementAmount,
         isSettlement = isSettlement
     )

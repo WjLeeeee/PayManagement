@@ -11,7 +11,7 @@ actual class DatabaseDriverFactory {
                 name = "PayManagementDatabase.db",
                 onConfiguration = { config ->
                     config.copy(
-                        version = 11
+                        version = 15
                     )
                 }
             )
@@ -22,7 +22,7 @@ actual class DatabaseDriverFactory {
                 name = "PayManagementDatabase.db",
                 onConfiguration = { config ->
                     config.copy(
-                        version = 11
+                        version = 15
                     )
                 }
             )
@@ -106,17 +106,17 @@ actual class DatabaseDriverFactory {
                 "PRAGMA table_info(BudgetPlanEntity)",
                 { cursor ->
                     var hasOldColumn = false
-                    while (cursor.next()) {
+                    while (cursor.next().value) {
                         val columnName = cursor.getString(1)
                         if (columnName == "periodStartDate") {
                             hasOldColumn = true
                             break
                         }
                     }
-                    hasOldColumn
+                    app.cash.sqldelight.db.QueryResult.Value(hasOldColumn)
                 },
                 0
-            )
+            ).value
         } catch (e: Exception) {
             false
         }
@@ -176,7 +176,7 @@ actual class DatabaseDriverFactory {
         val hasMerchantColumn = merchantColumnInfo.first
         val merchantPosition = merchantColumnInfo.second
 
-        if (!hasMerchantColumn) {
+        if (hasMerchantColumn == false) {
             // merchant 컬럼이 없으면 테이블 재생성 (올바른 컬럼 순서로)
             try {
                 driver.execute(
@@ -270,7 +270,7 @@ actual class DatabaseDriverFactory {
 
         // CategoryBudgetEntity 마이그레이션: categoryId -> categoryIds
         // BudgetPlanEntity 마이그레이션에서 이미 삭제되었을 수 있으므로 확인
-        if (!hasOldBudgetSchema) {
+        if (hasOldBudgetSchema == false) {
             // v11 스키마가 아니면 마이그레이션 진행
             val hasOldSchema = try {
                 driver.executeQuery(
@@ -395,7 +395,7 @@ actual class DatabaseDriverFactory {
             false
         }
 
-        if (!hasMemoColumn) {
+        if (hasMemoColumn == false) {
             try {
                 driver.execute(
                     null,
@@ -405,6 +405,134 @@ actual class DatabaseDriverFactory {
                 )
             } catch (e: Exception) {
                 // 컬럼이 이미 존재하거나 테이블이 없는 경우 무시
+            }
+        }
+
+        // RecurringTransactionEntity 테이블이 없으면 생성
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS RecurringTransactionEntity (
+                id TEXT NOT NULL PRIMARY KEY,
+                type TEXT NOT NULL,
+                category TEXT NOT NULL,
+                amount REAL NOT NULL,
+                merchant TEXT NOT NULL,
+                memo TEXT NOT NULL DEFAULT '',
+                paymentMethod TEXT NOT NULL,
+                balanceCardId TEXT,
+                giftCardId TEXT,
+                pattern TEXT NOT NULL,
+                dayOfMonth INTEGER,
+                dayOfWeek INTEGER,
+                weekendHandling TEXT NOT NULL DEFAULT 'AS_IS',
+                isActive INTEGER NOT NULL DEFAULT 1,
+                createdAt INTEGER NOT NULL,
+                lastExecutedDate TEXT
+            )
+            """.trimIndent(),
+            0,
+            null
+        )
+
+        // HolidayEntity 테이블이 없으면 생성
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS HolidayEntity (
+                locdate TEXT NOT NULL PRIMARY KEY,
+                dateName TEXT NOT NULL,
+                isHoliday TEXT NOT NULL,
+                year INTEGER NOT NULL
+            )
+            """.trimIndent(),
+            0,
+            null
+        )
+
+        // FailedNotificationEntity 테이블이 없으면 생성 (Schema v14)
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS FailedNotificationEntity (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                packageName TEXT NOT NULL,
+                title TEXT NOT NULL,
+                text TEXT NOT NULL,
+                bigText TEXT,
+                failureReason TEXT,
+                createdAt INTEGER NOT NULL
+            )
+            """.trimIndent(),
+            0,
+            null
+        )
+
+        // actualAmount 컬럼 제거 마이그레이션 (Schema v15)
+        val hasActualAmountColumn = try {
+            driver.executeQuery(
+                null,
+                "PRAGMA table_info(TransactionEntity)",
+                { cursor ->
+                    var hasColumn = false
+                    while (cursor.next().value) {
+                        val columnName = cursor.getString(1)
+                        if (columnName == "actualAmount") {
+                            hasColumn = true
+                            break
+                        }
+                    }
+                    app.cash.sqldelight.db.QueryResult.Value(hasColumn)
+                },
+                0
+            ).value
+        } catch (e: Exception) {
+            false
+        }
+
+        if (hasActualAmountColumn) {
+            // actualAmount 컬럼이 있으면 테이블 재생성 (컬럼 제거)
+            try {
+                driver.execute(
+                    null,
+                    """
+                    CREATE TABLE TransactionEntity_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        amount REAL NOT NULL,
+                        type TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        merchant TEXT,
+                        memo TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        incomeType TEXT,
+                        paymentMethod TEXT,
+                        balanceCardId TEXT,
+                        giftCardId TEXT,
+                        cardName TEXT,
+                        settlementAmount REAL,
+                        isSettlement INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                    0,
+                    null
+                )
+
+                driver.execute(
+                    null,
+                    """
+                    INSERT INTO TransactionEntity_new
+                    SELECT id, amount, type, category, merchant, memo, date, incomeType, paymentMethod,
+                           balanceCardId, giftCardId, cardName, settlementAmount, isSettlement
+                    FROM TransactionEntity
+                    """.trimIndent(),
+                    0,
+                    null
+                )
+
+                driver.execute(null, "DROP TABLE TransactionEntity", 0, null)
+                driver.execute(null, "ALTER TABLE TransactionEntity_new RENAME TO TransactionEntity", 0, null)
+            } catch (e: Exception) {
+                // 오류 무시
             }
         }
 

@@ -1,28 +1,13 @@
 package com.woojin.paymanagement
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -32,56 +17,72 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.isSystemInDarkTheme
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.di.databaseModule
 import com.woojin.paymanagement.di.domainModule
 import com.woojin.paymanagement.di.presentationModule
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.runtime.collectAsState
 import com.woojin.paymanagement.presentation.addtransaction.AddTransactionScreen
-import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.calculator.CalculatorDialog
+import com.woojin.paymanagement.presentation.calendar.CalendarScreen
 import com.woojin.paymanagement.presentation.datedetail.DateDetailScreen
 import com.woojin.paymanagement.presentation.monthlycomparison.MonthlyComparisonScreen
-import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionListScreen
+import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.settings.ThemeSettingsDialog
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
+import com.woojin.paymanagement.utils.LifecycleObserverHelper
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.ThemeMode
-import com.woojin.paymanagement.utils.LifecycleObserverHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.todayIn
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.datetime.todayIn
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -101,14 +102,21 @@ fun App(
     appInfo: com.woojin.paymanagement.utils.AppInfo,
     fileHandler: com.woojin.paymanagement.utils.FileHandler,
     billingClient: com.woojin.paymanagement.utils.BillingClient,
+    interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
+    shouldNavigateToAdRemoval: Boolean = false,
     onParsedTransactionsNavigationHandled: () -> Unit = {},
     onRecurringTransactionsNavigationHandled: () -> Unit = {},
+    onAdRemovalNavigationHandled: () -> Unit = {},
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
-    onLaunchLoadFile: () -> Unit = {}
+    onLaunchLoadFile: () -> Unit = {},
+    onAppExit: () -> Unit = {},
+    onContactSupport: () -> Unit = {},
+    nativeAdContent: @Composable () -> Unit = {},
+    hasNativeAd: Boolean = false
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -122,14 +130,22 @@ fun App(
         if (isKoinInitialized) {
             PayManagementApp(
                 modifier = modifier,
+                interstitialAdManager = interstitialAdManager,
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                 shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
+                shouldNavigateToAdRemoval = shouldNavigateToAdRemoval,
                 onParsedTransactionsNavigationHandled = onParsedTransactionsNavigationHandled,
                 onRecurringTransactionsNavigationHandled = onRecurringTransactionsNavigationHandled,
+                onAdRemovalNavigationHandled = onAdRemovalNavigationHandled,
                 onThemeChanged = onThemeChanged,
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 onLaunchSaveFile = onLaunchSaveFile,
-                onLaunchLoadFile = onLaunchLoadFile
+                onLaunchLoadFile = onLaunchLoadFile,
+                fileHandler = fileHandler,
+                onAppExit = onAppExit,
+                onContactSupport = onContactSupport,
+                nativeAdContent = nativeAdContent,
+                hasNativeAd = hasNativeAd
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -176,14 +192,22 @@ private fun initializeKoin(
 @Composable
 fun PayManagementApp(
     modifier: Modifier = Modifier,
+    interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
+    shouldNavigateToAdRemoval: Boolean = false,
     onParsedTransactionsNavigationHandled: () -> Unit = {},
     onRecurringTransactionsNavigationHandled: () -> Unit = {},
+    onAdRemovalNavigationHandled: () -> Unit = {},
     onThemeChanged: (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     onLaunchSaveFile: (String) -> Unit = {},
-    onLaunchLoadFile: () -> Unit = {}
+    onLaunchLoadFile: () -> Unit = {},
+    fileHandler: com.woojin.paymanagement.utils.FileHandler? = null,
+    onAppExit: () -> Unit = {},
+    onContactSupport: () -> Unit = {},
+    nativeAdContent: @Composable () -> Unit = {},
+    hasNativeAd: Boolean = false
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -205,6 +229,32 @@ fun PayManagementApp(
     // 네비게이션 스택 관리
     var navigationStack by remember { mutableStateOf(listOf(initialScreen)) }
     val currentScreen = navigationStack.last()
+
+    // 화면 변경 시 Analytics 로깅
+    LaunchedEffect(currentScreen) {
+        val analyticsLogger = com.woojin.paymanagement.analytics.Analytics.getInstance()
+        val screenName = when (currentScreen) {
+            Screen.PaydaySetup -> "월급날_설정"
+            Screen.Calendar -> "홈_캘린더"
+            Screen.Statistics -> "분석_통계"
+            Screen.AddTransaction -> "거래_추가"
+            Screen.DateDetail -> "날짜_상세"
+            Screen.EditTransaction -> "거래_수정"
+            Screen.ParsedTransactionList -> "파싱_거래_목록"
+            Screen.CategoryManagement -> "카테고리_관리"
+            Screen.CardManagement -> "카드_관리"
+            Screen.BudgetSettings -> "예산_설정"
+            Screen.MonthlyComparison -> "월별_비교"
+            Screen.TipDonation -> "팁_후원"
+            Screen.AdRemoval -> "광고_제거"
+            Screen.RecurringTransaction -> "반복_거래"
+        }
+
+        analyticsLogger.logScreenView(
+            screenName = screenName,
+            screenClass = currentScreen.name
+        )
+    }
 
     // 네비게이션 헬퍼 함수들
     fun navigateTo(screen: Screen) {
@@ -229,6 +279,73 @@ fun PayManagementApp(
     var selectedRecurringTransaction by remember { mutableStateOf<com.woojin.paymanagement.data.RecurringTransaction?>(null) }
     var showListenerPermissionDialog by remember { mutableStateOf(false) }
     var showPostPermissionDialog by remember { mutableStateOf(false) }
+    var budgetExceededMessage by remember { mutableStateOf<String?>(null) }
+    var payPeriodChangedMessage by remember { mutableStateOf<String?>(null) }
+    var shouldShowPreviousPeriodComparison by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // 예산 초과 스낵바 표시
+    LaunchedEffect(budgetExceededMessage) {
+        budgetExceededMessage?.let { message ->
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "확인",
+                    withDismissAction = false,
+                    duration = androidx.compose.material3.SnackbarDuration.Short
+                )
+                if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                    // 확인 버튼 클릭 시 예산 설정 화면으로 이동
+                    navigateTo(Screen.BudgetSettings)
+                }
+                // 스낵바가 사라지면 메시지 초기화
+                budgetExceededMessage = null
+            }
+        }
+    }
+
+    // 급여 기간 변경 스낵바 표시
+    LaunchedEffect(payPeriodChangedMessage) {
+        payPeriodChangedMessage?.let { message ->
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = message,
+                    actionLabel = "확인",
+                    withDismissAction = false,
+                    duration = androidx.compose.material3.SnackbarDuration.Short
+                )
+                if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                    // 확인 버튼 클릭 시 급여 기간 비교 화면으로 이동 (직직전 vs 직전)
+                    shouldShowPreviousPeriodComparison = true
+                    navigateTo(Screen.MonthlyComparison)
+                }
+                // 스낵바가 사라지면 메시지 초기화
+                payPeriodChangedMessage = null
+            }
+        }
+    }
+
+    // 앱 시작 시 급여 기간 변경 체크
+    LaunchedEffect(Unit) {
+        if (preferencesManager.isPaydaySet()) {
+            val payPeriodCalculator = koinInject<com.woojin.paymanagement.utils.PayPeriodCalculator>()
+            val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+            val payday = preferencesManager.getPayday()
+            val adjustment = preferencesManager.getPaydayAdjustment()
+            val currentPayPeriod = payPeriodCalculator.getCurrentPayPeriod(payday, adjustment, today)
+
+            val lastChecked = preferencesManager.getLastCheckedPayPeriodStartDate()
+            val currentStartDate = "${currentPayPeriod.startDate}"
+
+            if (lastChecked != null && lastChecked != currentStartDate) {
+                // 급여 기간이 변경됨!
+                payPeriodChangedMessage = "새로운 급여일이 시작됐어요! 지난 달과 비교해보세요 📊"
+            }
+
+            // 현재 기간 저장
+            preferencesManager.setLastCheckedPayPeriodStartDate(currentStartDate)
+        }
+    }
 
     // Deep link 처리: 푸시 알림에서 카드 결제 내역 화면으로 이동
     LaunchedEffect(shouldNavigateToParsedTransactions) {
@@ -249,6 +366,17 @@ fun PayManagementApp(
                 navigateTo(Screen.RecurringTransaction)
             }
             onRecurringTransactionsNavigationHandled()
+        }
+    }
+
+    // 광고 제거 화면으로 이동
+    LaunchedEffect(shouldNavigateToAdRemoval) {
+        if (shouldNavigateToAdRemoval) {
+            // Payday가 설정되어 있을 때만 네비게이션 수행
+            if (preferencesManager.isPaydaySet()) {
+                navigateTo(Screen.AdRemoval)
+            }
+            onAdRemovalNavigationHandled()
         }
     }
     
@@ -469,9 +597,11 @@ fun PayManagementApp(
                                 modifier = Modifier.height(38.dp)
                             )
 
+                            // 확장 가능한 메뉴 관리
+                            var expandedMenu by remember { mutableStateOf<ExpandableMenu?>(null) }
+
                             // 푸시 알림 설정 섹션 (확장 가능)
                             val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
-                            var isNotificationExpanded by remember { mutableStateOf(false) }
                             var hasListenerPermission by remember { mutableStateOf(notificationPermissionChecker.hasListenerPermission()) }
                             var hasPostPermission by remember { mutableStateOf(notificationPermissionChecker.hasPostNotificationPermission()) }
 
@@ -506,18 +636,18 @@ fun PayManagementApp(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Icon(
-                                            imageVector = if (isNotificationExpanded)
+                                            imageVector = if (expandedMenu == ExpandableMenu.NOTIFICATION)
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (isNotificationExpanded) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.NOTIFICATION) "접기" else "펼치기",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    isNotificationExpanded = !isNotificationExpanded
+                                    expandedMenu = if (expandedMenu == ExpandableMenu.NOTIFICATION) null else ExpandableMenu.NOTIFICATION
                                 },
                                 icon = {
                                     Text(
@@ -530,7 +660,7 @@ fun PayManagementApp(
 
                             // 확장된 알림 설정 항목들 (애니메이션 적용)
                             AnimatedVisibility(
-                                visible = isNotificationExpanded,
+                                visible = expandedMenu == ExpandableMenu.NOTIFICATION,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut()
                             ) {
@@ -629,8 +759,6 @@ fun PayManagementApp(
                                 }
                             }
 
-                            var isDataManagementExpanded by remember { mutableStateOf(false) }
-
                             NavigationDrawerItem(
                                 label = {
                                     Row(
@@ -644,18 +772,18 @@ fun PayManagementApp(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Icon(
-                                            imageVector = if (isDataManagementExpanded)
+                                            imageVector = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT)
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (isDataManagementExpanded) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT) "접기" else "펼치기",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    isDataManagementExpanded = !isDataManagementExpanded
+                                    expandedMenu = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT) null else ExpandableMenu.DATA_MANAGEMENT
                                 },
                                 icon = {
                                     Text(
@@ -668,7 +796,7 @@ fun PayManagementApp(
 
                             // 확장된 데이터 관리 항목들 (애니메이션 적용)
                             AnimatedVisibility(
-                                visible = isDataManagementExpanded,
+                                visible = expandedMenu == ExpandableMenu.DATA_MANAGEMENT,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut()
                             ) {
@@ -679,7 +807,7 @@ fun PayManagementApp(
                                 ) {
                                     // 데이터 내보내기
                                     val exportDataUseCase = koinInject<com.woojin.paymanagement.domain.usecase.ExportDataUseCase>()
-                                    val fileHandler = koinInject<com.woojin.paymanagement.utils.FileHandler>()
+                                    // fileHandler는 파라미터로 전달받음 (MainActivity와 동일한 인스턴스 사용)
                                     var showExportMessage by remember { mutableStateOf<String?>(null) }
 
                                     Row(
@@ -691,8 +819,8 @@ fun PayManagementApp(
                                                     val result = exportDataUseCase(com.woojin.paymanagement.domain.model.BackupType.ALL)
                                                     result.onSuccess { jsonString ->
                                                         val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-                                                        val fileName = "paymanagement_backup_${currentDate}.json"
-                                                        fileHandler.setSaveData(
+                                                        val fileName = "backup_${currentDate}.json"
+                                                        fileHandler?.setSaveData(
                                                             fileName = fileName,
                                                             jsonContent = jsonString,
                                                             onSuccess = {
@@ -778,7 +906,7 @@ fun PayManagementApp(
                                             confirmButton = {
                                                 Button(onClick = {
                                                     showReplaceConfirmDialog = false
-                                                    fileHandler.setLoadCallbacks(
+                                                    fileHandler?.setLoadCallbacks(
                                                         onSuccess = { jsonString ->
                                                             scope.launch {
                                                                 val result = importDataUseCase(jsonString, replaceExisting = true)
@@ -871,8 +999,6 @@ fun PayManagementApp(
                             }
 
                             // 거래 도구 섹션
-                            var isTransactionToolsExpanded by remember { mutableStateOf(false) }
-
                             NavigationDrawerItem(
                                 label = {
                                     Row(
@@ -886,22 +1012,22 @@ fun PayManagementApp(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Icon(
-                                            imageVector = if (isTransactionToolsExpanded)
+                                            imageVector = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS)
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (isTransactionToolsExpanded) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS) "접기" else "펼치기",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    isTransactionToolsExpanded = !isTransactionToolsExpanded
+                                    expandedMenu = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS) null else ExpandableMenu.TRANSACTION_TOOLS
                                 },
                                 icon = {
                                     Text(
-                                        text = "💰",
+                                        text = "🛠️",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                 },
@@ -910,7 +1036,7 @@ fun PayManagementApp(
 
                             // 확장된 거래 도구 항목들
                             AnimatedVisibility(
-                                visible = isTransactionToolsExpanded,
+                                visible = expandedMenu == ExpandableMenu.TRANSACTION_TOOLS,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut()
                             ) {
@@ -919,40 +1045,6 @@ fun PayManagementApp(
                                         .fillMaxWidth()
                                         .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
                                 ) {
-                                    // 계산기
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable {
-                                                showCalculatorDialog = true
-                                                scope.launch { drawerState.close() }
-                                            }
-                                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                                        horizontalArrangement = Arrangement.Start,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "🔢",
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text(
-                                                text = "계산기",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                text = "소비 패턴 분석 및 계산",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(4.dp))
-
                                     // 반복 거래 관리
                                     Row(
                                         modifier = Modifier
@@ -1022,8 +1114,6 @@ fun PayManagementApp(
                             }
 
                             // 분석 & 예산 섹션
-                            var isAnalysisExpanded by remember { mutableStateOf(false) }
-
                             NavigationDrawerItem(
                                 label = {
                                     Row(
@@ -1037,18 +1127,18 @@ fun PayManagementApp(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Icon(
-                                            imageVector = if (isAnalysisExpanded)
+                                            imageVector = if (expandedMenu == ExpandableMenu.ANALYSIS)
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (isAnalysisExpanded) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.ANALYSIS) "접기" else "펼치기",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
                                 selected = false,
                                 onClick = {
-                                    isAnalysisExpanded = !isAnalysisExpanded
+                                    expandedMenu = if (expandedMenu == ExpandableMenu.ANALYSIS) null else ExpandableMenu.ANALYSIS
                                 },
                                 icon = {
                                     Text(
@@ -1061,7 +1151,7 @@ fun PayManagementApp(
 
                             // 확장된 분석 & 예산 항목들
                             AnimatedVisibility(
-                                visible = isAnalysisExpanded,
+                                visible = expandedMenu == ExpandableMenu.ANALYSIS,
                                 enter = expandVertically() + fadeIn(),
                                 exit = shrinkVertically() + fadeOut()
                             ) {
@@ -1070,6 +1160,40 @@ fun PayManagementApp(
                                         .fillMaxWidth()
                                         .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
                                 ) {
+                                    // 계산기
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showCalculatorDialog = true
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "🔢",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "계산기",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "소비 패턴 분석 및 계산",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
                                     // 예산 설정
                                     Row(
                                         modifier = Modifier
@@ -1140,8 +1264,6 @@ fun PayManagementApp(
 
                             // 인앱 구매 (Android만)
                             if (com.woojin.paymanagement.utils.Platform.isAndroid()) {
-                                var isInAppPurchaseExpanded by remember { mutableStateOf(false) }
-
                                 // 메인 아이템: 인앱 구매
                                 NavigationDrawerItem(
                                     label = {
@@ -1152,19 +1274,22 @@ fun PayManagementApp(
                                         ) {
                                             Text(
                                                 text = "인앱 구매",
-                                                style = MaterialTheme.typography.bodyMedium,
+                                                style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.Medium
                                             )
-                                            Text(
-                                                text = if (isInAppPurchaseExpanded) "▲" else "▼",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            Icon(
+                                                imageVector = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE)
+                                                    Icons.Default.KeyboardArrowUp
+                                                else
+                                                    Icons.Default.KeyboardArrowDown,
+                                                contentDescription = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE) "접기" else "펼치기",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     },
                                     selected = false,
                                     onClick = {
-                                        isInAppPurchaseExpanded = !isInAppPurchaseExpanded
+                                        expandedMenu = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE) null else ExpandableMenu.IN_APP_PURCHASE
                                     },
                                     icon = {
                                         Text(
@@ -1172,14 +1297,38 @@ fun PayManagementApp(
                                             style = MaterialTheme.typography.bodyLarge
                                         )
                                     },
-                                    modifier = Modifier.height(48.dp)
+                                    modifier = Modifier.height(38.dp)
                                 )
 
-                                // 서브 아이템들 (확장되었을 때만 표시)
-                                if (isInAppPurchaseExpanded) {
-                                    // 개발자 응원하기
-                                    NavigationDrawerItem(
-                                        label = {
+                                // 확장된 인앱 구매 항목들
+                                AnimatedVisibility(
+                                    visible = expandedMenu == ExpandableMenu.IN_APP_PURCHASE,
+                                    enter = expandVertically() + fadeIn(),
+                                    exit = shrinkVertically() + fadeOut()
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                    ) {
+                                        // 개발자 응원하기
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    navigateTo(Screen.TipDonation)
+                                                    scope.launch { drawerState.close() }
+                                                }
+                                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                            horizontalArrangement = Arrangement.Start,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "☕",
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Column {
                                                 Text(
                                                     text = "개발자 응원하기",
@@ -1192,26 +1341,28 @@ fun PayManagementApp(
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
-                                        },
-                                        selected = false,
-                                        onClick = {
-                                            navigateTo(Screen.TipDonation)
-                                            scope.launch { drawerState.close() }
-                                        },
-                                        icon = {
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        // 광고 제거
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    navigateTo(Screen.AdRemoval)
+                                                    scope.launch { drawerState.close() }
+                                                }
+                                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                            horizontalArrangement = Arrangement.Start,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             Text(
-                                                text = "☕",
+                                                text = "🚫",
                                                 style = MaterialTheme.typography.bodyLarge
                                             )
-                                        },
-                                        modifier = Modifier
-                                            .height(56.dp)
-                                            .padding(start = 16.dp)
-                                    )
-
-                                    // 광고 제거
-                                    NavigationDrawerItem(
-                                        label = {
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Column {
                                                 Text(
                                                     text = "광고 제거",
@@ -1224,24 +1375,33 @@ fun PayManagementApp(
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
-                                        },
-                                        selected = false,
-                                        onClick = {
-                                            navigateTo(Screen.AdRemoval)
-                                            scope.launch { drawerState.close() }
-                                        },
-                                        icon = {
-                                            Text(
-                                                text = "🚫",
-                                                style = MaterialTheme.typography.bodyLarge
-                                            )
-                                        },
-                                        modifier = Modifier
-                                            .height(56.dp)
-                                            .padding(start = 16.dp)
-                                    )
+                                        }
+                                    }
                                 }
                             }
+
+                            // 관리자에게 문의
+                            NavigationDrawerItem(
+                                label = {
+                                    Text(
+                                        text = "관리자에게 문의",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                },
+                                selected = false,
+                                onClick = {
+                                    onContactSupport()
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "📧",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                modifier = Modifier.height(48.dp)
+                            )
 
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
                             NavigationDrawerItem(
@@ -1411,8 +1571,11 @@ fun PayManagementApp(
                 }
             }
     ) {
-        when (currentScreen) {
-        Screen.PaydaySetup -> {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { paddingValues ->
+            when (currentScreen) {
+            Screen.PaydaySetup -> {
             // Koin에서 ViewModel 주입 (remember로 상태 유지)
             val paydaySetupViewModel = remember { koinInject<com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupViewModel>() }
 
@@ -1463,6 +1626,7 @@ fun PayManagementApp(
             CalendarScreen(
                 viewModel = calendarViewModel,
                 tutorialViewModel = tutorialViewModel,
+                interstitialAdManager = interstitialAdManager,
                 onOpenDrawer = {
                     scope.launch {
                         drawerState.open()
@@ -1496,7 +1660,8 @@ fun PayManagementApp(
                         // 알림 리스너 권한이 없으면 요청
                         showListenerPermissionDialog = true
                     }
-                }
+                },
+                onAppExit = onAppExit
             )
         }
         
@@ -1525,7 +1690,7 @@ fun PayManagementApp(
                 parsedTransaction = selectedParsedTransaction,
                 recurringTransaction = selectedRecurringTransaction,
                 viewModel = addTransactionViewModel,
-                onSave = { newTransactions ->
+                onSave = { newTransactions, budgetMessage ->
                     scope.launch {
                         if (editTransaction != null) {
                             // 편집 모드: 거래 업데이트는 이미 UseCase에서 처리됨
@@ -1627,6 +1792,9 @@ fun PayManagementApp(
                         // 상태 초기화
                         selectedParsedTransaction = null
                         selectedRecurringTransaction = null
+
+                        // 예산 초과 메시지 설정
+                        budgetExceededMessage = budgetMessage
                     }
                     navigateBack()
                 },
@@ -1659,7 +1827,9 @@ fun PayManagementApp(
                 onAddTransaction = {
                     editTransaction = null
                     navigateTo(Screen.AddTransaction)
-                }
+                },
+                nativeAdContent = nativeAdContent,
+                hasNativeAd = hasNativeAd
             )
         }
         
@@ -1673,7 +1843,7 @@ fun PayManagementApp(
                 editTransaction = editTransaction,
                 recurringTransaction = null,
                 viewModel = editTransactionViewModel,
-                onSave = { newTransactions ->
+                onSave = { newTransactions, budgetMessage ->
                     scope.launch {
                         if (editTransaction != null) {
                             // 편집 모드: 거래 업데이트는 이미 UseCase에서 처리됨
@@ -1758,6 +1928,9 @@ fun PayManagementApp(
                                 // 거래 저장은 이미 UseCase에서 처리됨
                             }
                         }
+
+                        // 예산 초과 메시지 설정
+                        budgetExceededMessage = budgetMessage
                     }
                     navigateBack()
                 },
@@ -1822,7 +1995,11 @@ fun PayManagementApp(
 
             MonthlyComparisonScreen(
                 viewModel = monthlyComparisonViewModel,
-                onBack = { navigateBack() }
+                onBack = {
+                    shouldShowPreviousPeriodComparison = false
+                    navigateBack()
+                },
+                showPreviousPeriodComparison = shouldShowPreviousPeriodComparison
             )
         }
 
@@ -1840,7 +2017,8 @@ fun PayManagementApp(
 
             com.woojin.paymanagement.presentation.adremoval.AdRemovalScreen(
                 viewModel = adRemovalViewModel,
-                onNavigateBack = { navigateBack() }
+                onNavigateBack = { navigateBack() },
+                onRequestRestart = onThemeChanged
             )
         }
 
@@ -1858,30 +2036,36 @@ fun PayManagementApp(
                 }
             )
         }
-    }
+        }
+    } // Scaffold 닫기
 
     // 계산기 다이얼로그
     if (showCalculatorDialog) {
         val categoryRepository = remember { koinInject<com.woojin.paymanagement.domain.repository.CategoryRepository>() }
         val categories by categoryRepository.getAllCategories().collectAsState(initial = emptyList())
+        val payPeriodCalculator = remember { koinInject<com.woojin.paymanagement.utils.PayPeriodCalculator>() }
 
-        val currentPayPeriod = remember {
+        var currentPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
+
+        LaunchedEffect(Unit) {
             val payday = preferencesManager.getPayday()
             val adjustment = preferencesManager.getPaydayAdjustment()
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
-            com.woojin.paymanagement.utils.PayPeriodCalculator.getCurrentPayPeriod(
+            currentPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
                 currentDate = today,
                 payday = payday,
                 adjustment = adjustment
             )
         }
 
-        CalculatorDialog(
-            transactions = transactions,
-            onDismiss = { showCalculatorDialog = false },
-            initialPayPeriod = currentPayPeriod,
-            allCategories = categories
-        )
+        currentPayPeriod?.let { period ->
+            CalculatorDialog(
+                transactions = transactions,
+                onDismiss = { showCalculatorDialog = false },
+                initialPayPeriod = period,
+                allCategories = categories
+            )
+        }
     }
     } // BoxWithConstraints 닫기
     }
@@ -1902,4 +2086,12 @@ enum class Screen {
     TipDonation,
     AdRemoval,
     RecurringTransaction
+}
+
+enum class ExpandableMenu {
+    NOTIFICATION,
+    DATA_MANAGEMENT,
+    TRANSACTION_TOOLS,
+    ANALYSIS,
+    IN_APP_PURCHASE
 }

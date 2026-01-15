@@ -47,7 +47,7 @@ class CategoryRepositoryImpl(
             Category(uuid4().toString(), "식비", "🍔", TransactionType.INCOME, sortOrder = 1),
             Category(uuid4().toString(), "당근", "🥕", TransactionType.INCOME, sortOrder = 2),
             Category(uuid4().toString(), "K-패스 환급", "🚌", TransactionType.INCOME, sortOrder = 3),
-            Category(uuid4().toString(), "투자수익", "📈", TransactionType.INCOME, sortOrder = 4),
+            Category(uuid4().toString(), "익절", "📈", TransactionType.INCOME, sortOrder = 4),
             Category(uuid4().toString(), "기타수입", "💵", TransactionType.INCOME, sortOrder = 5)
         )
 

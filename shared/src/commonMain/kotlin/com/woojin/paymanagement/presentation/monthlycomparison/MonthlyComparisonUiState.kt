@@ -11,7 +11,8 @@ data class MonthlyComparisonUiState(
     val totalDifference: Double = 0.0,
     val totalDifferencePercentage: Float = 0f,
     val isLoading: Boolean = false,
-    val availableCategories: List<Category> = emptyList()
+    val availableCategories: List<Category> = emptyList(),
+    val canNavigateNext: Boolean = false
 )
 
 data class CategoryComparison(

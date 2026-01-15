@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -40,10 +41,37 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.PaymentMethod
+import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.domain.model.DailySummary
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.LocalDate
+
+/**
+ * 결제수단을 한글로 변환합니다.
+ */
+private fun getPaymentMethodText(paymentMethod: PaymentMethod?): String {
+    return when (paymentMethod) {
+        PaymentMethod.CASH -> "현금"
+        PaymentMethod.CARD -> "카드"
+        PaymentMethod.BALANCE_CARD -> "잔액권"
+        PaymentMethod.GIFT_CARD -> "상품권"
+        null -> ""
+    }
+}
+
+/**
+ * 수입유형을 한글로 변환합니다.
+ */
+private fun getIncomeTypeText(incomeType: IncomeType?): String {
+    return when (incomeType) {
+        IncomeType.CASH -> "현금"
+        IncomeType.BALANCE_CARD -> "잔액권"
+        IncomeType.GIFT_CARD -> "상품권"
+        null -> ""
+    }
+}
 
 @Composable
 fun DateDetailHeader(
@@ -226,6 +254,7 @@ fun TransactionDetailItem(
     onClick: () -> Unit = {},
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onSaveAsRecurring: () -> Unit,
     availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
 ) {
     Card(
@@ -272,7 +301,7 @@ fun TransactionDetailItem(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    // 카테고리
+                    // 카테고리와 결제수단
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -287,6 +316,21 @@ fun TransactionDetailItem(
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+
+                        // 결제수단/수입유형 표시
+                        val methodText = if (transaction.type == TransactionType.EXPENSE) {
+                            getPaymentMethodText(transaction.paymentMethod)
+                        } else {
+                            getIncomeTypeText(transaction.incomeType)
+                        }
+
+                        if (methodText.isNotBlank()) {
+                            Text(
+                                text = "($methodText)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -294,7 +338,7 @@ fun TransactionDetailItem(
                     // 금액
                     Text(
                         text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
-                            Utils.formatAmount(transaction.amount)
+                            Utils.formatAmount(transaction.displayAmount)
                         }원",
                         style = MaterialTheme.typography.bodyLarge,
                         color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
@@ -347,12 +391,32 @@ fun TransactionDetailItem(
                         )
                     }
 
-                    // 편집/삭제 버튼
+                    // 반복/편집/삭제 버튼
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Button(
+                            onClick = onSaveAsRecurring,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary,
+                                contentColor = MaterialTheme.colorScheme.onSecondary
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "반복거래로 저장",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("반복", style = MaterialTheme.typography.bodySmall)
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
                         Button(
                             onClick = onEdit,
                             colors = ButtonDefaults.buttonColors(

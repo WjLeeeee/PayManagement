@@ -17,8 +17,8 @@ class ParsedTransactionRepositoryImpl(
         return databaseHelper.getUnprocessedParsedTransactions()
     }
 
-    override suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction) {
-        databaseHelper.insertParsedTransaction(parsedTransaction)
+    override suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction): Boolean {
+        return databaseHelper.insertParsedTransaction(parsedTransaction)
     }
 
     override suspend fun markAsProcessed(id: String) {

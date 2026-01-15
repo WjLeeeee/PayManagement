@@ -25,8 +25,6 @@ data class AddTransactionUiState(
 
     // 더치페이 관련
     val isSettlement: Boolean = false,
-    val actualAmount: String = "",
-    val splitCount: String = "",
     val settlementAmount: String = "",
 
     // 카드 목록
@@ -48,7 +46,10 @@ data class AddTransactionUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isValidInput: Boolean = false,
-    val saveEnabled: Boolean = false
+    val saveEnabled: Boolean = false,
+
+    // 예산 초과 알림
+    val budgetExceededMessage: String? = null
 )
 
 val AddTransactionUiState.categories: List<String>

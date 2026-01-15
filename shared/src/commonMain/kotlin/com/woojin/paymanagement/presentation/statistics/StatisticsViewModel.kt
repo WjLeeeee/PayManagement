@@ -24,6 +24,7 @@ class StatisticsViewModel(
     private val analyzePaymentMethodsUseCase: AnalyzePaymentMethodsUseCase,
     private val preferencesRepository: PreferencesRepository,
     private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val payPeriodCalculator: PayPeriodCalculator,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(StatisticsUiState())
@@ -48,14 +49,16 @@ class StatisticsViewModel(
         availableBalanceCards: List<BalanceCard>,
         availableGiftCards: List<GiftCard>
     ) {
-        val payday = preferencesRepository.getPayday()
-        val adjustment = preferencesRepository.getPaydayAdjustment()
+        coroutineScope.launch {
+            val payday = preferencesRepository.getPayday()
+            val adjustment = preferencesRepository.getPaydayAdjustment()
 
-        val currentPayPeriod = initialPayPeriod ?: PayPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
+            val currentPayPeriod = initialPayPeriod ?: payPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
 
-        uiState = uiState.copy(currentPayPeriod = currentPayPeriod)
+            uiState = uiState.copy(currentPayPeriod = currentPayPeriod)
 
-        loadStatisticsData(availableBalanceCards, availableGiftCards)
+            loadStatisticsData(availableBalanceCards, availableGiftCards)
+        }
     }
 
     fun getStatisticsFlow(
@@ -83,8 +86,10 @@ class StatisticsViewModel(
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()
 
-        val previousPeriod = PayPeriodCalculator.getPreviousPayPeriod(currentPeriod, payday, adjustment)
-        uiState = uiState.copy(currentPayPeriod = previousPeriod)
+        coroutineScope.launch {
+            val previousPeriod = payPeriodCalculator.getPreviousPayPeriod(currentPeriod, payday, adjustment)
+            uiState = uiState.copy(currentPayPeriod = previousPeriod)
+        }
     }
 
     fun moveToNextPeriod() {
@@ -92,8 +97,10 @@ class StatisticsViewModel(
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()
 
-        val nextPeriod = PayPeriodCalculator.getNextPayPeriod(currentPeriod, payday, adjustment)
-        uiState = uiState.copy(currentPayPeriod = nextPeriod)
+        coroutineScope.launch {
+            val nextPeriod = payPeriodCalculator.getNextPayPeriod(currentPeriod, payday, adjustment)
+            uiState = uiState.copy(currentPayPeriod = nextPeriod)
+        }
     }
 
     fun showCalculatorDialog() {

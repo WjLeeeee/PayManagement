@@ -1,5 +1,6 @@
 package com.woojin.paymanagement.utils
 
+import com.woojin.paymanagement.domain.repository.HolidayRepository
 import kotlinx.datetime.*
 
 object Utils {
@@ -15,9 +16,11 @@ data class PayPeriod(
     val displayText: String
 )
 
-object PayPeriodCalculator {
-    
-    fun getCurrentPayPeriod(
+class PayPeriodCalculator(
+    private val holidayRepository: HolidayRepository? = null
+) {
+
+    suspend fun getCurrentPayPeriod(
         payday: Int,
         adjustment: PaydayAdjustment,
         currentDate: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -56,7 +59,7 @@ object PayPeriodCalculator {
         }
     }
     
-    fun getNextPayPeriod(currentPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): PayPeriod {
+    suspend fun getNextPayPeriod(currentPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): PayPeriod {
         val nextStartDate = currentPeriod.endDate.plus(1, DateTimeUnit.DAY)
         val nextMonthDate = nextStartDate.plus(1, DateTimeUnit.MONTH)
         val nextEndDate = calculateActualPayday(
@@ -73,7 +76,7 @@ object PayPeriodCalculator {
         )
     }
     
-    fun getPreviousPayPeriod(currentPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): PayPeriod {
+    suspend fun getPreviousPayPeriod(currentPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): PayPeriod {
         val previousEndDate = currentPeriod.startDate.minus(1, DateTimeUnit.DAY)
         val previousMonthDate = currentPeriod.startDate.minus(1, DateTimeUnit.MONTH)
         val previousStartDate = calculateActualPayday(
@@ -90,10 +93,10 @@ object PayPeriodCalculator {
         )
     }
     
-    private fun calculateActualPayday(
-        year: Int, 
-        month: Month, 
-        payday: Int, 
+    suspend fun calculateActualPayday(
+        year: Int,
+        month: Month,
+        payday: Int,
         adjustment: PaydayAdjustment
     ): LocalDate {
         val targetDate = try {
@@ -103,30 +106,48 @@ object PayPeriodCalculator {
             val lastDayOfMonth = LocalDate(year, month, 1).plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY)
             lastDayOfMonth
         }
-        
-        return when (targetDate.dayOfWeek) {
-            DayOfWeek.SATURDAY, DayOfWeek.SUNDAY -> {
-                when (adjustment) {
-                    PaydayAdjustment.BEFORE_WEEKEND -> {
-                        // 주말 이전 평일로 이동
-                        var adjustedDate = targetDate
-                        while (adjustedDate.dayOfWeek == DayOfWeek.SATURDAY || adjustedDate.dayOfWeek == DayOfWeek.SUNDAY) {
-                            adjustedDate = adjustedDate.minus(1, DateTimeUnit.DAY)
-                        }
-                        adjustedDate
+
+        // 주말 또는 공휴일 체크
+        val isWeekend = targetDate.dayOfWeek == DayOfWeek.SATURDAY || targetDate.dayOfWeek == DayOfWeek.SUNDAY
+        val isHoliday = checkIsHoliday(targetDate)
+
+        return if (isWeekend || isHoliday) {
+            when (adjustment) {
+                PaydayAdjustment.BEFORE_WEEKEND -> {
+                    // 주말/공휴일 이전 평일로 이동
+                    var adjustedDate = targetDate
+                    while (isWeekendOrHoliday(adjustedDate)) {
+                        adjustedDate = adjustedDate.minus(1, DateTimeUnit.DAY)
                     }
-                    PaydayAdjustment.AFTER_WEEKEND -> {
-                        // 주말 이후 평일로 이동
-                        var adjustedDate = targetDate
-                        while (adjustedDate.dayOfWeek == DayOfWeek.SATURDAY || adjustedDate.dayOfWeek == DayOfWeek.SUNDAY) {
-                            adjustedDate = adjustedDate.plus(1, DateTimeUnit.DAY)
-                        }
-                        adjustedDate
+                    adjustedDate
+                }
+                PaydayAdjustment.AFTER_WEEKEND -> {
+                    // 주말/공휴일 이후 평일로 이동
+                    var adjustedDate = targetDate
+                    while (isWeekendOrHoliday(adjustedDate)) {
+                        adjustedDate = adjustedDate.plus(1, DateTimeUnit.DAY)
                     }
+                    adjustedDate
                 }
             }
-            else -> targetDate // 평일이면 그대로
+        } else {
+            targetDate // 평일이고 공휴일 아니면 그대로
         }
+    }
+
+    private suspend fun isWeekendOrHoliday(date: LocalDate): Boolean {
+        val isWeekend = date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY
+        val isHoliday = checkIsHoliday(date)
+        return isWeekend || isHoliday
+    }
+
+    private suspend fun checkIsHoliday(date: LocalDate): Boolean {
+        if (holidayRepository == null) return false
+
+        // YYYYMMDD 형식으로 변환
+        val dateStr = "${date.year}${date.monthNumber.toString().padStart(2, '0')}${date.dayOfMonth.toString().padStart(2, '0')}"
+        val holiday = holidayRepository.getHolidayByDate(dateStr)
+        return holiday?.isHoliday == true
     }
     
     fun getRecommendedDateForPeriod(payPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): LocalDate {

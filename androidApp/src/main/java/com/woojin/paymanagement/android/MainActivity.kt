@@ -17,12 +17,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +37,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.ads.MobileAds
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.woojin.paymanagement.App
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.AppInfo
 import com.woojin.paymanagement.utils.FileHandler
 import com.woojin.paymanagement.utils.NotificationPermissionChecker
 import com.woojin.paymanagement.utils.PreferencesManager
+import com.woojin.paymanagement.analytics.Analytics
 
 class MainActivity : ComponentActivity() {
 
@@ -49,6 +53,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Firebase Analytics 초기화
+        val firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        val analyticsLogger = Analytics.getInstance()
+        analyticsLogger.initialize(firebaseAnalytics)
 
         // Intent로부터 네비게이션 플래그 확인
         handleIntent(intent)
@@ -193,6 +202,32 @@ fun StatusBarOverlayScreen(
     val view = LocalView.current
     var permissionResultCallback by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
 
+    // 광고 제거 화면으로 이동하기 위한 상태
+    var shouldNavigateToAdRemoval by remember { mutableStateOf(false) }
+
+    // 네이티브 광고 상태 관리
+    var nativeAdState by remember { mutableStateOf<com.woojin.paymanagement.android.ads.NativeAdState>(com.woojin.paymanagement.android.ads.NativeAdState.Loading) }
+    val nativeAdManager = remember { com.woojin.paymanagement.android.ads.NativeAdManager(context) }
+
+    // 광고 미리 로딩
+    LaunchedEffect(Unit) {
+        nativeAdManager.loadAd(
+            onAdLoaded = { ad ->
+                nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Success(ad)
+            },
+            onAdFailed = { error ->
+                nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+            }
+        )
+    }
+
+    // 정리
+    DisposableEffect(Unit) {
+        onDispose {
+            nativeAdManager.destroy()
+        }
+    }
+
     // FileHandler 초기화
     val fileHandler = remember { FileHandler() }
 
@@ -273,24 +308,46 @@ fun StatusBarOverlayScreen(
                 // 광고 제거 상태 확인
                 val isAdRemovalActive = remember { mutableStateOf(preferencesManager.isAdRemovalActive()) }
 
-                // 화면이 다시 보일 때마다 광고 제거 상태 업데이트
+                // 화면이 다시 보일 때마다 광고 제거 상태 update
                 LaunchedEffect(Unit) {
                     isAdRemovalActive.value = preferencesManager.isAdRemovalActive()
                 }
 
+                // Interstitial Ad Manager 생성
+                val interstitialAdManager = remember {
+                    com.woojin.paymanagement.utils.InterstitialAdManager(
+                        context = context,
+                        activityProvider = { context as? ComponentActivity },
+                        adUnitId = "ca-app-pub-9195598687879551/6004614996"
+                    )
+                }
+
                 App(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .imePadding(),
                     databaseDriverFactory = DatabaseDriverFactory(context = context),
                     preferencesManager = preferencesManager,
                     notificationPermissionChecker = NotificationPermissionChecker(context = context),
                     appInfo = appInfo,
                     fileHandler = fileHandler,
                     billingClient = billingClient,
+                    interstitialAdManager = interstitialAdManager,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,
+                    shouldNavigateToAdRemoval = shouldNavigateToAdRemoval,
                     onParsedTransactionsNavigationHandled = onParsedTransactionsNavigationHandled,
                     onRecurringTransactionsNavigationHandled = onRecurringTransactionsNavigationHandled,
+                    onAdRemovalNavigationHandled = { shouldNavigateToAdRemoval = false },
                     onThemeChanged = { onThemeChanged() },
+                    nativeAdContent = {
+                        // 광고 로딩 성공 시에만 표시
+                        if (nativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
+                            val ad = (nativeAdState as com.woojin.paymanagement.android.ads.NativeAdState.Success).ad
+                            com.woojin.paymanagement.android.ads.NativeAdItem(nativeAd = ad)
+                        }
+                    },
+                    hasNativeAd = nativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success,
                     onRequestPostNotificationPermission = { callback ->
                         // 콜백 저장
                         permissionResultCallback = callback
@@ -346,13 +403,29 @@ fun StatusBarOverlayScreen(
                             type = "application/json"
                         }
                         loadFileLauncher.launch(intent)
+                    },
+                    onAppExit = {
+                        (context as? ComponentActivity)?.finish()
+                    },
+                    onContactSupport = {
+                        val emailHelper = com.woojin.paymanagement.utils.EmailHelper(context)
+                        emailHelper.sendSupportEmail(
+                            email = "dldnwls0115@naver.com",
+                            subject = "편한 가계부-월급 기반 관리 시스템",
+                            appVersion = "${appInfo.getVersionName()}(${appInfo.getVersionCode()})",
+                            osVersion = android.os.Build.VERSION.RELEASE,
+                            deviceModel = android.os.Build.MODEL
+                        )
                     }
                 )
 
                 // 하단 배너 광고 (광고 제거가 활성화되지 않았을 때만 표시)
                 if (!isAdRemovalActive.value) {
                     BannerAdView(
-                        adUnitId = "ca-app-pub-9195598687879551/3919131534"
+                        adUnitId = "ca-app-pub-9195598687879551/3919131534",
+                        onNavigateToAdRemoval = {
+                            shouldNavigateToAdRemoval = true
+                        }
                     )
                 }
 

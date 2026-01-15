@@ -38,15 +38,24 @@ import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.utils.BackHandler
 import com.woojin.paymanagement.utils.Utils
+import kotlin.math.round
 
 @Composable
 fun MonthlyComparisonScreen(
     viewModel: MonthlyComparisonViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    showPreviousPeriodComparison: Boolean = false
 ) {
     BackHandler(onBack = onBack)
 
     val uiState = viewModel.uiState
+
+    // 스낵바에서 진입한 경우 이전 급여 기간 비교 모드로 시작
+    androidx.compose.runtime.LaunchedEffect(showPreviousPeriodComparison) {
+        if (showPreviousPeriodComparison) {
+            viewModel.startWithPreviousPeriod()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -346,7 +355,7 @@ private fun TotalComparisonCard(
                         )
                         if (differencePercentage != 0f) {
                             Text(
-                                text = "(${if (differencePercentage > 0) "+" else ""}${String.format("%.1f", differencePercentage)}%)",
+                                text = "(${if (differencePercentage > 0) "+" else ""}${formatToOneDecimal(differencePercentage)}%)",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = when {
                                     difference > 0 -> MaterialTheme.colorScheme.error
@@ -471,7 +480,7 @@ private fun CategoryComparisonCard(
                     )
                     if (comparison.differencePercentage != 0f) {
                         Text(
-                            text = "(${if (comparison.differencePercentage > 0) "+" else ""}${String.format("%.1f", comparison.differencePercentage)}%)",
+                            text = "(${if (comparison.differencePercentage > 0) "+" else ""}${formatToOneDecimal(comparison.differencePercentage)}%)",
                             style = MaterialTheme.typography.bodySmall,
                             color = when {
                                 comparison.isIncrease -> MaterialTheme.colorScheme.error
@@ -483,5 +492,17 @@ private fun CategoryComparisonCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * Float을 소수점 1자리 문자열로 포맷팅 (iOS 호환)
+ */
+private fun formatToOneDecimal(value: Float): String {
+    val rounded = round(value * 10) / 10
+    return if (rounded == rounded.toInt().toFloat()) {
+        "${rounded.toInt()}.0"
+    } else {
+        rounded.toString()
     }
 }

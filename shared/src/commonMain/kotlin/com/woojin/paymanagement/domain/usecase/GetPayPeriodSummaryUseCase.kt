@@ -13,11 +13,11 @@ class GetPayPeriodSummaryUseCase {
 
         val totalIncome = periodTransactions
             .filter { it.type == TransactionType.INCOME }
-            .sumOf { it.amount }
+            .sumOf { it.displayAmount }
 
         val totalExpense = periodTransactions
             .filter { it.type == TransactionType.EXPENSE }
-            .sumOf { it.amount }
+            .sumOf { it.displayAmount }
 
         return PayPeriodSummary(
             totalIncome = totalIncome,

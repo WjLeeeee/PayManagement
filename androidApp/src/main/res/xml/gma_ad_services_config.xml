@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ad-services-config>
+    <!-- Google Mobile Ads SDK와 Firebase Analytics 간의 충돌 방지 설정 -->
+</ad-services-config>

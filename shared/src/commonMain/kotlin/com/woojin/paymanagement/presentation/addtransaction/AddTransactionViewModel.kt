@@ -20,6 +20,7 @@ import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import com.woojin.paymanagement.database.DatabaseHelper
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -40,7 +41,8 @@ class AddTransactionViewModel(
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getAvailableBalanceCardsUseCase: GetAvailableBalanceCardsUseCase,
     private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase,
-    private val getCategoriesUseCase: GetCategoriesUseCase
+    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val databaseHelper: DatabaseHelper
 ) : ViewModel() {
     var uiState by mutableStateOf(AddTransactionUiState())
         private set
@@ -112,7 +114,6 @@ class AddTransactionViewModel(
                 memo = editTransaction.memo,
                 date = initialDate,
                 isSettlement = editTransaction.isSettlement,
-                actualAmount = editTransaction.actualAmount?.toLong()?.toString() ?: "",
                 settlementAmount = editTransaction.settlementAmount?.toLong()?.toString() ?: "",
                 availableBalanceCards = availableBalanceCards,
                 availableGiftCards = availableGiftCards,
@@ -164,6 +165,14 @@ class AddTransactionViewModel(
 
         // 최신 카테고리 로드
         loadCategories()
+
+        // merchant로 자동 카테고리 제안
+        viewModelScope.launch {
+            val suggestedCategory = databaseHelper.getSuggestedCategory(parsedTransaction.merchantName)
+            if (suggestedCategory != null) {
+                uiState = uiState.copy(category = suggestedCategory)
+            }
+        }
 
         validateInput()
     }
@@ -231,18 +240,6 @@ class AddTransactionViewModel(
                     selection = TextRange(formattedAmount.length)
                 )
             )
-
-            // 더치페이 활성화 시 정산받을 금액 자동 계산
-            if (uiState.isSettlement && uiState.actualAmount.isNotBlank()) {
-                val actual = parseAmountToDouble(uiState.actualAmount)
-                val myAmount = digitsOnly.toDoubleOrNull() ?: 0.0
-                if (actual > myAmount) {
-                    val settlementValue = (actual - myAmount).toLong()
-                    uiState = uiState.copy(
-                        settlementAmount = formatWithCommas(settlementValue)
-                    )
-                }
-            }
 
             validateInput()
         }
@@ -322,15 +319,13 @@ class AddTransactionViewModel(
         } else {
             uiState.copy(
                 isSettlement = false,
-                actualAmount = "",
-                splitCount = "",
                 settlementAmount = ""
             )
         }
         validateInput()
     }
 
-    fun updateActualAmount(newValue: String) {
+    fun updateSettlementAmount(newValue: String) {
         val digitsOnly = removeCommas(newValue)
 
         if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
@@ -341,59 +336,7 @@ class AddTransactionViewModel(
                 ""
             }
 
-            uiState = uiState.copy(actualAmount = formattedAmount)
-
-            val actual = digitsOnly.toDoubleOrNull() ?: 0.0
-            val split = uiState.splitCount.toIntOrNull() ?: 0
-            if (actual > 0 && split > 0) {
-                val myShare = actual / split
-                val myShareText = formatWithCommas(myShare.toLong())
-                uiState = uiState.copy(
-                    amount = TextFieldValue(
-                        text = myShareText,
-                        selection = TextRange(myShareText.length)
-                    ),
-                    settlementAmount = formatWithCommas((actual - myShare).toLong())
-                )
-            }
-        }
-    }
-
-    fun updateSplitCount(newValue: String) {
-        if (newValue.isEmpty() || newValue.matches(Regex("^\\d+$"))) {
-            uiState = uiState.copy(splitCount = newValue)
-
-            val actual = parseAmountToDouble(uiState.actualAmount)
-            val split = newValue.toIntOrNull() ?: 0
-            if (actual > 0 && split > 0) {
-                val myShare = actual / split
-                val myShareText = formatWithCommas(myShare.toLong())
-                uiState = uiState.copy(
-                    amount = TextFieldValue(
-                        text = myShareText,
-                        selection = TextRange(myShareText.length)
-                    ),
-                    settlementAmount = formatWithCommas((actual - myShare).toLong())
-                )
-            }
-        }
-    }
-
-    fun updateSettlementAmount(newValue: String) {
-        if (newValue.isEmpty() || newValue.matches(Regex("^\\d+\\.?\\d*$"))) {
-            uiState = uiState.copy(settlementAmount = newValue)
-
-            val actual = uiState.actualAmount.toDoubleOrNull() ?: 0.0
-            val settlement = newValue.toDoubleOrNull() ?: 0.0
-            if (actual > settlement) {
-                val newAmountText = (actual - settlement).toInt().toString()
-                uiState = uiState.copy(
-                    amount = TextFieldValue(
-                        text = newAmountText,
-                        selection = TextRange(newAmountText.length)
-                    )
-                )
-            }
+            uiState = uiState.copy(settlementAmount = formattedAmount)
         }
     }
 
@@ -421,8 +364,13 @@ class AddTransactionViewModel(
         )
     }
 
-    suspend fun saveTransaction(): List<Transaction> {
-        if (!uiState.isValidInput || uiState.date == null) return emptyList()
+    data class SaveResult(
+        val transactions: List<Transaction>,
+        val budgetExceededMessage: String?
+    )
+
+    suspend fun saveTransaction(): SaveResult {
+        if (!uiState.isValidInput || uiState.date == null) return SaveResult(emptyList(), null)
 
         try {
             uiState = uiState.copy(isLoading = true, error = null)
@@ -431,13 +379,14 @@ class AddTransactionViewModel(
             val currentDate = uiState.date!!
 
             val transactions = when {
-                // 잔액권 지출 시 특별 처리
+                // 편집 모드가 아닐 때만 잔액권 지출 특별 처리 (복수 거래 가능)
+                !uiState.isEditMode &&
                 uiState.selectedType == TransactionType.EXPENSE &&
                 uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD &&
                 uiState.selectedBalanceCard != null -> {
 
                     val baseTransaction = Transaction(
-                        id = if (uiState.isEditMode) uiState.editTransaction?.id ?: generateUniqueId() else generateUniqueId(),
+                        id = generateUniqueId(),
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
@@ -458,13 +407,14 @@ class AddTransactionViewModel(
                     result.transactions
                 }
 
-                // 상품권 지출 시 특별 처리
+                // 편집 모드가 아닐 때만 상품권 지출 특별 처리 (복수 거래 가능)
+                !uiState.isEditMode &&
                 uiState.selectedType == TransactionType.EXPENSE &&
                 uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD &&
                 uiState.selectedGiftCard != null -> {
 
                     val baseTransaction = Transaction(
-                        id = if (uiState.isEditMode) uiState.editTransaction?.id ?: generateUniqueId() else generateUniqueId(),
+                        id = generateUniqueId(),
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
@@ -512,9 +462,12 @@ class AddTransactionViewModel(
                             else -> null
                         },
                         giftCardId = when {
-                            // 상품권은 항상 새로 추가
+                            // 수입 - 상품권 새로 추가
                             uiState.selectedType == TransactionType.INCOME &&
                             uiState.selectedIncomeType == IncomeType.GIFT_CARD -> generateUniqueId()
+                            // 지출 - 상품권 사용
+                            uiState.selectedType == TransactionType.EXPENSE &&
+                            uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.id
                             else -> null
                         },
                         cardName = when {
@@ -532,9 +485,11 @@ class AddTransactionViewModel(
                             // 지출 - 잔액권 사용
                             uiState.selectedType == TransactionType.EXPENSE &&
                             uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.name
+                            // 지출 - 상품권 사용
+                            uiState.selectedType == TransactionType.EXPENSE &&
+                            uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.name
                             else -> null
                         },
-                        actualAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.actualAmount) else null,
                         settlementAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount) else null,
                         isSettlement = uiState.isSettlement
                     )
@@ -544,6 +499,7 @@ class AddTransactionViewModel(
             }
 
             // 저장 실행
+            var budgetExceededResult: com.woojin.paymanagement.domain.usecase.BudgetExceededResult? = null
             if (uiState.isEditMode && uiState.editTransaction != null) {
                 // 편집 모드에서는 단일 거래만 업데이트
                 if (transactions.size == 1) {
@@ -552,25 +508,45 @@ class AddTransactionViewModel(
             } else {
                 // 새 거래 추가
                 if (transactions.size == 1) {
-                    saveTransactionUseCase(transactions.first())
+                    budgetExceededResult = saveTransactionUseCase(transactions.first())
+                    println("AddTransactionViewModel: budgetExceededResult = $budgetExceededResult")
                 } else {
-                    saveMultipleTransactionsUseCase(transactions)
+                    budgetExceededResult = saveMultipleTransactionsUseCase(transactions)
+                    println("AddTransactionViewModel: budgetExceededResult (multiple) = $budgetExceededResult")
                 }
             }
 
+            // 예산 초과 메시지 생성
+            val budgetMessage = budgetExceededResult?.let { result ->
+                val percentage = (result.usageRate * 100).toInt()
+                val message = "${result.categoryBudget.categoryName} 예산 ${result.threshold}% 초과! (${percentage}% 사용)"
+                println("AddTransactionViewModel: budgetMessage = $message")
+                message
+            }
+            println("AddTransactionViewModel: budgetMessage (final) = $budgetMessage")
+
             uiState = uiState.copy(
                 isLoading = false,
-                error = null
+                error = null,
+                budgetExceededMessage = budgetMessage
             )
+            println("AddTransactionViewModel: uiState.budgetExceededMessage = ${uiState.budgetExceededMessage}")
 
-            return transactions
+            return SaveResult(transactions, budgetMessage)
 
         } catch (e: Exception) {
             uiState = uiState.copy(
                 isLoading = false,
                 error = e.message ?: "알 수 없는 오류가 발생했습니다."
             )
-            return emptyList()
+            return SaveResult(emptyList(), null)
         }
+    }
+
+    /**
+     * 예산 초과 메시지 초기화
+     */
+    fun clearBudgetExceededMessage() {
+        uiState = uiState.copy(budgetExceededMessage = null)
     }
 }

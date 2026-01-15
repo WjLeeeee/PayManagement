@@ -4,13 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,6 +18,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,7 +47,7 @@ fun AddTransactionScreen(
     parsedTransaction: com.woojin.paymanagement.data.ParsedTransaction? = null,
     recurringTransaction: com.woojin.paymanagement.data.RecurringTransaction? = null,
     viewModel: AddTransactionViewModel,
-    onSave: (List<Transaction>) -> Unit,
+    onSave: (List<Transaction>, String?) -> Unit,  // budgetExceededMessage 추가
     onCancel: () -> Unit
 ) {
     // 시스템 뒤로가기 버튼 처리
@@ -56,6 +56,7 @@ fun AddTransactionScreen(
     val uiState = viewModel.uiState
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(transactions, selectedDate, editTransaction, parsedTransaction, recurringTransaction) {
         if (recurringTransaction != null) {
@@ -67,11 +68,14 @@ fun AddTransactionScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
     ) {
         Text(
             text = if (uiState.isEditMode) "거래 편집" else "거래 추가",
@@ -153,13 +157,8 @@ fun AddTransactionScreen(
             SettlementSection(
                 isSettlement = uiState.isSettlement,
                 onSettlementChange = viewModel::updateSettlement,
-                actualAmount = uiState.actualAmount,
-                onActualAmountChange = viewModel::updateActualAmount,
-                splitCount = uiState.splitCount,
-                onSplitCountChange = viewModel::updateSplitCount,
                 settlementAmount = uiState.settlementAmount,
-                onSettlementAmountChange = viewModel::updateSettlementAmount,
-                myAmount = uiState.amount.text
+                onSettlementAmountChange = viewModel::updateSettlementAmount
             )
         }
 
@@ -236,9 +235,10 @@ fun AddTransactionScreen(
             Button(
                 onClick = {
                     scope.launch {
-                        val savedTransactions = viewModel.saveTransaction()
-                        if (savedTransactions.isNotEmpty()) {
-                            onSave(savedTransactions)
+                        val result = viewModel.saveTransaction()
+                        if (result.transactions.isNotEmpty()) {
+                            // 화면을 바로 닫고 부모 화면에 예산 초과 메시지 전달
+                            onSave(result.transactions, result.budgetExceededMessage)
                         }
                     }
                 },
@@ -268,6 +268,7 @@ fun AddTransactionScreen(
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium
             )
+        }
         }
     }
 }

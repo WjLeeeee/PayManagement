@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionDialog
 import com.woojin.paymanagement.utils.BackHandler
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -32,7 +33,9 @@ fun DateDetailScreen(
     onBack: () -> Unit,
     onEditTransaction: (Transaction) -> Unit,
     onDeleteTransaction: (Transaction) -> Unit,
-    onAddTransaction: () -> Unit
+    onAddTransaction: () -> Unit,
+    nativeAdContent: @Composable () -> Unit = {},
+    hasNativeAd: Boolean = false
 ) {
     // 시스템 뒤로가기 버튼 처리
     BackHandler(onBack = onBack)
@@ -85,12 +88,62 @@ fun DateDetailScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (dayTransactions.isNotEmpty()) {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp),
-                modifier = Modifier.weight(1f)
-            ) {
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            // 거래도 없고 광고도 없으면 빈 메시지 표시
+            if (dayTransactions.isEmpty() && !hasNativeAd) {
+                item {
+                    EmptyTransactionMessage()
+                }
+            }
+
+            // 광고가 있을 때만 광고 삽입 위치 결정
+            if (hasNativeAd) {
+                val adInsertPosition = minOf(3, dayTransactions.size)
+
+                // 광고 이전 거래 아이템 (최대 3개)
+                val transactionsBeforeAd = dayTransactions.take(adInsertPosition)
+                items(transactionsBeforeAd) { transaction ->
+                    TransactionDetailItem(
+                        transaction = transaction,
+                        isExpanded = uiState.expandedTransactionId == transaction.id,
+                        onClick = { viewModel.toggleTransactionExpansion(transaction.id) },
+                        onEdit = { onEditTransaction(transaction) },
+                        onDelete = {
+                            // 삭제 확인 다이얼로그 표시
+                            viewModel.showDeleteConfirmation(transaction)
+                        },
+                        onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
+                        availableCategories = uiState.availableCategories
+                    )
+                }
+
+                // 네이티브 광고
+                item {
+                    nativeAdContent()
+                }
+
+                // 광고 이후 거래 아이템 (3개 이후)
+                val transactionsAfterAd = dayTransactions.drop(adInsertPosition)
+                items(transactionsAfterAd) { transaction ->
+                    TransactionDetailItem(
+                        transaction = transaction,
+                        isExpanded = uiState.expandedTransactionId == transaction.id,
+                        onClick = { viewModel.toggleTransactionExpansion(transaction.id) },
+                        onEdit = { onEditTransaction(transaction) },
+                        onDelete = {
+                            // 삭제 확인 다이얼로그 표시
+                            viewModel.showDeleteConfirmation(transaction)
+                        },
+                        onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
+                        availableCategories = uiState.availableCategories
+                    )
+                }
+            } else {
+                // 광고 없으면 모든 거래 아이템만 표시
                 items(dayTransactions) { transaction ->
                     TransactionDetailItem(
                         transaction = transaction,
@@ -101,13 +154,11 @@ fun DateDetailScreen(
                             // 삭제 확인 다이얼로그 표시
                             viewModel.showDeleteConfirmation(transaction)
                         },
+                        onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
                         availableCategories = uiState.availableCategories
                     )
                 }
             }
-        } else {
-            EmptyTransactionMessage()
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 
@@ -152,6 +203,18 @@ fun DateDetailScreen(
                 TextButton(onClick = { viewModel.clearError() }) {
                     Text("확인")
                 }
+            }
+        )
+    }
+
+    // 반복거래 저장 다이얼로그
+    if (uiState.showRecurringDialog && uiState.recurringTransactionBase != null) {
+        RecurringTransactionDialog(
+            transaction = uiState.recurringTransactionBase,
+            categories = uiState.availableCategories,
+            onDismiss = { viewModel.hideRecurringTransactionDialog() },
+            onSave = { recurringTransaction ->
+                viewModel.saveRecurringTransaction(recurringTransaction)
             }
         )
     }

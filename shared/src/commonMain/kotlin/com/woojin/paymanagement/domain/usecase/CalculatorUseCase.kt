@@ -36,7 +36,7 @@ class CalculatorUseCase {
         }
 
         // 총액 계산
-        val totalAmount = filteredTransactions.sumOf { it.amount }
+        val totalAmount = filteredTransactions.sumOf { it.displayAmount }
 
         // 거래 건수
         val transactionCount = filteredTransactions.size
@@ -47,7 +47,7 @@ class CalculatorUseCase {
         // 카테고리별 요약
         val categoryGroups = filteredTransactions.groupBy { it.category }
         val categorySummaries = categoryGroups.map { (category, transactions) ->
-            val categoryAmount = transactions.sumOf { it.amount }
+            val categoryAmount = transactions.sumOf { it.displayAmount }
             val categoryCount = transactions.size
             val percentage = if (totalAmount > 0) (categoryAmount / totalAmount) * 100 else 0.0
 
@@ -64,7 +64,7 @@ class CalculatorUseCase {
             .sortedBy { it.date }
             .map { transaction ->
                 TransactionDetail(
-                    amount = transaction.amount,
+                    amount = transaction.displayAmount,
                     memo = transaction.memo,
                     merchant = transaction.merchant,
                     date = transaction.date

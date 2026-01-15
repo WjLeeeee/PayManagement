@@ -10,6 +10,7 @@ import com.woojin.paymanagement.utils.BillingResult
 import com.woojin.paymanagement.utils.AdRemovalProductId
 import com.woojin.paymanagement.utils.PreferencesManager
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 /**
  * 광고 제거 화면의 ViewModel
@@ -59,7 +60,7 @@ class AdRemovalViewModel(
                 when (result) {
                     is BillingResult.Success -> {
                         // 구매 성공 - 만료 시간 계산 및 저장
-                        val currentTime = System.currentTimeMillis()
+                        val currentTime = Clock.System.now().toEpochMilliseconds()
                         val daysInMillis = selectedPeriod.days * 24 * 60 * 60 * 1000L
                         val expiryTime = currentTime + daysInMillis
 

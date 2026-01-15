@@ -21,6 +21,13 @@ actual class BillingClient {
     }
 
     /**
+     * 광고 제거 구매 시작
+     */
+    actual suspend fun launchPurchaseFlow(productId: AdRemovalProductId): BillingResult {
+        return BillingResult.Error("iOS에서는 지원하지 않습니다")
+    }
+
+    /**
      * 연결 종료
      */
     actual fun disconnect() {

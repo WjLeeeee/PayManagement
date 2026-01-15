@@ -6,7 +6,7 @@ import com.woojin.paymanagement.domain.repository.ParsedTransactionRepository
 class InsertParsedTransactionUseCase(
     private val parsedTransactionRepository: ParsedTransactionRepository
 ) {
-    suspend operator fun invoke(parsedTransaction: ParsedTransaction) {
-        parsedTransactionRepository.insertParsedTransaction(parsedTransaction)
+    suspend operator fun invoke(parsedTransaction: ParsedTransaction): Boolean {
+        return parsedTransactionRepository.insertParsedTransaction(parsedTransaction)
     }
 }

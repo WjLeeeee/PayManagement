@@ -93,3 +93,9 @@
     public static *** v(...);
     public static *** i(...);
 }
+
+# Facebook Audience Network - Annotation 관련
+-dontwarn com.facebook.infer.annotation.Nullsafe
+-dontwarn com.facebook.infer.annotation.Nullsafe$Mode
+-keep class com.facebook.ads.** { *; }
+-dontwarn com.facebook.ads.**

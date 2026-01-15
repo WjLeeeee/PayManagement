@@ -30,13 +30,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.animation.core.animateFloatAsState
@@ -79,15 +84,20 @@ import kotlinx.datetime.todayIn
 fun CalendarScreen(
     viewModel: CalendarViewModel,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel,
+    interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     onOpenDrawer: () -> Unit = {},
     onDateDetailClick: (LocalDate) -> Unit = {},
     onStatisticsClick: (PayPeriod) -> Unit = {},
     onAddTransactionClick: () -> Unit = {},
     onPayPeriodChanged: (PayPeriod) -> Unit = {},
-    onParsedTransactionsClick: () -> Unit = {}
+    onParsedTransactionsClick: () -> Unit = {},
+    onAppExit: () -> Unit = {}
 ) {
     val uiState = viewModel.uiState
     val tutorialUiState = tutorialViewModel.uiState
+
+    // 뒤로가기 핸들링을 위한 상태
+    var showExitDialog by remember { mutableStateOf(false) }
 
     // 네비게이션바 높이 계산
     val density = LocalDensity.current
@@ -102,9 +112,20 @@ fun CalendarScreen(
         }
     }
 
+    // 전면광고 미리 로드
+    LaunchedEffect(interstitialAdManager) {
+        interstitialAdManager?.loadAd()
+    }
+
+    // 뒤로가기 핸들링 - 앱 종료 시 전면광고 표시
+    com.woojin.paymanagement.utils.BackHandler {
+        showExitDialog = true
+    }
+
     // EdgeToEdge 대응은 CalendarTutorialOverlay에서 처리됩니다
 
     var fabExpanded by remember { mutableStateOf(false) }
+    var showYearMonthPicker by remember { mutableStateOf(false) }
 
     // HorizontalPager 상태 (무한 스크롤을 위해 큰 pageCount 사용)
     val initialPage = Int.MAX_VALUE / 2
@@ -170,6 +191,7 @@ fun CalendarScreen(
                     uiState.selectedDate?.let { selectedDate ->
                         PayPeriodHeader(
                             selectedDate = selectedDate,
+                            onClick = { showYearMonthPicker = true },
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
@@ -211,6 +233,7 @@ fun CalendarScreen(
                     payPeriod = uiState.currentPayPeriod,
                     transactions = uiState.transactions,
                     selectedDate = uiState.selectedDate,
+                    holidays = uiState.holidays,
                     isMoveMode = uiState.isMoveMode,
                     onDateSelected = { date ->
                         if (uiState.isMoveMode) {
@@ -228,6 +251,7 @@ fun CalendarScreen(
                 DailyTransactionCard(
                     selectedDate = uiState.selectedDate,
                     transactions = uiState.transactions,
+                    holidayNames = uiState.holidayNames,
                     isMoveMode = uiState.isMoveMode,
                     transactionToMove = uiState.transactionToMove,
                     availableCategories = uiState.availableCategories,
@@ -299,11 +323,52 @@ fun CalendarScreen(
             )
         }
     }
+
+    // 년/월 선택 다이얼로그
+    if (showYearMonthPicker && uiState.selectedDate != null) {
+        YearMonthPickerDialog(
+            currentYear = uiState.selectedDate.year,
+            currentMonth = uiState.selectedDate.monthNumber,
+            onDismiss = { showYearMonthPicker = false },
+            onConfirm = { year, month ->
+                viewModel.navigateToYearMonth(year, month)
+            }
+        )
+    }
+
+    // 앱 종료 확인 다이얼로그
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("앱 종료") },
+            text = { Text("앱을 종료하시겠습니까?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExitDialog = false
+                        // 전면광고 표시 후 앱 종료
+                        interstitialAdManager?.showAd {
+                            // 광고 닫힌 후 앱 종료 콜백 호출
+                            onAppExit()
+                        }
+                    }
+                ) {
+                    Text("종료")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("취소")
+                }
+            }
+        )
+    }
 }
 
 @Composable
 private fun PayPeriodHeader(
     selectedDate: LocalDate,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val year = selectedDate.year
@@ -312,10 +377,10 @@ private fun PayPeriodHeader(
     Text(
         text = "${year}년 ${month}월",
         style = MaterialTheme.typography.titleLarge,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
-        modifier = modifier
+        modifier = modifier.clickable(onClick = onClick)
     )
 }
 
@@ -332,9 +397,16 @@ private fun PayPeriodSummaryCard(
         transaction.date >= payPeriod.startDate && transaction.date <= payPeriod.endDate
     }
 
-    val income = periodTransactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-    val expense =
-        periodTransactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+    // 투자 관련 카테고리 목록
+    val investmentCategories = setOf("투자", "손절", "익절", "배당금")
+
+    // 투자 관련 항목 제외하고 계산
+    val income = periodTransactions
+        .filter { it.type == TransactionType.INCOME && it.category !in investmentCategories }
+        .sumOf { it.displayAmount }
+    val expense = periodTransactions
+        .filter { it.type == TransactionType.EXPENSE && it.category !in investmentCategories }
+        .sumOf { it.displayAmount }
     val balance = income - expense
 
     Card(
@@ -500,6 +572,7 @@ private fun CalendarGrid(
     payPeriod: PayPeriod,
     transactions: List<Transaction>,
     selectedDate: LocalDate?,
+    holidays: Set<LocalDate> = emptySet(),
     isMoveMode: Boolean = false,
     onDateSelected: (LocalDate) -> Unit,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
@@ -561,6 +634,7 @@ private fun CalendarGrid(
                 val hasExpense = dayTransactions.any { it.type == TransactionType.EXPENSE }
                 val isInCurrentPeriod = date >= payPeriod.startDate && date <= payPeriod.endDate
                 val dayOfWeek = date.dayOfWeek.ordinal // 0=Monday, 6=Sunday
+                val isHoliday = holidays.contains(date)
 
                 CalendarDay(
                     day = date.dayOfMonth,
@@ -570,6 +644,7 @@ private fun CalendarGrid(
                     isInCurrentPeriod = isInCurrentPeriod,
                     isToday = date == today,
                     dayOfWeek = dayOfWeek,
+                    isHoliday = isHoliday,
                     onClick = { onDateSelected(date) }
                 )
             }
@@ -597,22 +672,23 @@ private fun CalendarDay(
     isInCurrentPeriod: Boolean = true,
     isToday: Boolean = false,
     dayOfWeek: Int, // 0=Monday, 5=Saturday, 6=Sunday
+    isHoliday: Boolean = false,
     onClick: () -> Unit
 ) {
     // 다크모드 확인: onSurface 색상이 밝으면 다크모드
     val isDarkMode = MaterialTheme.colorScheme.onSurface.red > 0.5f
 
-    // 주말 배경색 계산 (토요일: 파랑, 일요일: 빨강)
-    val weekendBackground = when (dayOfWeek) {
-        5 -> if (isDarkMode) {
+    // 주말 및 공휴일 배경색 계산 (토요일: 파랑, 일요일/공휴일: 빨강)
+    val weekendBackground = when {
+        isHoliday || dayOfWeek == 6 -> if (isDarkMode) {
+            Color(0xFFC62828).copy(alpha = 0.2f) // 일요일/공휴일 - 다크모드에서는 어두운 빨강 + 낮은 투명도
+        } else {
+            Color(0xFFFFEBEE).copy(alpha = 0.5f) // 일요일/공휴일 - 라이트모드: 연한 빨강
+        }
+        dayOfWeek == 5 -> if (isDarkMode) {
             Color(0xFF1565C0).copy(alpha = 0.2f) // 토요일 - 다크모드에서는 어두운 파랑 + 낮은 투명도
         } else {
             Color(0xFFE3F2FD).copy(alpha = 0.5f) // 토요일 - 라이트모드: 연한 파랑
-        }
-        6 -> if (isDarkMode) {
-            Color(0xFFC62828).copy(alpha = 0.2f) // 일요일 - 다크모드에서는 어두운 빨강 + 낮은 투명도
-        } else {
-            Color(0xFFFFEBEE).copy(alpha = 0.5f) // 일요일 - 라이트모드: 연한 빨강
         }
         else -> Color.Transparent
     }
@@ -676,6 +752,7 @@ private fun CalendarDay(
 private fun DailyTransactionCard(
     selectedDate: LocalDate?,
     transactions: List<Transaction>,
+    holidayNames: Map<LocalDate, String> = emptyMap(),
     isMoveMode: Boolean = false,
     transactionToMove: Transaction? = null,
     availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
@@ -752,11 +829,11 @@ private fun DailyTransactionCard(
                         Text(
                             text = if (selectedDate != null) {
                                 val count = dayTransactions.size
-                                if (count > 0) {
-                                    "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역 (${count}건)"
-                                } else {
-                                    "📝 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
-                                }
+                                val holidayName = holidayNames[selectedDate]
+                                val baseText = "${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
+                                val holidayText = if (holidayName != null) " ($holidayName)" else ""
+                                val countText = if (count > 0) " (${count}건)" else ""
+                                "📝 $baseText$holidayText$countText"
                             } else {
                                 "📝 날짜를 선택해서 메모 보기"
                             },
@@ -870,7 +947,7 @@ private fun TransactionItem(
                 Text(
                     text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
                         Utils.formatAmount(
-                            transaction.amount
+                            transaction.displayAmount
                         )
                     }원",
                     style = MaterialTheme.typography.bodySmall,
@@ -915,6 +992,157 @@ private fun TransactionItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
+            }
+        }
+    }
+}
+
+/**
+ * 년/월 선택 다이얼로그
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun YearMonthPickerDialog(
+    currentYear: Int,
+    currentMonth: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (year: Int, month: Int) -> Unit
+) {
+    var selectedYear by remember { mutableStateOf(currentYear) }
+    var selectedMonth by remember { mutableStateOf(currentMonth) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                // 제목
+                Text(
+                    text = "급여일 선택",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+
+                // 년도 선택
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "년도",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { selectedYear -= 1 }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowLeft,
+                                contentDescription = "이전 년도",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Text(
+                            text = "${selectedYear}년",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+
+                        IconButton(onClick = { selectedYear += 1 }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowRight,
+                                contentDescription = "다음 년도",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 월 선택
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "월",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+                            selectedMonth = if (selectedMonth == 1) 12 else selectedMonth - 1
+                        }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowLeft,
+                                contentDescription = "이전 월",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Text(
+                            text = "${selectedMonth}월",
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 32.dp)
+                        )
+
+                        IconButton(onClick = {
+                            selectedMonth = if (selectedMonth == 12) 1 else selectedMonth + 1
+                        }) {
+                            Icon(
+                                Icons.Default.KeyboardArrowRight,
+                                contentDescription = "다음 월",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 버튼
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("취소")
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    TextButton(onClick = {
+                        onConfirm(selectedYear, selectedMonth)
+                        onDismiss()
+                    }) {
+                        Text("확인")
+                    }
+                }
             }
         }
     }

@@ -89,12 +89,30 @@ class CategoryManagementViewModel(
         }
     }
 
-    fun deleteCategory(categoryId: String) {
+    fun showDeleteConfirmDialog(category: Category) {
+        uiState = uiState.copy(
+            isDeleteDialogVisible = true,
+            deletingCategory = category
+        )
+    }
+
+    fun hideDeleteConfirmDialog() {
+        uiState = uiState.copy(
+            isDeleteDialogVisible = false,
+            deletingCategory = null
+        )
+    }
+
+    fun confirmDelete() {
+        val categoryToDelete = uiState.deletingCategory ?: return
+
         viewModelScope.launch {
             try {
-                deleteCategoryUseCase(categoryId)
+                deleteCategoryUseCase(categoryToDelete.id)
+                hideDeleteConfirmDialog()
             } catch (e: Exception) {
                 uiState = uiState.copy(error = e.message)
+                hideDeleteConfirmDialog()
             }
         }
     }

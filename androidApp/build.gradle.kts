@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.play.publisher)
+    alias(libs.plugins.google.services)
 }
 
 // Play Store 배포 설정
@@ -12,7 +13,7 @@ play {
     serviceAccountCredentials.set(file("../play-store-credentials.json"))
     track.set("internal")  // internal, alpha, beta, production 중 선택
     defaultToAppBundles.set(true)  // AAB 파일 사용
-    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.DRAFT)  // Draft 상태로 업로드
+    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.COMPLETED)
     releaseName.set(provider { "${android.defaultConfig.versionCode} (${android.defaultConfig.versionName})" })
 }
 
@@ -23,7 +24,7 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 28
         targetSdk = 35
-        versionCode = 15
+        versionCode = 41
         versionName = "1.8"
     }
 
@@ -53,6 +54,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -67,6 +69,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        getByName("debug") {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -92,6 +98,15 @@ dependencies {
 
     // AdMob
     implementation("com.google.android.gms:play-services-ads:23.0.0")
+    //Meta Audience Network 어뎁터
+    implementation("com.google.ads.mediation:facebook:6.21.0.0")
+
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
 
     debugImplementation(libs.compose.ui.tooling)
 }

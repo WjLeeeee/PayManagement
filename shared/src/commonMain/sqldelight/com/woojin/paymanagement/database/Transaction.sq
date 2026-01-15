@@ -1,4 +1,4 @@
--- Schema version 12
+-- Schema version 15
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -21,6 +21,17 @@ CREATE TABLE ParsedTransactionEntity (
     createdAt INTEGER NOT NULL
 );
 
+-- 파싱 실패한 알림을 저장하는 테이블
+CREATE TABLE FailedNotificationEntity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    packageName TEXT NOT NULL,  -- 알림을 보낸 앱 패키지명
+    title TEXT NOT NULL,         -- 알림 제목
+    text TEXT NOT NULL,          -- 알림 내용
+    bigText TEXT,                -- 확장된 알림 내용
+    failureReason TEXT,          -- 실패 원인
+    createdAt INTEGER NOT NULL   -- 받은 시간
+);
+
 CREATE TABLE TransactionEntity (
     id TEXT NOT NULL PRIMARY KEY,
     amount REAL NOT NULL,
@@ -34,7 +45,6 @@ CREATE TABLE TransactionEntity (
     balanceCardId TEXT,
     giftCardId TEXT,
     cardName TEXT,
-    actualAmount REAL,
     settlementAmount REAL,
     isSettlement INTEGER NOT NULL DEFAULT 0
 );
@@ -96,9 +106,16 @@ CREATE TABLE RecurringTransactionEntity (
     lastExecutedDate TEXT  -- 마지막 실행 날짜 (YYYY-MM-DD)
 );
 
+CREATE TABLE HolidayEntity (
+    locdate TEXT NOT NULL PRIMARY KEY,  -- YYYYMMDD 형식
+    dateName TEXT NOT NULL,              -- 공휴일 이름
+    isHoliday TEXT NOT NULL,             -- Y 또는 N
+    year INTEGER NOT NULL                -- 빠른 조회를 위한 연도
+);
+
 insertTransaction:
-INSERT INTO TransactionEntity(id, amount, type, category, merchant, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName, actualAmount, settlementAmount, isSettlement)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO TransactionEntity(id, amount, type, category, merchant, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName, settlementAmount, isSettlement)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllTransactions:
 SELECT * FROM TransactionEntity
@@ -119,7 +136,7 @@ SELECT MIN(date) AS oldestDate FROM TransactionEntity;
 
 updateTransaction:
 UPDATE TransactionEntity
-SET amount = ?, type = ?, category = ?, merchant = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, actualAmount = ?, settlementAmount = ?, isSettlement = ?
+SET amount = ?, type = ?, category = ?, merchant = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, settlementAmount = ?, isSettlement = ?
 WHERE id = ?;
 
 deleteTransaction:
@@ -133,6 +150,14 @@ updateTransactionsCategoryName:
 UPDATE TransactionEntity
 SET category = ?
 WHERE category = ?;
+
+getSuggestedCategoryByMerchant:
+SELECT category, COUNT(*)
+FROM TransactionEntity
+WHERE merchant = ? AND type = 'EXPENSE'
+GROUP BY category
+ORDER BY COUNT(*) DESC
+LIMIT 1;
 
 -- BalanceCard 관련 쿼리들
 insertBalanceCard:
@@ -232,6 +257,10 @@ selectUnprocessedParsedTransactions:
 SELECT * FROM ParsedTransactionEntity
 WHERE isProcessed = 0
 ORDER BY createdAt DESC;
+
+selectParsedTransactionById:
+SELECT * FROM ParsedTransactionEntity
+WHERE id = ?;
 
 updateParsedTransactionProcessed:
 UPDATE ParsedTransactionEntity
@@ -370,3 +399,54 @@ WHERE id = ?;
 
 deleteAllRecurringTransactions:
 DELETE FROM RecurringTransactionEntity;
+
+-- Holiday 관련 쿼리들
+insertHoliday:
+INSERT OR REPLACE INTO HolidayEntity(locdate, dateName, isHoliday, year)
+VALUES (?, ?, ?, ?);
+
+selectHolidayByDate:
+SELECT * FROM HolidayEntity
+WHERE locdate = ?;
+
+selectHolidaysByYear:
+SELECT * FROM HolidayEntity
+WHERE year = ?
+ORDER BY locdate ASC;
+
+deleteHolidaysByYear:
+DELETE FROM HolidayEntity
+WHERE year = ?;
+
+deleteAllHolidays:
+DELETE FROM HolidayEntity;
+
+selectLatestHolidayDate:
+SELECT locdate FROM HolidayEntity
+ORDER BY locdate DESC
+LIMIT 1;
+
+-- FailedNotification 관련 쿼리들
+insertFailedNotification:
+INSERT INTO FailedNotificationEntity(packageName, title, text, bigText, failureReason, createdAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+selectAllFailedNotifications:
+SELECT * FROM FailedNotificationEntity
+ORDER BY createdAt DESC;
+
+selectRecentFailedNotifications:
+SELECT * FROM FailedNotificationEntity
+ORDER BY createdAt DESC
+LIMIT ?;
+
+deleteFailedNotification:
+DELETE FROM FailedNotificationEntity
+WHERE id = ?;
+
+deleteAllFailedNotifications:
+DELETE FROM FailedNotificationEntity;
+
+deleteOldFailedNotifications:
+DELETE FROM FailedNotificationEntity
+WHERE createdAt < ?;

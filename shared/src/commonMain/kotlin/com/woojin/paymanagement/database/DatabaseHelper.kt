@@ -9,6 +9,7 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.ParsedTransaction
+import com.woojin.paymanagement.data.FailedNotification
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.BudgetPlan
 import com.woojin.paymanagement.data.CategoryBudget
@@ -79,7 +80,6 @@ class DatabaseHelper(
             balanceCardId = transaction.balanceCardId,
             giftCardId = transaction.giftCardId,
             cardName = transaction.cardName,
-            actualAmount = transaction.actualAmount,
             settlementAmount = transaction.settlementAmount,
             isSettlement = if (transaction.isSettlement) 1L else 0L
         )
@@ -98,7 +98,6 @@ class DatabaseHelper(
             balanceCardId = transaction.balanceCardId,
             giftCardId = transaction.giftCardId,
             cardName = transaction.cardName,
-            actualAmount = transaction.actualAmount,
             settlementAmount = transaction.settlementAmount,
             isSettlement = if (transaction.isSettlement) 1L else 0L,
             id = transaction.id
@@ -115,6 +114,18 @@ class DatabaseHelper(
 
     suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String) {
         queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName)
+    }
+
+    /**
+     * merchant로 가장 많이 사용된 카테고리를 제안
+     * 카드 파싱된 거래에서 자동 카테고리 선택에 사용
+     */
+    suspend fun getSuggestedCategory(merchant: String): String? {
+        return try {
+            queries.getSuggestedCategoryByMerchant(merchant).executeAsOneOrNull()?.category
+        } catch (e: Exception) {
+            null
+        }
     }
 
     // BalanceCard 관련 메서드들
@@ -282,7 +293,15 @@ class DatabaseHelper(
             }
     }
 
-    suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction) {
+    suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction): Boolean {
+        // INSERT OR IGNORE는 중복 시 무시하므로, 실제로 삽입되었는지 확인
+        val existingTransaction = queries.selectParsedTransactionById(parsedTransaction.id).executeAsOneOrNull()
+
+        if (existingTransaction != null) {
+            // 이미 존재하는 경우 삽입 실패
+            return false
+        }
+
         queries.insertParsedTransaction(
             id = parsedTransaction.id,
             amount = parsedTransaction.amount,
@@ -292,6 +311,9 @@ class DatabaseHelper(
             isProcessed = if (parsedTransaction.isProcessed) 1L else 0L,
             createdAt = parsedTransaction.createdAt
         )
+
+        // 삽입 성공
+        return true
     }
 
     suspend fun markParsedTransactionAsProcessed(id: String) {
@@ -466,7 +488,6 @@ class DatabaseHelper(
             balanceCardId = this.balanceCardId,
             giftCardId = this.giftCardId,
             cardName = this.cardName,
-            actualAmount = this.actualAmount,
             settlementAmount = this.settlementAmount,
             isSettlement = this.isSettlement == 1L
         )
@@ -638,6 +659,83 @@ class DatabaseHelper(
             isActive = this.isActive == 1L,
             createdAt = this.createdAt,
             lastExecutedDate = this.lastExecutedDate
+        )
+    }
+
+    // Holiday 관련 메서드들
+    suspend fun insertHoliday(locdate: String, dateName: String, isHoliday: String, year: Long) {
+        queries.insertHoliday(
+            locdate = locdate,
+            dateName = dateName,
+            isHoliday = isHoliday,
+            year = year
+        )
+    }
+
+    suspend fun getHolidayByDate(date: String): HolidayEntity? {
+        return queries.selectHolidayByDate(date).executeAsOneOrNull()
+    }
+
+    suspend fun getHolidaysByYear(year: Long): List<HolidayEntity> {
+        return queries.selectHolidaysByYear(year).executeAsList()
+    }
+
+    suspend fun deleteHolidaysByYear(year: Long) {
+        queries.deleteHolidaysByYear(year)
+    }
+
+    suspend fun getLatestHolidayDate(): String? {
+        return queries.selectLatestHolidayDate().executeAsOneOrNull()
+    }
+
+    // FailedNotification 관련 메서드들
+    suspend fun insertFailedNotification(failedNotification: FailedNotification) {
+        queries.insertFailedNotification(
+            packageName = failedNotification.packageName,
+            title = failedNotification.title,
+            text = failedNotification.text,
+            bigText = failedNotification.bigText,
+            failureReason = failedNotification.failureReason,
+            createdAt = failedNotification.createdAt
+        )
+    }
+
+    fun getAllFailedNotifications(): Flow<List<FailedNotification>> {
+        return queries.selectAllFailedNotifications()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toFailedNotification() }
+            }
+    }
+
+    suspend fun getRecentFailedNotifications(limit: Long): List<FailedNotification> {
+        return queries.selectRecentFailedNotifications(limit)
+            .executeAsList()
+            .map { it.toFailedNotification() }
+    }
+
+    suspend fun deleteFailedNotification(id: Long) {
+        queries.deleteFailedNotification(id)
+    }
+
+    suspend fun deleteAllFailedNotifications() {
+        queries.deleteAllFailedNotifications()
+    }
+
+    suspend fun deleteOldFailedNotifications(beforeTimestamp: Long) {
+        queries.deleteOldFailedNotifications(beforeTimestamp)
+    }
+
+    private fun FailedNotificationEntity.toFailedNotification(): FailedNotification {
+        return FailedNotification(
+            id = this.id,
+            packageName = this.packageName,
+            title = this.title,
+            text = this.text,
+            bigText = this.bigText,
+            failureReason = this.failureReason,
+            createdAt = this.createdAt
         )
     }
 }

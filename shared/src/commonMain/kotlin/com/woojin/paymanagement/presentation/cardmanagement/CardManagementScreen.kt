@@ -301,8 +301,8 @@ private fun TransactionItem(
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = when (transaction.type) {
-                        TransactionType.INCOME -> "+${Utils.formatAmount(transaction.amount)}원"
-                        TransactionType.EXPENSE -> "-${Utils.formatAmount(transaction.amount)}원"
+                        TransactionType.INCOME -> "+${Utils.formatAmount(transaction.displayAmount)}원"
+                        TransactionType.EXPENSE -> "-${Utils.formatAmount(transaction.displayAmount)}원"
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,

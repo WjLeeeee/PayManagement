@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.presentation.statistics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.components.PieChart
 import com.woojin.paymanagement.utils.BackHandler
@@ -141,6 +143,29 @@ fun StatisticsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Investment Summary Card
+        // 전체 transactions에서 투자 관련 카테고리 데이터 계산
+        val investmentTransactions = statisticsData.transactions.filter { it.category == "투자" }
+        val lossCutTransactions = statisticsData.transactions.filter { it.category == "손절" }
+        val profitTransactions = statisticsData.transactions.filter { it.category == "익절" }
+        val dividendTransactions = statisticsData.transactions.filter { it.category == "배당금" }
+
+        val investmentAmount = investmentTransactions.sumOf { it.displayAmount }
+        val lossCutAmount = lossCutTransactions.sumOf { it.displayAmount }
+        val profitAmount = profitTransactions.sumOf { it.displayAmount }
+        val dividendAmount = dividendTransactions.sumOf { it.displayAmount }
+
+        if (investmentAmount > 0 || lossCutAmount > 0 || profitAmount > 0 || dividendAmount > 0) {
+            InvestmentSummaryCard(
+                investmentAmount = investmentAmount,
+                lossCutAmount = lossCutAmount,
+                profitAmount = profitAmount,
+                dividendAmount = dividendAmount
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
         // Income Chart
         statisticsData.chartData?.let { chartData ->
             if (chartData.incomeItems.isNotEmpty()) {
@@ -148,7 +173,9 @@ fun StatisticsScreen(
                     title = "수입 분석",
                     items = chartData.incomeItems,
                     total = chartData.totalIncome,
-                    availableCategories = uiState.availableCategories
+                    availableCategories = uiState.availableCategories,
+                    transactions = statisticsData.transactions,
+                    transactionType = TransactionType.INCOME
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -162,8 +189,30 @@ fun StatisticsScreen(
                     title = "지출 분석",
                     items = chartData.expenseItems,
                     total = chartData.totalExpense,
-                    availableCategories = uiState.availableCategories
+                    availableCategories = uiState.availableCategories,
+                    transactions = statisticsData.transactions,
+                    transactionType = TransactionType.EXPENSE
                 )
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+
+        // Investment Activity Chart (moved after Expense Chart)
+        if (investmentAmount > 0 || lossCutAmount > 0 || profitAmount > 0 || dividendAmount > 0) {
+            statisticsData.chartData?.let { chartData ->
+                if (chartData.investmentItems.isNotEmpty()) {
+                    ChartSection(
+                        title = "투자 활동 분석",
+                        items = chartData.investmentItems,
+                        total = chartData.totalInvestment,
+                        availableCategories = uiState.availableCategories,
+                        transactions = statisticsData.transactions,
+                        transactionType = TransactionType.INCOME, // 투자는 수입/지출 혼합 (더미값)
+                        groupSmallItems = false, // 투자 활동은 기타로 묶지 않고 모두 표시
+                        filterByType = false // 투자 활동은 타입 필터링 하지 않음 (수입/지출 모두 포함)
+                    )
+                }
             }
         }
 
@@ -384,6 +433,126 @@ private fun SummaryCard(
 }
 
 @Composable
+private fun InvestmentSummaryCard(
+    investmentAmount: Double,
+    lossCutAmount: Double,
+    profitAmount: Double,
+    dividendAmount: Double
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "📈 투자 활동 요약",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 한 줄로 표시
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // 투자
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "💹 투자",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${Utils.formatAmount(investmentAmount)}원",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // 손절
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "📉 손절",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Text(
+                            text = "-${Utils.formatAmount(lossCutAmount)}원",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    // 익절
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "📈 익절",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(profitAmount)}원",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    // 배당금
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = "💰 배당금",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "+${Utils.formatAmount(dividendAmount)}원",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun SummaryItem(
     label: String,
     amount: Double,
@@ -423,7 +592,11 @@ private fun ChartSection(
     title: String,
     items: List<com.woojin.paymanagement.data.ChartItem>,
     total: Double,
-    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
+    transactions: List<Transaction> = emptyList(),
+    transactionType: TransactionType,
+    groupSmallItems: Boolean = true, // 기본값은 true (기타로 묶음)
+    filterByType: Boolean = true // 기본값은 true (타입으로 필터링)
 ) {
     // 선택된 카테고리 상태
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -431,26 +604,31 @@ private fun ChartSection(
     // "기타" 색상을 먼저 가져오기
     val etcColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // 4% 미만 항목들을 "기타"로 묶기
-    val (processedItems, mainItems, smallItems) = remember(items, total, etcColor) {
-        val threshold = 4.0f
-        val mainItems = items.filter { it.percentage >= threshold }
-        val smallItems = items.filter { it.percentage < threshold }
-
-        if (smallItems.isEmpty()) {
+    // 3% 미만 항목들을 "기타"로 묶기 (groupSmallItems가 true일 때만)
+    val (processedItems, mainItems, smallItems) = remember(items, total, etcColor, groupSmallItems) {
+        if (!groupSmallItems) {
+            // 기타로 묶지 않고 모든 항목 표시
             Triple(items, items, emptyList())
         } else {
-            val etcAmount = smallItems.sumOf { it.amount.toDouble() }
-            val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
+            val threshold = 3.0f
+            val mainItems = items.filter { it.percentage >= threshold }
+            val smallItems = items.filter { it.percentage < threshold }
 
-            val etcItem = com.woojin.paymanagement.data.ChartItem(
-                category = "기타",
-                amount = etcAmount,
-                percentage = etcPercentage,
-                color = etcColor
-            )
+            if (smallItems.isEmpty()) {
+                Triple(items, items, emptyList())
+            } else {
+                val etcAmount = smallItems.sumOf { it.amount.toDouble() }
+                val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
 
-            Triple(mainItems + etcItem, mainItems, smallItems)
+                val etcItem = com.woojin.paymanagement.data.ChartItem(
+                    category = "기타",
+                    amount = etcAmount,
+                    percentage = etcPercentage,
+                    color = etcColor
+                )
+
+                Triple(mainItems + etcItem, mainItems, smallItems)
+            }
         }
     }
 
@@ -479,6 +657,7 @@ private fun ChartSection(
                     showLegend = false,
                     labelTextColor = MaterialTheme.colorScheme.onSurface,
                     valueLineColor = MaterialTheme.colorScheme.onSurface,
+                    selectedCategory = selectedCategory,
                     onItemSelected = { category ->
                         selectedCategory = category
                     }
@@ -492,11 +671,22 @@ private fun ChartSection(
                 ) {
                     // 주요 항목들 표시
                     mainItems.forEach { item ->
+                        val categoryTransactions = transactions.filter {
+                            if (filterByType) {
+                                it.category == item.category && it.type == transactionType
+                            } else {
+                                it.category == item.category
+                            }
+                        }.sortedBy { it.date }
+
                         ChartLegendItem(
                             item = item,
                             isSubItem = false,
                             isSelected = selectedCategory == item.category,
-                            availableCategories = availableCategories
+                            availableCategories = availableCategories,
+                            onClick = { selectedCategory = if (selectedCategory == item.category) null else item.category },
+                            transactions = categoryTransactions,
+                            transactionType = transactionType
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -516,18 +706,32 @@ private fun ChartSection(
                             ),
                             isSubItem = false,
                             isSelected = selectedCategory == "기타",
-                            availableCategories = availableCategories
+                            availableCategories = availableCategories,
+                            onClick = { selectedCategory = if (selectedCategory == "기타") null else "기타" },
+                            transactions = emptyList(),
+                            transactionType = transactionType
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         // 기타 내부 항목들 (들여쓰기)
                         smallItems.forEach { item ->
+                            val categoryTransactions = transactions.filter {
+                                if (filterByType) {
+                                    it.category == item.category && it.type == transactionType
+                                } else {
+                                    it.category == item.category
+                                }
+                            }.sortedBy { it.date }
+
                             ChartLegendItem(
                                 item = item,
                                 isSubItem = true,
                                 isSelected = selectedCategory == item.category,
-                                availableCategories = availableCategories
+                                availableCategories = availableCategories,
+                                onClick = { selectedCategory = if (selectedCategory == item.category) null else item.category },
+                                transactions = categoryTransactions,
+                                transactionType = transactionType
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -543,20 +747,27 @@ private fun ChartLegendItem(
     item: com.woojin.paymanagement.data.ChartItem,
     isSubItem: Boolean = false,
     isSelected: Boolean = false,
-    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
+    onClick: () -> Unit = {},
+    transactions: List<Transaction> = emptyList(),
+    transactionType: TransactionType
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = if (isSubItem) 24.dp else 0.dp)
-            .background(
-                color = if (isSelected) item.color.copy(alpha = 0.15f) else Color.Transparent,
-                shape = RoundedCornerShape(8.dp)
-            )
-            .padding(vertical = if (isSelected) 8.dp else 0.dp, horizontal = if (isSelected) 8.dp else 0.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = if (isSubItem) 24.dp else 0.dp)
+                .clickable { onClick() }
+                .background(
+                    color = if (isSelected) item.color.copy(alpha = 0.15f) else Color.Transparent,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .padding(vertical = if (isSelected) 8.dp else 0.dp, horizontal = if (isSelected) 8.dp else 0.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
@@ -605,12 +816,69 @@ private fun ChartLegendItem(
             }
         }
 
-        Text(
-            text = "${(item.percentage * 10).toInt() / 10.0}%",
-            style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-            fontWeight = if (isSelected) FontWeight.ExtraBold else if (isSubItem) FontWeight.Normal else FontWeight.Bold,
-            color = if (isSubItem) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-        )
+            Text(
+                text = "${(item.percentage * 10).toInt() / 10.0}%",
+                style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.ExtraBold else if (isSubItem) FontWeight.Normal else FontWeight.Bold,
+                color = if (isSubItem) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        // 거래 내역 확장 표시
+        androidx.compose.animation.AnimatedVisibility(
+            visible = isSelected && transactions.isNotEmpty()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = if (isSubItem) 48.dp else 24.dp, top = 8.dp, end = 8.dp, bottom = 4.dp)
+                    .background(
+                        color = item.color.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .padding(12.dp)
+            ) {
+                transactions.forEach { transaction ->
+                    val dateText = "${transaction.date.monthNumber}/${transaction.date.dayOfMonth.toString().padStart(2, '0')}"
+                    val amountText = Utils.formatAmount(transaction.displayAmount)
+
+                    // 실제 거래 타입에 따라 표시 (transactionType 파라미터가 아닌 transaction.type 사용)
+                    when (transaction.type) {
+                        TransactionType.INCOME -> {
+                            // 수입: 날짜 + 메모 (있으면) + 금액
+                            val displayText = if (transaction.memo.isNotBlank()) {
+                                "• $dateText - ${transaction.memo} (${amountText}원)"
+                            } else {
+                                "• $dateText (${amountText}원)"
+                            }
+                            Text(
+                                text = displayText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TransactionType.EXPENSE -> {
+                            // 지출: 날짜 + 사용처 + 메모 (있으면) + 금액
+                            val merchant = transaction.merchant ?: ""
+                            val displayText = if (transaction.memo.isNotBlank()) {
+                                "• $dateText - $merchant (${transaction.memo}) (${amountText}원)"
+                            } else {
+                                "• $dateText - $merchant (${amountText}원)"
+                            }
+                            Text(
+                                text = displayText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    if (transaction != transactions.last()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -78,9 +78,8 @@ fun CalculatorDialog(
     var selectedCategory by remember { mutableStateOf<String?>(null) }
     var calculatorResult by remember { mutableStateOf<CalculatorResult?>(null) }
 
-    // 날짜 선택 다이얼로그 상태
-    var showStartDatePicker by remember { mutableStateOf(false) }
-    var showEndDatePicker by remember { mutableStateOf(false) }
+    // 날짜 범위 선택 다이얼로그 상태
+    var showDateRangePicker by remember { mutableStateOf(false) }
 
     // 스크롤 상태
     val scrollState = rememberScrollState()
@@ -149,65 +148,48 @@ fun CalculatorDialog(
                         .verticalScroll(scrollState)
                 ) {
                     // 기간 설정
-                    Text(
-                        text = "기간 설정",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { showStartDatePicker = true }
-                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                "시작일",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                "${startDate.year}.${startDate.monthNumber}.${startDate.dayOfMonth}",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
                         Text(
-                            "~",
-                            modifier = Modifier.padding(horizontal = 8.dp),
+                            text = "기간 설정",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
 
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { showEndDatePicker = true }
-                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
-                                .padding(12.dp)
+                        OutlinedButton(
+                            onClick = { showDateRangePicker = true },
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                "종료일",
+                                "기간 수정",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                "${endDate.year}.${endDate.monthNumber}.${endDate.dayOfMonth}",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 선택된 기간 표시
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${startDate.year}.${startDate.monthNumber.toString().padStart(2, '0')}.${startDate.dayOfMonth.toString().padStart(2, '0')} ~ ${endDate.year}.${endDate.monthNumber.toString().padStart(2, '0')}.${endDate.dayOfMonth.toString().padStart(2, '0')}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -369,34 +351,18 @@ fun CalculatorDialog(
             }
         }
 
-        // 날짜 선택 다이얼로그들
-        if (showStartDatePicker) {
-            CalendarDatePickerDialog(
-                currentDate = startDate,
-                maxDate = today, // 오늘 이후 날짜 선택 불가
-                minDate = null,
-                onDateSelected = { newDate ->
-                    startDate = newDate
-                    // 시작일이 종료일보다 이후면 종료일을 시작일로 맞춤
-                    if (newDate > endDate) {
-                        endDate = newDate
-                    }
-                    showStartDatePicker = false
+        // 날짜 범위 선택 다이얼로그
+        if (showDateRangePicker) {
+            DateRangePickerDialog(
+                initialStartDate = startDate,
+                initialEndDate = endDate,
+                maxDate = today,
+                onDateRangeSelected = { newStartDate, newEndDate ->
+                    startDate = newStartDate
+                    endDate = newEndDate
+                    showDateRangePicker = false
                 },
-                onDismiss = { showStartDatePicker = false }
-            )
-        }
-
-        if (showEndDatePicker) {
-            CalendarDatePickerDialog(
-                currentDate = endDate,
-                maxDate = today, // 오늘 이후 날짜 선택 불가
-                minDate = startDate, // 시작일 이전 날짜 선택 불가
-                onDateSelected = { newDate ->
-                    endDate = newDate
-                    showEndDatePicker = false
-                },
-                onDismiss = { showEndDatePicker = false }
+                onDismiss = { showDateRangePicker = false }
             )
         }
     }
@@ -557,16 +523,17 @@ private fun TransactionDetailItem(detail: TransactionDetail) {
 }
 
 @Composable
-private fun CalendarDatePickerDialog(
-    currentDate: LocalDate,
-    maxDate: LocalDate? = null, // 선택 가능한 최대 날짜
-    minDate: LocalDate? = null, // 선택 가능한 최소 날짜
-    onDateSelected: (LocalDate) -> Unit,
+private fun DateRangePickerDialog(
+    initialStartDate: LocalDate,
+    initialEndDate: LocalDate,
+    maxDate: LocalDate? = null,
+    onDateRangeSelected: (LocalDate, LocalDate) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var displayMonth by remember { mutableStateOf(currentDate.monthNumber) }
-    var displayYear by remember { mutableStateOf(currentDate.year) }
-    var selectedDate by remember { mutableStateOf(currentDate) }
+    var displayMonth by remember { mutableStateOf(initialStartDate.monthNumber) }
+    var displayYear by remember { mutableStateOf(initialStartDate.year) }
+    var tempStartDate by remember { mutableStateOf<LocalDate?>(null) }
+    var tempEndDate by remember { mutableStateOf<LocalDate?>(null) }
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
     Dialog(onDismissRequest = onDismiss) {
@@ -669,12 +636,16 @@ private fun CalendarDatePickerDialog(
                     items(daysInMonth) { dayIndex ->
                         val day = dayIndex + 1
                         val date = LocalDate(displayYear, displayMonth, day)
-                        val isSelected = date == selectedDate
+
+                        // 날짜 선택 상태 확인
+                        val isStartDate = date == tempStartDate
+                        val isEndDate = date == tempEndDate
+                        val isInRange = tempStartDate != null && tempEndDate != null &&
+                                       date >= tempStartDate!! && date <= tempEndDate!!
                         val isToday = date == today
 
                         // 날짜 선택 가능 여부 체크
-                        val isDisabled =
-                            (maxDate != null && date > maxDate) || (minDate != null && date < minDate)
+                        val isDisabled = maxDate != null && date > maxDate
 
                         Box(
                             modifier = Modifier
@@ -682,12 +653,34 @@ private fun CalendarDatePickerDialog(
                                 .padding(2.dp)
                                 .clickable(enabled = !isDisabled) {
                                     if (!isDisabled) {
-                                        selectedDate = date
+                                        when {
+                                            // 첫 번째 클릭: 시작일 설정
+                                            tempStartDate == null -> {
+                                                tempStartDate = date
+                                                tempEndDate = null
+                                            }
+                                            // 두 번째 클릭: 종료일 설정
+                                            tempEndDate == null -> {
+                                                if (date >= tempStartDate!!) {
+                                                    tempEndDate = date
+                                                } else {
+                                                    // 시작일보다 이전 날짜를 선택하면 시작일을 새로 설정
+                                                    tempStartDate = date
+                                                    tempEndDate = null
+                                                }
+                                            }
+                                            // 이미 범위가 선택된 경우: 다시 시작
+                                            else -> {
+                                                tempStartDate = date
+                                                tempEndDate = null
+                                            }
+                                        }
                                     }
                                 }
                                 .background(
                                     when {
-                                        isSelected -> MaterialTheme.colorScheme.primary
+                                        isStartDate || isEndDate -> MaterialTheme.colorScheme.primary
+                                        isInRange -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                                         isToday -> MaterialTheme.colorScheme.surfaceVariant
                                         else -> Color.Transparent
                                     },
@@ -700,17 +693,36 @@ private fun CalendarDatePickerDialog(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = when {
                                     isDisabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                    isSelected -> Color.White
+                                    isStartDate || isEndDate -> Color.White
+                                    isInRange -> MaterialTheme.colorScheme.primary
                                     isToday -> MaterialTheme.colorScheme.onSurface
                                     else -> MaterialTheme.colorScheme.onSurface
                                 },
-                                fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (isStartDate || isEndDate || isToday) FontWeight.Bold else FontWeight.Normal
                             )
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
+
+                // 선택 안내 텍스트
+                Text(
+                    text = when {
+                        tempStartDate == null -> "시작일을 선택해주세요"
+                        tempEndDate == null -> "종료일을 선택해주세요"
+                        else -> "선택 완료: ${tempStartDate!!.year}.${tempStartDate!!.monthNumber.toString().padStart(2, '0')}.${tempStartDate!!.dayOfMonth.toString().padStart(2, '0')} ~ ${tempEndDate!!.year}.${tempEndDate!!.monthNumber.toString().padStart(2, '0')}.${tempEndDate!!.dayOfMonth.toString().padStart(2, '0')}"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (tempStartDate != null && tempEndDate != null)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Buttons
                 Row(
@@ -725,7 +737,12 @@ private fun CalendarDatePickerDialog(
                     }
 
                     Button(
-                        onClick = { onDateSelected(selectedDate) },
+                        onClick = {
+                            if (tempStartDate != null && tempEndDate != null) {
+                                onDateRangeSelected(tempStartDate!!, tempEndDate!!)
+                            }
+                        },
+                        enabled = tempStartDate != null && tempEndDate != null,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
