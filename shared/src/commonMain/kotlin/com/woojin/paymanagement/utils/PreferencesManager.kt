@@ -25,6 +25,10 @@ expect class PreferencesManager {
     fun setAdRemovalExpiryTime(expiryTime: Long)
     fun isAdRemovalActive(): Boolean // 현재 광고 제거 활성화 여부
 
+    // 쿠폰 관련
+    fun isCouponUsed(couponCode: String): Boolean
+    fun markCouponAsUsed(couponCode: String)
+
     // 마지막으로 체크한 급여 기간 시작일
     fun getLastCheckedPayPeriodStartDate(): String? // "yyyy-MM-dd" 형식
     fun setLastCheckedPayPeriodStartDate(date: String)

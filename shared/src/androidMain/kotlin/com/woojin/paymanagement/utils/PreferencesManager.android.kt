@@ -74,6 +74,15 @@ actual class PreferencesManager(private val context: Context) {
         return expiryTime > System.currentTimeMillis()
     }
 
+    // 쿠폰 관련
+    actual fun isCouponUsed(couponCode: String): Boolean {
+        return prefs.getBoolean("coupon_used_$couponCode", false)
+    }
+
+    actual fun markCouponAsUsed(couponCode: String) {
+        prefs.edit().putBoolean("coupon_used_$couponCode", true).apply()
+    }
+
     // 마지막으로 체크한 급여 기간 시작일
     actual fun getLastCheckedPayPeriodStartDate(): String? {
         return prefs.getString("last_checked_pay_period_start_date", null)

@@ -247,6 +247,7 @@ fun PayManagementApp(
             Screen.MonthlyComparison -> "월별_비교"
             Screen.TipDonation -> "팁_후원"
             Screen.AdRemoval -> "광고_제거"
+            Screen.Coupon -> "쿠폰_입력"
             Screen.RecurringTransaction -> "반복_거래"
         }
 
@@ -1376,6 +1377,40 @@ fun PayManagementApp(
                                                 )
                                             }
                                         }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        // 쿠폰 입력
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    navigateTo(Screen.Coupon)
+                                                    scope.launch { drawerState.close() }
+                                                }
+                                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                            horizontalArrangement = Arrangement.Start,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "🎫",
+                                                style = MaterialTheme.typography.bodyLarge
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column {
+                                                Text(
+                                                    text = "쿠폰 입력",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Text(
+                                                    text = "쿠폰 코드로 광고 제거",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1626,6 +1661,7 @@ fun PayManagementApp(
             CalendarScreen(
                 viewModel = calendarViewModel,
                 tutorialViewModel = tutorialViewModel,
+                preferencesManager = preferencesManager,
                 interstitialAdManager = interstitialAdManager,
                 onOpenDrawer = {
                     scope.launch {
@@ -2022,6 +2058,16 @@ fun PayManagementApp(
             )
         }
 
+        Screen.Coupon -> {
+            val couponViewModel = remember { koinInject<com.woojin.paymanagement.presentation.coupon.CouponViewModel>() }
+
+            com.woojin.paymanagement.presentation.coupon.CouponScreen(
+                viewModel = couponViewModel,
+                onNavigateBack = { navigateBack() },
+                onRequestRestart = onThemeChanged
+            )
+        }
+
         Screen.RecurringTransaction -> {
             val recurringTransactionViewModel = remember { koinInject<com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionViewModel>() }
 
@@ -2085,6 +2131,7 @@ enum class Screen {
     MonthlyComparison,
     TipDonation,
     AdRemoval,
+    Coupon,
     RecurringTransaction
 }
 

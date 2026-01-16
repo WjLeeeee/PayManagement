@@ -208,17 +208,23 @@ fun StatusBarOverlayScreen(
     // 네이티브 광고 상태 관리
     var nativeAdState by remember { mutableStateOf<com.woojin.paymanagement.android.ads.NativeAdState>(com.woojin.paymanagement.android.ads.NativeAdState.Loading) }
     val nativeAdManager = remember { com.woojin.paymanagement.android.ads.NativeAdManager(context) }
+    val preferencesManagerForAd = remember { PreferencesManager(context = context) }
 
-    // 광고 미리 로딩
+    // 광고 미리 로딩 (광고 제거가 활성화되지 않았을 때만)
     LaunchedEffect(Unit) {
-        nativeAdManager.loadAd(
-            onAdLoaded = { ad ->
-                nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Success(ad)
-            },
-            onAdFailed = { error ->
-                nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
-            }
-        )
+        if (!preferencesManagerForAd.isAdRemovalActive()) {
+            nativeAdManager.loadAd(
+                onAdLoaded = { ad ->
+                    nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Success(ad)
+                },
+                onAdFailed = { error ->
+                    nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+                }
+            )
+        } else {
+            // 광고 제거가 활성화되어 있으면 Failed 상태로 설정 (광고 없이 거래내역만 표시)
+            nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+        }
     }
 
     // 정리
