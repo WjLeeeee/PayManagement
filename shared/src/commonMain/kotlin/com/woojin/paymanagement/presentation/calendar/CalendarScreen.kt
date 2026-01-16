@@ -84,6 +84,7 @@ import kotlinx.datetime.todayIn
 fun CalendarScreen(
     viewModel: CalendarViewModel,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel,
+    preferencesManager: com.woojin.paymanagement.utils.PreferencesManager,
     interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     onOpenDrawer: () -> Unit = {},
     onDateDetailClick: (LocalDate) -> Unit = {},
@@ -346,10 +347,15 @@ fun CalendarScreen(
                 TextButton(
                     onClick = {
                         showExitDialog = false
-                        // 전면광고 표시 후 앱 종료
-                        interstitialAdManager?.showAd {
-                            // 광고 닫힌 후 앱 종료 콜백 호출
+                        // 광고 제거가 활성화되어 있으면 광고 없이 바로 종료
+                        if (preferencesManager.isAdRemovalActive()) {
                             onAppExit()
+                        } else {
+                            // 전면광고 표시 후 앱 종료
+                            interstitialAdManager?.showAd {
+                                // 광고 닫힌 후 앱 종료 콜백 호출
+                                onAppExit()
+                            }
                         }
                     }
                 ) {
