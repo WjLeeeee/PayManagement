@@ -16,6 +16,7 @@ uuid = "0.8.4"
 billing = "7.1.1"
 play-publisher = "3.10.1"
 firebase-bom = "33.7.0"
+firebase-crashlytics = "3.0.2"
 google-services = "4.4.2"
 ktor = "3.0.1"
 buildkonfig = "0.15.1"
@@ -50,6 +51,7 @@ uuid = { module = "com.benasher44:uuid", version.ref = "uuid" }
 billing = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics-ktx" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics-ktx" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
@@ -68,4 +70,5 @@ kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", vers
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 play-publisher = { id = "com.github.triplet.play", version.ref = "play-publisher" }
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics" }
 buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildkonfig" }

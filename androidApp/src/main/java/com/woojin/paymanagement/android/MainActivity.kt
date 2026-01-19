@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.ads.MobileAds
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.woojin.paymanagement.App
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.AppInfo
@@ -58,6 +59,14 @@ class MainActivity : ComponentActivity() {
         val firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         val analyticsLogger = Analytics.getInstance()
         analyticsLogger.initialize(firebaseAnalytics)
+
+        // Firebase Crashlytics 초기화
+        val crashlytics = FirebaseCrashlytics.getInstance()
+        // 릴리즈 빌드에서만 Crashlytics 활성화
+        crashlytics.setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+        // 앱 버전 정보 기록
+        crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
+        crashlytics.setCustomKey("version_code", BuildConfig.VERSION_CODE)
 
         // Intent로부터 네비게이션 플래그 확인
         handleIntent(intent)
