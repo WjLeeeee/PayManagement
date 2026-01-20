@@ -34,10 +34,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.ads.MobileAds
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.woojin.paymanagement.App
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.AppInfo
@@ -58,6 +63,14 @@ class MainActivity : ComponentActivity() {
         val firebaseAnalytics = FirebaseAnalytics.getInstance(this)
         val analyticsLogger = Analytics.getInstance()
         analyticsLogger.initialize(firebaseAnalytics)
+
+        // Firebase Crashlytics 초기화
+        val crashlytics = FirebaseCrashlytics.getInstance()
+        // 릴리즈 빌드에서만 Crashlytics 활성화
+        crashlytics.setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+        // 앱 버전 정보 기록
+        crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
+        crashlytics.setCustomKey("version_code", BuildConfig.VERSION_CODE)
 
         // Intent로부터 네비게이션 플래그 확인
         handleIntent(intent)
@@ -421,6 +434,14 @@ fun StatusBarOverlayScreen(
                             appVersion = "${appInfo.getVersionName()}(${appInfo.getVersionCode()})",
                             osVersion = android.os.Build.VERSION.RELEASE,
                             deviceModel = android.os.Build.MODEL
+                        )
+                    },
+                    permissionGuideImage = {
+                        Image(
+                            painter = painterResource(id = R.drawable.notification_setup_guide),
+                            contentDescription = "알림 설정 안내",
+                            modifier = Modifier.fillMaxWidth(),
+                            contentScale = ContentScale.FillWidth
                         )
                     }
                 )

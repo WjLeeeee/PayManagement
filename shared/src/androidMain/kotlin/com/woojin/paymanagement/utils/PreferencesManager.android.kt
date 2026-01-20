@@ -91,4 +91,13 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setLastCheckedPayPeriodStartDate(date: String) {
         prefs.edit().putString("last_checked_pay_period_start_date", date).apply()
     }
+
+    // 권한 안내 다이얼로그 표시 여부
+    actual fun isPermissionGuideShown(): Boolean {
+        return prefs.getBoolean("permission_guide_shown", false)
+    }
+
+    actual fun setPermissionGuideShown() {
+        prefs.edit().putBoolean("permission_guide_shown", true).apply()
+    }
 }

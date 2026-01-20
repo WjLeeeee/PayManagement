@@ -32,6 +32,10 @@ expect class PreferencesManager {
     // 마지막으로 체크한 급여 기간 시작일
     fun getLastCheckedPayPeriodStartDate(): String? // "yyyy-MM-dd" 형식
     fun setLastCheckedPayPeriodStartDate(date: String)
+
+    // 권한 안내 다이얼로그 표시 여부
+    fun isPermissionGuideShown(): Boolean
+    fun setPermissionGuideShown()
 }
 
 enum class PaydayAdjustment {
