@@ -39,6 +39,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -85,6 +86,7 @@ fun CalendarScreen(
     viewModel: CalendarViewModel,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel,
     preferencesManager: com.woojin.paymanagement.utils.PreferencesManager,
+    notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker? = null,
     interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     onOpenDrawer: () -> Unit = {},
     onDateDetailClick: (LocalDate) -> Unit = {},
@@ -92,13 +94,32 @@ fun CalendarScreen(
     onAddTransactionClick: () -> Unit = {},
     onPayPeriodChanged: (PayPeriod) -> Unit = {},
     onParsedTransactionsClick: () -> Unit = {},
-    onAppExit: () -> Unit = {}
+    onAppExit: () -> Unit = {},
+    onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
+    permissionGuideImage: @Composable (() -> Unit)? = null
 ) {
     val uiState = viewModel.uiState
     val tutorialUiState = tutorialViewModel.uiState
 
     // 뒤로가기 핸들링을 위한 상태
     var showExitDialog by remember { mutableStateOf(false) }
+
+    // 권한 안내 다이얼로그 상태
+    var showPermissionGuideDialog by remember { mutableStateOf(false) }
+
+    // 튜토리얼 완료 후 권한 안내 다이얼로그 표시
+    LaunchedEffect(tutorialUiState.shouldShowTutorial) {
+        // 튜토리얼이 완료되었고, 권한 안내를 아직 보여주지 않았다면
+        if (!tutorialUiState.shouldShowTutorial &&
+            preferencesManager.isCalendarTutorialCompleted() &&
+            !preferencesManager.isPermissionGuideShown() &&
+            notificationPermissionChecker != null
+        ) {
+            // 약간의 딜레이 후 다이얼로그 표시
+            kotlinx.coroutines.delay(500)
+            showPermissionGuideDialog = true
+        }
+    }
 
     // 네비게이션바 높이 계산
     val density = LocalDensity.current
@@ -367,6 +388,63 @@ fun CalendarScreen(
                     Text("취소")
                 }
             }
+        )
+    }
+
+    // 권한 안내 다이얼로그
+    if (showPermissionGuideDialog && notificationPermissionChecker != null) {
+        AlertDialog(
+            onDismissRequest = {
+                // 바깥 클릭 시 닫지 않음 (닫기 버튼으로만 닫기)
+            },
+            title = null,
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // 이미지를 가득 채워서 표시
+                    permissionGuideImage?.invoke()
+                }
+            },
+            confirmButton = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // 다시 안보기 버튼 (왼쪽)
+                    TextButton(
+                        onClick = {
+                            preferencesManager.setPermissionGuideShown()
+                            showPermissionGuideDialog = false
+                        }
+                    ) {
+                        Text("닫기")
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    // 파싱 권한 버튼 (오른쪽)
+                    TextButton(
+                        onClick = {
+                            notificationPermissionChecker.openListenerSettings()
+                        }
+                    ) {
+                        Text("파싱권한")
+                    }
+
+                    // 푸시 권한 버튼 (오른쪽)
+                    TextButton(
+                        onClick = {
+                            notificationPermissionChecker.openAppNotificationSettings()
+                        }
+                    ) {
+                        Text("푸시권한")
+                    }
+                }
+            },
+            dismissButton = null
         )
     }
 }

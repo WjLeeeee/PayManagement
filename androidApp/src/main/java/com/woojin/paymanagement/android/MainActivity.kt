@@ -34,6 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.ads.MobileAds
@@ -430,6 +434,14 @@ fun StatusBarOverlayScreen(
                             appVersion = "${appInfo.getVersionName()}(${appInfo.getVersionCode()})",
                             osVersion = android.os.Build.VERSION.RELEASE,
                             deviceModel = android.os.Build.MODEL
+                        )
+                    },
+                    permissionGuideImage = {
+                        Image(
+                            painter = painterResource(id = R.drawable.notification_setup_guide),
+                            contentDescription = "알림 설정 안내",
+                            modifier = Modifier.fillMaxWidth(),
+                            contentScale = ContentScale.FillWidth
                         )
                     }
                 )

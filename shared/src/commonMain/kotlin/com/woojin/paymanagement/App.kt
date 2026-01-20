@@ -116,7 +116,8 @@ fun App(
     onAppExit: () -> Unit = {},
     onContactSupport: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
-    hasNativeAd: Boolean = false
+    hasNativeAd: Boolean = false,
+    permissionGuideImage: @Composable (() -> Unit)? = null
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -145,7 +146,8 @@ fun App(
                 onAppExit = onAppExit,
                 onContactSupport = onContactSupport,
                 nativeAdContent = nativeAdContent,
-                hasNativeAd = hasNativeAd
+                hasNativeAd = hasNativeAd,
+                permissionGuideImage = permissionGuideImage
             )
         } else {
             // 로딩 화면 또는 빈 화면
@@ -207,7 +209,8 @@ fun PayManagementApp(
     onAppExit: () -> Unit = {},
     onContactSupport: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
-    hasNativeAd: Boolean = false
+    hasNativeAd: Boolean = false,
+    permissionGuideImage: @Composable (() -> Unit)? = null
 ) {
     // DI로 의존성 주입받기
     val preferencesManager: PreferencesManager = koinInject()
@@ -1636,6 +1639,7 @@ fun PayManagementApp(
             // Koin에서 ViewModel 주입 (remember로 상태 유지)
             val calendarViewModel = remember { koinInject<com.woojin.paymanagement.presentation.calendar.CalendarViewModel>() }
             val tutorialViewModel = remember { koinInject<com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel>() }
+            val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
 
             // ViewModel 초기화
             LaunchedEffect(Unit) {
@@ -1662,7 +1666,10 @@ fun PayManagementApp(
                 viewModel = calendarViewModel,
                 tutorialViewModel = tutorialViewModel,
                 preferencesManager = preferencesManager,
+                notificationPermissionChecker = notificationPermissionChecker,
                 interstitialAdManager = interstitialAdManager,
+                onRequestPostNotificationPermission = onRequestPostNotificationPermission,
+                permissionGuideImage = permissionGuideImage,
                 onOpenDrawer = {
                     scope.launch {
                         drawerState.open()
