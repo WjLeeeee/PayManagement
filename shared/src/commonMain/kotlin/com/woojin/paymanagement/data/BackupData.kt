@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class BackupData(
-    val version: Int = 4, // 백업 데이터 버전 (v4: budget template system)
+    val version: Int = 5, // 백업 데이터 버전 (v5: recurring transactions)
     val exportDate: String = "", // 내보내기 날짜
     val payday: Int = 0, // 월급날
     val paydayAdjustment: String = "NONE", // 월급날 조정 (enum name)
@@ -16,7 +16,8 @@ data class BackupData(
     val giftCards: List<GiftCardBackup> = emptyList(),
     val categories: List<CategoryBackup> = emptyList(), // v3부터 추가
     val budgetPlans: List<BudgetPlanBackup> = emptyList(), // v3부터 추가
-    val categoryBudgets: List<CategoryBudgetBackup> = emptyList() // v3부터 추가
+    val categoryBudgets: List<CategoryBudgetBackup> = emptyList(), // v3부터 추가
+    val recurringTransactions: List<RecurringTransactionBackup> = emptyList() // v5부터 추가
 )
 
 @Serializable
@@ -89,4 +90,24 @@ data class CategoryBudgetBackup(
     val categoryEmoji: String,
     val allocatedAmount: Double,
     val memo: String? = null // v3부터 추가
+)
+
+@Serializable
+data class RecurringTransactionBackup(
+    val id: String,
+    val type: String, // "INCOME" or "EXPENSE"
+    val category: String,
+    val amount: Double,
+    val merchant: String,
+    val memo: String = "",
+    val paymentMethod: String,
+    val balanceCardId: String? = null,
+    val giftCardId: String? = null,
+    val pattern: String, // "MONTHLY" or "WEEKLY"
+    val dayOfMonth: Int? = null,
+    val dayOfWeek: Int? = null,
+    val weekendHandling: String = "AS_IS",
+    val isActive: Boolean = true,
+    val createdAt: Long,
+    val lastExecutedDate: String? = null
 )

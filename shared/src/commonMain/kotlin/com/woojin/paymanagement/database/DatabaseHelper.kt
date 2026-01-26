@@ -637,6 +637,10 @@ class DatabaseHelper(
         queries.deleteRecurringTransaction(id)
     }
 
+    suspend fun deleteAllRecurringTransactions() {
+        queries.deleteAllRecurringTransactions()
+    }
+
     private fun RecurringTransactionEntity.toRecurringTransaction(): RecurringTransaction {
         return RecurringTransaction(
             id = this.id,
