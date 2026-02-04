@@ -43,7 +43,11 @@ import androidx.core.app.ActivityCompat
 import com.google.android.gms.ads.MobileAds
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.woojin.paymanagement.android.config.RemoteConfigManager
 import com.woojin.paymanagement.App
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.AppInfo
 import com.woojin.paymanagement.utils.FileHandler
@@ -55,6 +59,9 @@ class MainActivity : ComponentActivity() {
 
     private var shouldNavigateToParsedTransactions by mutableStateOf(false)
     private var shouldNavigateToRecurringTransactions by mutableStateOf(false)
+
+    // Remote Config 관리자
+    private lateinit var remoteConfigManager: RemoteConfigManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +78,16 @@ class MainActivity : ComponentActivity() {
         // 앱 버전 정보 기록
         crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
         crashlytics.setCustomKey("version_code", BuildConfig.VERSION_CODE)
+
+        // Firebase Remote Config 초기화
+        remoteConfigManager = RemoteConfigManager()
+        CoroutineScope(Dispatchers.IO).launch {
+            remoteConfigManager.fetchAndActivate()
+
+            // 테스트용 로그
+            val featureType = remoteConfigManager.getString(RemoteConfigManager.KEY_FEATURE_TYPE)
+            android.util.Log.d("RemoteConfig", "feature_type = $featureType")
+        }
 
         // Intent로부터 네비게이션 플래그 확인
         handleIntent(intent)
