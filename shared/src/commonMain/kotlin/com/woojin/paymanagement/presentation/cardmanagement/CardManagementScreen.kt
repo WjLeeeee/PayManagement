@@ -22,6 +22,7 @@ import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.Utils
 import com.woojin.paymanagement.utils.PlatformBackHandler
 import kotlinx.datetime.LocalDate
@@ -33,6 +34,7 @@ fun CardManagementScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState = viewModel.uiState
+    val strings = LocalStrings.current
 
     // Android 뒤로가기 버튼 처리
     PlatformBackHandler(onBack = onNavigateBack)
@@ -40,10 +42,10 @@ fun CardManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("잔액권/상품권 관리") },
+                title = { Text(strings.balanceGiftCardManagement) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로가기")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, strings.goBack)
                     }
                 },
                 windowInsets = WindowInsets(0.dp)
@@ -60,12 +62,12 @@ fun CardManagementScreen(
                 Tab(
                     selected = uiState.selectedTab == CardTab.ACTIVE,
                     onClick = { viewModel.selectTab(CardTab.ACTIVE) },
-                    text = { Text("사용중") }
+                    text = { Text(strings.activeTab) }
                 )
                 Tab(
                     selected = uiState.selectedTab == CardTab.INACTIVE,
                     onClick = { viewModel.selectTab(CardTab.INACTIVE) },
-                    text = { Text("사용완료") }
+                    text = { Text(strings.completedTab) }
                 )
             }
 
@@ -77,9 +79,9 @@ fun CardManagementScreen(
                 ) {
                     Text(
                         text = if (uiState.selectedTab == CardTab.ACTIVE) {
-                            "사용중인 카드가 없습니다"
+                            strings.noActiveCards
                         } else {
-                            "사용완료된 카드가 없습니다"
+                            strings.noCompletedCards
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -129,6 +131,8 @@ private fun BalanceCardItem(
     transactions: List<Transaction>,
     onClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -175,7 +179,7 @@ private fun BalanceCardItem(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = "잔액: ${Utils.formatAmount(balanceCard.currentBalance)}원",
+                            text = strings.balanceDisplay(Utils.formatAmount(balanceCard.currentBalance)),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -200,6 +204,8 @@ private fun BalanceCardItem(
 private fun TransactionHistorySection(
     transactions: List<Transaction>
 ) {
+    val strings = LocalStrings.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -212,7 +218,7 @@ private fun TransactionHistorySection(
         )
 
         Text(
-            text = "거래 내역",
+            text = strings.transactionHistory,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -227,7 +233,7 @@ private fun TransactionHistorySection(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "거래 내역이 없습니다",
+                    text = strings.noTransactionHistory,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -248,6 +254,8 @@ private fun TransactionHistorySection(
 private fun TransactionItem(
     transaction: Transaction
 ) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -301,8 +309,8 @@ private fun TransactionItem(
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = when (transaction.type) {
-                        TransactionType.INCOME -> "+${Utils.formatAmount(transaction.displayAmount)}원"
-                        TransactionType.EXPENSE -> "-${Utils.formatAmount(transaction.displayAmount)}원"
+                        TransactionType.INCOME -> strings.incomeAmountDisplay(Utils.formatAmount(transaction.displayAmount))
+                        TransactionType.EXPENSE -> strings.expenseAmountDisplay(Utils.formatAmount(transaction.displayAmount))
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -327,6 +335,8 @@ private fun GiftCardItem(
     transactions: List<Transaction>,
     onClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -373,7 +383,7 @@ private fun GiftCardItem(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = "잔액: ${Utils.formatAmount(giftCard.remainingAmount)}원",
+                            text = strings.balanceDisplay(Utils.formatAmount(giftCard.remainingAmount)),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary

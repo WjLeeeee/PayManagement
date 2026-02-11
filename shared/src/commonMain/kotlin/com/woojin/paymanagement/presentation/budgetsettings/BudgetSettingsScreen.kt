@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.utils.Utils
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PlatformBackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,6 +36,7 @@ fun BudgetSettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToCategoryManagement: () -> Unit
 ) {
+    val strings = LocalStrings.current
     val uiState = viewModel.uiState
 
     // 시스템 뒤로가기 버튼 처리
@@ -43,10 +45,10 @@ fun BudgetSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("예산 관리") },
+                title = { Text(strings.budgetManagement) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "뒤로가기")
+                        Icon(Icons.Default.ArrowBack, strings.goBack)
                     }
                 },
                 windowInsets = WindowInsets(0.dp)
@@ -63,12 +65,12 @@ fun BudgetSettingsScreen(
                 Tab(
                     selected = uiState.selectedTab == BudgetTab.SETTINGS,
                     onClick = { viewModel.selectTab(BudgetTab.SETTINGS) },
-                    text = { Text("예산 설정") }
+                    text = { Text(strings.budgetSettings) }
                 )
                 Tab(
                     selected = uiState.selectedTab == BudgetTab.PROGRESS,
                     onClick = { viewModel.selectTab(BudgetTab.PROGRESS) },
-                    text = { Text("사용 현황") }
+                    text = { Text(strings.usageStatus) }
                 )
             }
 
@@ -112,11 +114,11 @@ fun BudgetSettingsScreen(
         if (uiState.error != null) {
             AlertDialog(
                 onDismissRequest = { viewModel.clearError() },
-                title = { Text("오류") },
+                title = { Text(strings.error) },
                 text = { Text(uiState.error) },
                 confirmButton = {
                     TextButton(onClick = { viewModel.clearError() }) {
-                        Text("확인")
+                        Text(strings.confirm)
                     }
                 }
             )
@@ -130,6 +132,7 @@ fun BudgetSettingsTab(
     viewModel: BudgetSettingsViewModel,
     onNavigateToCategoryManagement: () -> Unit
 ) {
+    val strings = LocalStrings.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -169,7 +172,7 @@ fun BudgetSettingsTab(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "💵 급여",
+                                text = "💵 ${strings.monthlySalary}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -183,7 +186,7 @@ fun BudgetSettingsTab(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Edit,
-                                        contentDescription = "급여 수정",
+                                        contentDescription = strings.editSalary,
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -199,15 +202,15 @@ fun BudgetSettingsTab(
                                 value = uiState.monthlySalary,
                                 onValueChange = { viewModel.updateMonthlySalary(it) },
                                 modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("급여를 입력하세요") },
-                                suffix = { Text("원") },
+                                placeholder = { Text(strings.enterSalary) },
+                                suffix = { Text(strings.currencySymbol) },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
                                 trailingIcon = {
                                     IconButton(onClick = { viewModel.toggleSalaryEditMode() }) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = "완료",
+                                            contentDescription = strings.done,
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
@@ -216,9 +219,9 @@ fun BudgetSettingsTab(
                         } else {
                             // 표시 모드: Text 표시
                             val salaryText = if (uiState.monthlySalary.text.isEmpty()) {
-                                "급여를 설정하세요"
+                                strings.setSalary
                             } else {
-                                "${uiState.monthlySalary.text}원"
+                                strings.amountWithUnit(uiState.monthlySalary.text)
                             }
 
                             Text(
@@ -266,7 +269,7 @@ fun BudgetSettingsTab(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "📝 지출 계획",
+                            text = "📝 ${strings.spendingPlan}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -277,11 +280,11 @@ fun BudgetSettingsTab(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "계획 합계:",
+                                text = strings.plannedTotal,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${Utils.formatAmount(uiState.totalAllocated)}원",
+                                text = strings.amountWithUnit(Utils.formatAmount(uiState.totalAllocated)),
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -292,11 +295,11 @@ fun BudgetSettingsTab(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "남은 금액:",
+                                text = strings.remainingLabel,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${Utils.formatAmount(uiState.unallocated)}원",
+                                text = strings.amountWithUnit(Utils.formatAmount(uiState.unallocated)),
                                 fontWeight = FontWeight.Bold,
                                 color = if (uiState.unallocated < 0) {
                                     MaterialTheme.colorScheme.error
@@ -354,7 +357,7 @@ fun BudgetSettingsTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "+ 카테고리 추가",
+                            text = strings.addCategoryLabel,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold
@@ -406,7 +409,7 @@ fun BudgetSettingsTab(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "카테고리 관리",
+                            text = strings.categoryManagement,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -422,6 +425,7 @@ fun BudgetProgressTab(
     uiState: BudgetSettingsUiState,
     viewModel: BudgetSettingsViewModel
 ) {
+    val strings = LocalStrings.current
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -507,7 +511,7 @@ fun BudgetProgressTab(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "💰 전체 진행도",
+                            text = "💰 ${strings.overallProgress}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -520,12 +524,12 @@ fun BudgetProgressTab(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "급여:",
+                                text = strings.salaryLabel,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             val salaryAmount = uiState.monthlySalary.text.replace(",", "").toDoubleOrNull() ?: 0.0
                             Text(
-                                text = "${Utils.formatAmount(salaryAmount)}원",
+                                text = strings.amountWithUnit(Utils.formatAmount(salaryAmount)),
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -537,11 +541,11 @@ fun BudgetProgressTab(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "예산:",
+                                text = strings.budgetLabel,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${Utils.formatAmount(uiState.totalAllocated)}원",
+                                text = strings.amountWithUnit(Utils.formatAmount(uiState.totalAllocated)),
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -552,14 +556,14 @@ fun BudgetProgressTab(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "사용:",
+                                text = strings.usedLabel,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             val percentage = if (uiState.totalAllocated > 0) {
                                 ((uiState.totalSpent / uiState.totalAllocated) * 100).toInt()
                             } else 0
                             Text(
-                                text = "${Utils.formatAmount(uiState.totalSpent)}원 ($percentage%)",
+                                text = "${strings.amountWithUnit(Utils.formatAmount(uiState.totalSpent))} ($percentage%)",
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -577,11 +581,11 @@ fun BudgetProgressTab(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "남음:",
+                                text = strings.remainingLabel,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${Utils.formatAmount(uiState.totalAllocated - uiState.totalSpent)}원",
+                                text = strings.amountWithUnit(Utils.formatAmount(uiState.totalAllocated - uiState.totalSpent)),
                                 fontWeight = FontWeight.Bold,
                                 color = if (uiState.totalSpent > uiState.totalAllocated) {
                                     MaterialTheme.colorScheme.error
@@ -603,7 +607,7 @@ fun BudgetProgressTab(
         if (uiState.categoryBudgets.isEmpty()) {
             item {
                 Text(
-                    text = "예산이 설정된 카테고리가 없습니다.\n\"예산 설정\" 탭에서 카테고리를 추가해주세요.",
+                    text = strings.noBudgetCategoriesMessage,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -622,6 +626,7 @@ fun CategoryBudgetCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -670,7 +675,7 @@ fun CategoryBudgetCard(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${Utils.formatAmount(budget.categoryBudget.allocatedAmount)}원",
+                                text = strings.amountWithUnit(Utils.formatAmount(budget.categoryBudget.allocatedAmount)),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -679,10 +684,10 @@ fun CategoryBudgetCard(
 
                     Row {
                         IconButton(onClick = onEdit) {
-                            Icon(Icons.Default.Edit, "수정", tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.Edit, strings.edit, tint = MaterialTheme.colorScheme.primary)
                         }
                         IconButton(onClick = onDelete) {
-                            Icon(Icons.Default.Delete, "삭제", tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Delete, strings.delete, tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -700,7 +705,7 @@ fun CategoryBudgetCard(
                             modifier = Modifier.padding(12.dp)
                         ) {
                             Text(
-                                text = "포함된 카테고리:",
+                                text = strings.includedCategories,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -730,7 +735,7 @@ fun CategoryBudgetCard(
                                 modifier = Modifier.padding(12.dp)
                             ) {
                                 Text(
-                                    text = "메모",
+                                    text = strings.memo,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.SemiBold
@@ -754,6 +759,7 @@ fun CategoryBudgetCard(
 fun CategoryProgressCard(
     budget: CategoryBudgetWithProgress
 ) {
+    val strings = LocalStrings.current
     val progressColor = when {
         budget.progress < 0.7f -> MaterialTheme.colorScheme.primary
         budget.progress < 0.9f -> MaterialTheme.colorScheme.tertiary
@@ -810,11 +816,11 @@ fun CategoryProgressCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "예산:",
+                        text = strings.budgetLabel,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "${Utils.formatAmount(budget.categoryBudget.allocatedAmount)}원",
+                        text = strings.amountWithUnit(Utils.formatAmount(budget.categoryBudget.allocatedAmount)),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -825,12 +831,12 @@ fun CategoryProgressCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "사용:",
+                        text = strings.usedLabel,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     val percentage = (budget.progress * 100).toInt()
                     Text(
-                        text = "${Utils.formatAmount(budget.spentAmount)}원 ($percentage%)",
+                        text = "${strings.amountWithUnit(Utils.formatAmount(budget.spentAmount))} ($percentage%)",
                         fontWeight = FontWeight.Bold,
                         color = progressColor
                     )
@@ -849,11 +855,11 @@ fun CategoryProgressCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (budget.isOverBudget) "초과:" else "남음:",
+                        text = if (budget.isOverBudget) strings.exceededLabel else strings.remainingLabel,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "${Utils.formatAmount(kotlin.math.abs(budget.remainingAmount))}원",
+                        text = strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(budget.remainingAmount))),
                         fontWeight = FontWeight.Bold,
                         color = if (budget.isOverBudget) {
                             MaterialTheme.colorScheme.error
@@ -876,7 +882,7 @@ fun CategoryProgressCard(
                             modifier = Modifier.padding(12.dp)
                         ) {
                             Text(
-                                text = "카테고리별 지출:",
+                                text = strings.categorySpending,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold
@@ -894,7 +900,7 @@ fun CategoryProgressCard(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = "${Utils.formatAmount(spent)}원",
+                                        text = strings.amountWithUnit(Utils.formatAmount(spent)),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -908,13 +914,13 @@ fun CategoryProgressCard(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = "  └─ 총:",
+                                    text = "  └─ ${strings.totalLabel}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "${Utils.formatAmount(budget.spentAmount)}원",
+                                    text = strings.amountWithUnit(Utils.formatAmount(budget.spentAmount)),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = progressColor
@@ -939,9 +945,10 @@ fun AddCategoryBudgetDialog(
     onMemoChanged: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
+    val strings = LocalStrings.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("카테고리 예산 추가") },
+        title = { Text(strings.addCategoryBudget) },
         text = {
             LazyColumn(
                 modifier = Modifier
@@ -950,7 +957,7 @@ fun AddCategoryBudgetDialog(
             ) {
                 item {
                     Text(
-                        text = "카테고리 선택 (복수 선택 가능)",
+                        text = strings.selectCategoriesMultiple,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -965,7 +972,7 @@ fun AddCategoryBudgetDialog(
                 item {
                     if (uiState.availableCategories.isEmpty()) {
                         Text(
-                            text = "추가할 수 있는 카테고리가 없습니다.",
+                            text = strings.noCategoriesAvailable,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(8.dp)
@@ -1039,7 +1046,7 @@ fun AddCategoryBudgetDialog(
                                 style = MaterialTheme.typography.headlineSmall
                             )
                             Text(
-                                text = "그룹명 입력",
+                                text = strings.groupNameInput,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -1056,7 +1063,7 @@ fun AddCategoryBudgetDialog(
                             value = uiState.groupName,
                             onValueChange = onGroupNameChanged,
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text("그룹명") },
+                            label = { Text(strings.groupNameLabel) },
                             placeholder = {
                                 Text(uiState.selectedCategories.joinToString(", ") { it.name })
                             },
@@ -1075,7 +1082,7 @@ fun AddCategoryBudgetDialog(
 
                 item {
                     Text(
-                        text = "배분 금액",
+                        text = strings.allocatedAmount,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1091,8 +1098,8 @@ fun AddCategoryBudgetDialog(
                         value = uiState.newBudgetAmount,
                         onValueChange = onAmountChanged,
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("금액을 입력하세요") },
-                        suffix = { Text("원") },
+                        placeholder = { Text(strings.enterAmountPlaceholder) },
+                        suffix = { Text(strings.currencySymbol) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -1108,7 +1115,7 @@ fun AddCategoryBudgetDialog(
 
                 item {
                     Text(
-                        text = "메모 (선택사항)",
+                        text = strings.memoOptional,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -1143,12 +1150,12 @@ fun AddCategoryBudgetDialog(
                 onClick = onConfirm,
                 enabled = uiState.selectedCategories.isNotEmpty() && uiState.newBudgetAmount.text.isNotEmpty()
             ) {
-                Text("추가")
+                Text(strings.add)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("취소")
+                Text(strings.cancel)
             }
         }
     )
@@ -1162,11 +1169,12 @@ fun EditCategoryBudgetDialog(
     onMemoChanged: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
+    val strings = LocalStrings.current
     val budget = uiState.editingBudget ?: return
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("${budget.categoryBudget.categoryEmoji} ${budget.categoryBudget.categoryName} 예산 수정") },
+        title = { Text(strings.editBudgetTitle(budget.categoryBudget.categoryEmoji, budget.categoryBudget.categoryName)) },
         text = {
             Column(
                 modifier = Modifier
@@ -1174,7 +1182,7 @@ fun EditCategoryBudgetDialog(
                     .heightIn(max = 400.dp)
             ) {
                 Text(
-                    text = "배분 금액",
+                    text = strings.allocatedAmount,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -1183,8 +1191,8 @@ fun EditCategoryBudgetDialog(
                     value = uiState.editAmount,
                     onValueChange = onAmountChanged,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("금액을 입력하세요") },
-                    suffix = { Text("원") },
+                    placeholder = { Text(strings.enterAmountPlaceholder) },
+                    suffix = { Text(strings.currencySymbol) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1196,7 +1204,7 @@ fun EditCategoryBudgetDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "메모 (선택사항)",
+                    text = strings.memoOptional,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -1219,12 +1227,12 @@ fun EditCategoryBudgetDialog(
                 onClick = onConfirm,
                 enabled = uiState.editAmount.text.isNotEmpty()
             ) {
-                Text("수정")
+                Text(strings.edit)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("취소")
+                Text(strings.cancel)
             }
         }
     )

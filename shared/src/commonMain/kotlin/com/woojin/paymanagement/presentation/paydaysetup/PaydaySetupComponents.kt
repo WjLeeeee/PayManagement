@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PaydayAdjustment
 
 @Composable
@@ -59,8 +60,9 @@ fun PaydaySelector(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
+        val strings = LocalStrings.current
         Text(
-            text = "월급날을 선택해주세요",
+            text = strings.selectPaydayPrompt,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
@@ -92,8 +94,9 @@ fun PaydayAdjustmentSelector(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
+        val strings = LocalStrings.current
         Text(
-            text = "월급날이 주말/공휴일인 경우",
+            text = strings.paydayOnWeekendHoliday,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
@@ -136,8 +139,9 @@ fun PaydaySetupButton(
                 modifier = Modifier.size(24.dp)
             )
         } else {
+            val strings = LocalStrings.current
             Text(
-                text = "설정 완료",
+                text = strings.setupComplete,
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
@@ -171,8 +175,9 @@ fun ErrorMessage(
                 modifier = Modifier.weight(1f)
             )
 
+            val strings = LocalStrings.current
             TextButton(onClick = onDismiss) {
-                Text("닫기", color = MaterialTheme.colorScheme.error)
+                Text(strings.close, color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -232,10 +237,11 @@ private fun AdjustmentOption(
                 selectedColor = MaterialTheme.colorScheme.primary
             )
         )
+        val strings = LocalStrings.current
         Text(
             text = when (adjustment) {
-                PaydayAdjustment.BEFORE_WEEKEND -> "이전 평일에 지급"
-                PaydayAdjustment.AFTER_WEEKEND -> "이후 평일에 지급"
+                PaydayAdjustment.BEFORE_WEEKEND -> strings.payBeforeWeekday
+                PaydayAdjustment.AFTER_WEEKEND -> strings.payAfterWeekday
             },
             modifier = Modifier.padding(start = 16.dp),
             style = MaterialTheme.typography.bodyLarge,

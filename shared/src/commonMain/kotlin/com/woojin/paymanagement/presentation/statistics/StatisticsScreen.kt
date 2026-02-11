@@ -53,6 +53,7 @@ import com.woojin.paymanagement.presentation.components.PieChart
 import com.woojin.paymanagement.utils.BackHandler
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
+import com.woojin.paymanagement.strings.LocalStrings
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -64,6 +65,8 @@ fun StatisticsScreen(
     onBack: () -> Unit,
     viewModel: StatisticsViewModel
 ) {
+    val strings = LocalStrings.current
+
     // 시스템 뒤로가기 버튼 처리
     BackHandler(onBack = onBack)
 
@@ -106,13 +109,13 @@ fun StatisticsScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "뒤로가기",
+                    contentDescription = strings.goBack,
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
 
             Text(
-                text = "통계",
+                text = strings.statistics,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -170,7 +173,7 @@ fun StatisticsScreen(
         statisticsData.chartData?.let { chartData ->
             if (chartData.incomeItems.isNotEmpty()) {
                 ChartSection(
-                    title = "수입 분석",
+                    title = strings.incomeAnalysis,
                     items = chartData.incomeItems,
                     total = chartData.totalIncome,
                     availableCategories = uiState.availableCategories,
@@ -186,7 +189,7 @@ fun StatisticsScreen(
         statisticsData.chartData?.let { chartData ->
             if (chartData.expenseItems.isNotEmpty()) {
                 ChartSection(
-                    title = "지출 분석",
+                    title = strings.expenseAnalysis,
                     items = chartData.expenseItems,
                     total = chartData.totalExpense,
                     availableCategories = uiState.availableCategories,
@@ -203,7 +206,7 @@ fun StatisticsScreen(
             statisticsData.chartData?.let { chartData ->
                 if (chartData.investmentItems.isNotEmpty()) {
                     ChartSection(
-                        title = "투자 활동 분석",
+                        title = strings.investmentActivityAnalysis,
                         items = chartData.investmentItems,
                         total = chartData.totalInvestment,
                         availableCategories = uiState.availableCategories,
@@ -224,7 +227,7 @@ fun StatisticsScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "결제 수단별 분석",
+                    text = strings.paymentMethodAnalysis,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -238,7 +241,7 @@ fun StatisticsScreen(
 
         if (statisticsData.chartData?.let { it.incomeItems.isEmpty() && it.expenseItems.isEmpty() } == true) {
             Text(
-                text = "이 기간에 거래 내역이 없습니다",
+                text = strings.noTransactionsForPeriod,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -308,6 +311,7 @@ private fun SummaryCard(
     totalIncome: Double,
     totalExpense: Double
 ) {
+    val strings = LocalStrings.current
     val balance = totalIncome - totalExpense
 
     Card(
@@ -333,7 +337,7 @@ private fun SummaryCard(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "📊 급여 기간 요약",
+                    text = "📊 ${strings.payPeriodSummary}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -356,13 +360,13 @@ private fun SummaryCard(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "수입",
+                                text = strings.income,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Text(
-                            text = "+${Utils.formatAmount(totalIncome)}원",
+                            text = "+${strings.amountWithUnit(Utils.formatAmount(totalIncome))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -380,13 +384,13 @@ private fun SummaryCard(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "지출",
+                                text = strings.expense,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
                         Text(
-                            text = "-${Utils.formatAmount(totalExpense)}원",
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(totalExpense))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -404,7 +408,7 @@ private fun SummaryCard(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "잔액",
+                                text = strings.balance,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -416,7 +420,7 @@ private fun SummaryCard(
                                     balance < 0 -> "-"
                                     else -> ""
                                 }
-                            }${Utils.formatAmount(kotlin.math.abs(balance))}원",
+                            }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = when {
@@ -439,6 +443,7 @@ private fun InvestmentSummaryCard(
     profitAmount: Double,
     dividendAmount: Double
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -462,7 +467,7 @@ private fun InvestmentSummaryCard(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "📈 투자 활동 요약",
+                    text = "📈 ${strings.investmentActivitySummary}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -481,12 +486,12 @@ private fun InvestmentSummaryCard(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = "💹 투자",
+                            text = "💹 ${strings.investment}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${Utils.formatAmount(investmentAmount)}원",
+                            text = strings.amountWithUnit(Utils.formatAmount(investmentAmount)),
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -499,12 +504,12 @@ private fun InvestmentSummaryCard(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = "📉 손절",
+                            text = "📉 ${strings.stopLoss}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error
                         )
                         Text(
-                            text = "-${Utils.formatAmount(lossCutAmount)}원",
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(lossCutAmount))}",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -517,12 +522,12 @@ private fun InvestmentSummaryCard(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = "📈 익절",
+                            text = "📈 ${strings.profitTaking}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "+${Utils.formatAmount(profitAmount)}원",
+                            text = "+${strings.amountWithUnit(Utils.formatAmount(profitAmount))}",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -535,12 +540,12 @@ private fun InvestmentSummaryCard(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = "💰 배당금",
+                            text = "💰 ${strings.dividend}",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "+${Utils.formatAmount(dividendAmount)}원",
+                            text = "+${strings.amountWithUnit(Utils.formatAmount(dividendAmount))}",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -558,6 +563,7 @@ private fun SummaryItem(
     amount: Double,
     color: Color
 ) {
+    val strings = LocalStrings.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -566,18 +572,17 @@ private fun SummaryItem(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-//            text = "${if (amount > 0 && label != "잔액") "+" else ""}${Utils.formatAmount(amount)}원",
             text = when {
-                label == "잔액" && amount > 0 -> "+${Utils.formatAmount(amount)}원"
-                label == "잔액" && amount < 0 -> "-${Utils.formatAmount(kotlin.math.abs(amount))}원"
-                label == "잔액" -> "${Utils.formatAmount(amount)}원"
-                amount > 0 -> "+${Utils.formatAmount(amount)}원"
-                amount < 0 -> "-${Utils.formatAmount(amount)}원"
-                else -> "${Utils.formatAmount(amount)}원"
+                label == strings.balance && amount > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(amount))}"
+                label == strings.balance && amount < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(amount)))}"
+                label == strings.balance -> strings.amountWithUnit(Utils.formatAmount(amount))
+                amount > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(amount))}"
+                amount < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(amount))}"
+                else -> strings.amountWithUnit(Utils.formatAmount(amount))
 
             },
             style = MaterialTheme.typography.titleMedium,
@@ -598,6 +603,7 @@ private fun ChartSection(
     groupSmallItems: Boolean = true, // 기본값은 true (기타로 묶음)
     filterByType: Boolean = true // 기본값은 true (타입으로 필터링)
 ) {
+    val strings = LocalStrings.current
     // 선택된 카테고리 상태
     var selectedCategory by remember { mutableStateOf<String?>(null) }
 
@@ -621,7 +627,7 @@ private fun ChartSection(
                 val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
 
                 val etcItem = com.woojin.paymanagement.data.ChartItem(
-                    category = "기타",
+                    category = strings.other,
                     amount = etcAmount,
                     percentage = etcPercentage,
                     color = etcColor
@@ -699,15 +705,15 @@ private fun ChartSection(
 
                         ChartLegendItem(
                             item = com.woojin.paymanagement.data.ChartItem(
-                                category = "기타",
+                                category = strings.other,
                                 amount = etcTotal,
                                 percentage = etcPercentage,
                                 color = etcColor
                             ),
                             isSubItem = false,
-                            isSelected = selectedCategory == "기타",
+                            isSelected = selectedCategory == strings.other,
                             availableCategories = availableCategories,
-                            onClick = { selectedCategory = if (selectedCategory == "기타") null else "기타" },
+                            onClick = { selectedCategory = if (selectedCategory == strings.other) null else strings.other },
                             transactions = emptyList(),
                             transactionType = transactionType
                         )
@@ -752,6 +758,7 @@ private fun ChartLegendItem(
     transactions: List<Transaction> = emptyList(),
     transactionType: TransactionType
 ) {
+    val strings = LocalStrings.current
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -808,7 +815,7 @@ private fun ChartLegendItem(
                     )
                 }
                 Text(
-                    text = "${Utils.formatAmount(item.amount)}원",
+                    text = strings.amountWithUnit(Utils.formatAmount(item.amount)),
                     style = if (isSelected) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                     color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
@@ -847,9 +854,9 @@ private fun ChartLegendItem(
                         TransactionType.INCOME -> {
                             // 수입: 날짜 + 메모 (있으면) + 금액
                             val displayText = if (transaction.memo.isNotBlank()) {
-                                "• $dateText - ${transaction.memo} (${amountText}원)"
+                                "• $dateText - ${transaction.memo} (${strings.amountWithUnit(amountText)})"
                             } else {
-                                "• $dateText (${amountText}원)"
+                                "• $dateText (${strings.amountWithUnit(amountText)})"
                             }
                             Text(
                                 text = displayText,
@@ -861,9 +868,9 @@ private fun ChartLegendItem(
                             // 지출: 날짜 + 사용처 + 메모 (있으면) + 금액
                             val merchant = transaction.merchant ?: ""
                             val displayText = if (transaction.memo.isNotBlank()) {
-                                "• $dateText - $merchant (${transaction.memo}) (${amountText}원)"
+                                "• $dateText - $merchant (${transaction.memo}) (${strings.amountWithUnit(amountText)})"
                             } else {
-                                "• $dateText - $merchant (${amountText}원)"
+                                "• $dateText - $merchant (${strings.amountWithUnit(amountText)})"
                             }
                             Text(
                                 text = displayText,
@@ -928,6 +935,7 @@ private fun CashSummaryCard(
     income: Double,
     expense: Double
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -951,7 +959,7 @@ private fun CashSummaryCard(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "💰 현금",
+                    text = "💰 ${strings.cash}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -965,12 +973,12 @@ private fun CashSummaryCard(
                 ) {
                     Column {
                         Text(
-                            text = "수입",
+                            text = strings.income,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "+${Utils.formatAmount(income)}원",
+                            text = "+${strings.amountWithUnit(Utils.formatAmount(income))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -979,12 +987,12 @@ private fun CashSummaryCard(
 
                     Column {
                         Text(
-                            text = "지출",
+                            text = strings.expense,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "-${Utils.formatAmount(expense)}원",
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -993,16 +1001,16 @@ private fun CashSummaryCard(
 
                     Column {
                         Text(
-                            text = "차액",
+                            text = strings.differenceAmount,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val balance = income - expense
                         Text(
                             text = when {
-                                balance > 0 -> "+${Utils.formatAmount(balance)}원"
-                                balance < 0 -> "-${Utils.formatAmount(kotlin.math.abs(balance))}원"
-                                else -> "${Utils.formatAmount(balance)}원"
+                                balance > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(balance))}"
+                                balance < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}"
+                                else -> strings.amountWithUnit(Utils.formatAmount(balance))
                             },
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
@@ -1025,6 +1033,7 @@ private fun CardSummaryCard(
     actualExpense: Double,
     settlementIncome: Double
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1048,7 +1057,7 @@ private fun CardSummaryCard(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "💳 카드",
+                    text = "💳 ${strings.card}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -1063,12 +1072,12 @@ private fun CardSummaryCard(
                     // 지출 - 항상 표시
                     Column {
                         Text(
-                            text = "지출",
+                            text = strings.expense,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "-${Utils.formatAmount(expense)}원",
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -1079,12 +1088,12 @@ private fun CardSummaryCard(
                     Column {
                         if (actualExpense != expense) {
                             Text(
-                                text = "실제 사용",
+                                text = strings.actualUsage,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "-${Utils.formatAmount(actualExpense)}원",
+                                text = "-${strings.amountWithUnit(Utils.formatAmount(actualExpense))}",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1106,12 +1115,12 @@ private fun CardSummaryCard(
                     Column {
                         if (settlementIncome > 0) {
                             Text(
-                                text = "정산수입",
+                                text = strings.settlementIncome,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "+${Utils.formatAmount(settlementIncome)}원",
+                                text = "+${strings.amountWithUnit(Utils.formatAmount(settlementIncome))}",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
@@ -1138,6 +1147,7 @@ private fun CardSummaryCard(
 private fun BalanceCardSummaryCard(
     balanceCard: BalanceCardSummary
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1175,12 +1185,12 @@ private fun BalanceCardSummaryCard(
                 ) {
                     Column {
                         Text(
-                            text = "충전",
+                            text = strings.charge,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "+${Utils.formatAmount(balanceCard.income)}원",
+                            text = "+${strings.amountWithUnit(Utils.formatAmount(balanceCard.income))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -1189,12 +1199,12 @@ private fun BalanceCardSummaryCard(
 
                     Column {
                         Text(
-                            text = "사용",
+                            text = strings.usage,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "-${Utils.formatAmount(balanceCard.expense)}원",
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(balanceCard.expense))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -1203,12 +1213,12 @@ private fun BalanceCardSummaryCard(
 
                     Column {
                         Text(
-                            text = "잔액",
+                            text = strings.balance,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${Utils.formatAmount(balanceCard.currentBalance)}원",
+                            text = strings.amountWithUnit(Utils.formatAmount(balanceCard.currentBalance)),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -1224,6 +1234,7 @@ private fun BalanceCardSummaryCard(
 private fun GiftCardSummaryCard(
     giftCard: GiftCardSummary
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1261,12 +1272,12 @@ private fun GiftCardSummaryCard(
                 ) {
                     Column {
                         Text(
-                            text = "구매",
+                            text = strings.purchase,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "+${Utils.formatAmount(giftCard.income)}원",
+                            text = "+${strings.amountWithUnit(Utils.formatAmount(giftCard.income))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -1275,12 +1286,12 @@ private fun GiftCardSummaryCard(
 
                     Column {
                         Text(
-                            text = "사용",
+                            text = strings.usage,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "-${Utils.formatAmount(giftCard.expense)}원",
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(giftCard.expense))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error
@@ -1289,12 +1300,12 @@ private fun GiftCardSummaryCard(
 
                     Column {
                         Text(
-                            text = "잔액",
+                            text = strings.balance,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${Utils.formatAmount(giftCard.currentBalance)}원",
+                            text = strings.amountWithUnit(Utils.formatAmount(giftCard.currentBalance)),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -1311,6 +1322,7 @@ private fun OtherPaymentSummaryCard(
     income: Double,
     expense: Double
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -1334,7 +1346,7 @@ private fun OtherPaymentSummaryCard(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "📦 기타",
+                    text = "📦 ${strings.other}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -1348,12 +1360,12 @@ private fun OtherPaymentSummaryCard(
                 ) {
                     Column {
                         Text(
-                            text = "수입",
+                            text = strings.income,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "+${Utils.formatAmount(income)}원",
+                            text = "+${strings.amountWithUnit(Utils.formatAmount(income))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -1362,12 +1374,12 @@ private fun OtherPaymentSummaryCard(
 
                     Column {
                         Text(
-                            text = "지출",
+                            text = strings.expense,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "-${Utils.formatAmount(expense)}원",
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error

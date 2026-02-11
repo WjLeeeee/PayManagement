@@ -41,6 +41,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -74,6 +75,9 @@ import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
 import com.woojin.paymanagement.utils.LifecycleObserverHelper
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.utils.ThemeMode
+import com.woojin.paymanagement.strings.Language
+import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.strings.ProvideStrings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -127,9 +131,12 @@ fun App(
         isKoinInitialized = true
     }
 
+    var languageCode by remember { mutableStateOf(preferencesManager.getLanguageCode()) }
+
     MaterialTheme {
         if (isKoinInitialized) {
-            PayManagementApp(
+            ProvideStrings(languageCode) {
+                PayManagementApp(
                 modifier = modifier,
                 interstitialAdManager = interstitialAdManager,
                 shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
@@ -145,10 +152,15 @@ fun App(
                 fileHandler = fileHandler,
                 onAppExit = onAppExit,
                 onContactSupport = onContactSupport,
+                onLanguageChanged = { newCode ->
+                    preferencesManager.setLanguageCode(newCode)
+                    languageCode = newCode
+                },
                 nativeAdContent = nativeAdContent,
                 hasNativeAd = hasNativeAd,
                 permissionGuideImage = permissionGuideImage
             )
+            }
         } else {
             // 로딩 화면 또는 빈 화면
         }
@@ -208,6 +220,7 @@ fun PayManagementApp(
     fileHandler: com.woojin.paymanagement.utils.FileHandler? = null,
     onAppExit: () -> Unit = {},
     onContactSupport: () -> Unit = {},
+    onLanguageChanged: ((String) -> Unit)? = null,
     nativeAdContent: @Composable () -> Unit = {},
     hasNativeAd: Boolean = false,
     permissionGuideImage: @Composable (() -> Unit)? = null
@@ -217,6 +230,7 @@ fun PayManagementApp(
     val databaseHelper: DatabaseHelper = koinInject()
     val categoryRepository: com.woojin.paymanagement.domain.repository.CategoryRepository = koinInject()
     val scope = rememberCoroutineScope()
+    val strings = LocalStrings.current
 
     // 초기 카테고리 설정
     LaunchedEffect(Unit) {
@@ -294,7 +308,7 @@ fun PayManagementApp(
             scope.launch {
                 val result = snackbarHostState.showSnackbar(
                     message = message,
-                    actionLabel = "확인",
+                    actionLabel = strings.confirm,
                     withDismissAction = false,
                     duration = androidx.compose.material3.SnackbarDuration.Short
                 )
@@ -314,7 +328,7 @@ fun PayManagementApp(
             scope.launch {
                 val result = snackbarHostState.showSnackbar(
                     message = message,
-                    actionLabel = "확인",
+                    actionLabel = strings.confirm,
                     withDismissAction = false,
                     duration = androidx.compose.material3.SnackbarDuration.Short
                 )
@@ -343,7 +357,7 @@ fun PayManagementApp(
 
             if (lastChecked != null && lastChecked != currentStartDate) {
                 // 급여 기간이 변경됨!
-                payPeriodChangedMessage = "새로운 급여일이 시작됐어요! 지난 달과 비교해보세요 📊"
+                payPeriodChangedMessage = strings.newPayPeriodStarted + " 📊"
             }
 
             // 현재 기간 저장
@@ -420,20 +434,20 @@ fun PayManagementApp(
     if (showListenerPermissionDialog) {
         AlertDialog(
             onDismissRequest = { showListenerPermissionDialog = false },
-            title = { Text("알림 리스너 권한 필요") },
-            text = { Text("카드 알림을 감지하려면 알림 리스너 권한이 필요합니다.\n\n설정 화면으로 이동하시겠습니까?") },
+            title = { Text(strings.notificationListenerPermission) },
+            text = { Text(strings.notificationListenerPermissionDesc) },
             confirmButton = {
                 Button(onClick = {
                     showListenerPermissionDialog = false
                     val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
                     notificationPermissionChecker.openListenerSettings()
                 }) {
-                    Text("설정하기")
+                    Text(strings.goToSettings)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showListenerPermissionDialog = false }) {
-                    Text("취소")
+                    Text(strings.cancel)
                 }
             }
         )
@@ -443,20 +457,20 @@ fun PayManagementApp(
     if (showPostPermissionDialog) {
         AlertDialog(
             onDismissRequest = { showPostPermissionDialog = false },
-            title = { Text("알림 전송 권한 필요") },
-            text = { Text("앱 알림을 표시하려면 알림 전송 권한이 필요합니다.\n\n설정 화면으로 이동하시겠습니까?") },
+            title = { Text(strings.postNotificationPermission) },
+            text = { Text(strings.postNotificationPermissionDesc) },
             confirmButton = {
                 Button(onClick = {
                     showPostPermissionDialog = false
                     val notificationPermissionChecker = koinInject<com.woojin.paymanagement.utils.NotificationPermissionChecker>()
                     notificationPermissionChecker.openAppNotificationSettings()
                 }) {
-                    Text("설정하기")
+                    Text(strings.goToSettings)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPostPermissionDialog = false }) {
-                    Text("취소")
+                    Text(strings.cancel)
                 }
             }
         )
@@ -468,6 +482,7 @@ fun PayManagementApp(
     var currentThemeMode by remember { mutableStateOf(preferencesManager.getThemeMode()) }
     var showPaydayChangeDialog by remember { mutableStateOf(false) }
     var showCalculatorDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     // 테마 설정 다이얼로그
     if (showThemeDialog) {
@@ -482,25 +497,71 @@ fun PayManagementApp(
         )
     }
 
+    // 언어 선택 다이얼로그
+    if (showLanguageDialog) {
+        val currentLang = preferencesManager.getLanguageCode()
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(strings.selectLanguage) },
+            text = {
+                Column {
+                    listOf(
+                        "ko" to strings.korean,
+                        "en" to strings.english
+                    ).forEach { (code, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onLanguageChanged?.invoke(code)
+                                    showLanguageDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = currentLang == code,
+                                onClick = {
+                                    onLanguageChanged?.invoke(code)
+                                    showLanguageDialog = false
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog = false }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
+
     // 월급날 변경 다이얼로그
     if (showPaydayChangeDialog) {
         AlertDialog(
             onDismissRequest = { showPaydayChangeDialog = false },
-            title = { Text("월급날 변경") },
+            title = { Text(strings.paydayChange) },
             text = {
-                Text("월급날을 변경하시겠습니까?\n월급날 설정 화면으로 이동합니다.")
+                Text(strings.paydayChangeConfirm + "\n" + strings.paydayChangeDesc)
             },
             confirmButton = {
                 Button(onClick = {
                     showPaydayChangeDialog = false
                     navigateTo(Screen.PaydaySetup)
                 }) {
-                    Text("변경하기")
+                    Text(strings.goToPaydaySettings)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPaydayChangeDialog = false }) {
-                    Text("취소")
+                    Text(strings.cancel)
                 }
             }
         )
@@ -533,7 +594,7 @@ fun PayManagementApp(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "설정",
+                                text = strings.settings,
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -548,7 +609,7 @@ fun PayManagementApp(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
-                                    contentDescription = "닫기",
+                                    contentDescription = strings.close,
                                     tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
@@ -574,12 +635,12 @@ fun PayManagementApp(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "월급날 변경",
+                                            text = strings.paydayChange,
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
                                         Text(
-                                            text = "${preferencesManager.getPayday()}일",
+                                            text = strings.paydayDisplay(preferencesManager.getPayday()),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.primary
                                         )
@@ -635,7 +696,7 @@ fun PayManagementApp(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "푸시 알림",
+                                            text = strings.pushNotifications,
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -644,7 +705,7 @@ fun PayManagementApp(
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (expandedMenu == ExpandableMenu.NOTIFICATION) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.NOTIFICATION) strings.fold else strings.expand,
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -686,12 +747,12 @@ fun PayManagementApp(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = "카드 알림 감지",
+                                                text = strings.cardNotificationDetection,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "다른 앱의 카드 알림을 파싱",
+                                                text = strings.cardNotificationDetectionDesc,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -731,12 +792,12 @@ fun PayManagementApp(
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = "앱 알림",
+                                                text = strings.appNotification,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "앱에서 알림 받기",
+                                                text = strings.appNotificationDesc,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -771,7 +832,7 @@ fun PayManagementApp(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "데이터 관리",
+                                            text = strings.dataManagement,
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -780,7 +841,7 @@ fun PayManagementApp(
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT) strings.fold else strings.expand,
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -828,16 +889,16 @@ fun PayManagementApp(
                                                             fileName = fileName,
                                                             jsonContent = jsonString,
                                                             onSuccess = {
-                                                                showExportMessage = "데이터를 성공적으로 내보냈습니다"
+                                                                showExportMessage = strings.exportSuccess
                                                                 scope.launch { drawerState.close() }
                                                             },
                                                             onError = { error ->
-                                                                showExportMessage = "내보내기 실패: $error"
+                                                                showExportMessage = "${strings.exportFailed}: $error"
                                                             }
                                                         )
                                                         onLaunchSaveFile(fileName)
                                                     }.onFailure { error ->
-                                                        showExportMessage = "내보내기 실패: ${error.message}"
+                                                        showExportMessage = "${strings.exportFailed}: ${error.message}"
                                                     }
                                                 }
                                             }
@@ -852,12 +913,12 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = "내보내기",
+                                                text = strings.exportData,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "전체 데이터를 JSON 파일로 저장",
+                                                text = strings.exportDataDesc,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -889,12 +950,12 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = "가져오기",
+                                                text = strings.importData,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "JSON 파일에서 데이터 복원",
+                                                text = strings.importDataDesc,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -905,8 +966,8 @@ fun PayManagementApp(
                                     if (showReplaceConfirmDialog) {
                                         AlertDialog(
                                             onDismissRequest = { showReplaceConfirmDialog = false },
-                                            title = { Text("데이터 가져오기") },
-                                            text = { Text("⚠️ JSON 파일에 포함된 데이터를 가져옵니다.\n기존 데이터는 삭제됩니다.\n\n계속하시겠습니까?") },
+                                            title = { Text(strings.importConfirm) },
+                                            text = { Text(strings.importConfirmDesc) },
                                             confirmButton = {
                                                 Button(onClick = {
                                                     showReplaceConfirmDialog = false
@@ -915,25 +976,25 @@ fun PayManagementApp(
                                                             scope.launch {
                                                                 val result = importDataUseCase(jsonString, replaceExisting = true)
                                                                 result.onSuccess { importResult ->
-                                                                    showImportMessage = "데이터 가져오기 완료\n성공: ${importResult.successCount}, 실패: ${importResult.failureCount}"
+                                                                    showImportMessage = strings.importResult(importResult.successCount, importResult.failureCount)
                                                                     scope.launch { drawerState.close() }
                                                                 }.onFailure { error ->
-                                                                    showImportMessage = "가져오기 실패: ${error.message}"
+                                                                    showImportMessage = "${strings.importFailed}: ${error.message}"
                                                                 }
                                                             }
                                                         },
                                                         onError = { error ->
-                                                            showImportMessage = "파일 불러오기 실패: $error"
+                                                            showImportMessage = "${strings.fileLoadFailed}: $error"
                                                         }
                                                     )
                                                     onLaunchLoadFile()
                                                 }) {
-                                                    Text("가져오기")
+                                                    Text(strings.importData)
                                                 }
                                             },
                                             dismissButton = {
                                                 TextButton(onClick = { showReplaceConfirmDialog = false }) {
-                                                    Text("취소")
+                                                    Text(strings.cancel)
                                                 }
                                             }
                                         )
@@ -943,11 +1004,11 @@ fun PayManagementApp(
                                     showExportMessage?.let { message ->
                                         AlertDialog(
                                             onDismissRequest = { showExportMessage = null },
-                                            title = { Text("알림") },
+                                            title = { Text(strings.notice) },
                                             text = { Text(message) },
                                             confirmButton = {
                                                 Button(onClick = { showExportMessage = null }) {
-                                                    Text("확인")
+                                                    Text(strings.confirm)
                                                 }
                                             }
                                         )
@@ -956,11 +1017,11 @@ fun PayManagementApp(
                                     showImportMessage?.let { message ->
                                         AlertDialog(
                                             onDismissRequest = { showImportMessage = null },
-                                            title = { Text("알림") },
+                                            title = { Text(strings.notice) },
                                             text = { Text(message) },
                                             confirmButton = {
                                                 Button(onClick = { showImportMessage = null }) {
-                                                    Text("확인")
+                                                    Text(strings.confirm)
                                                 }
                                             }
                                         )
@@ -988,12 +1049,12 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = "카테고리 관리",
+                                                text = strings.categoryManagement,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "수입/지출 카테고리 추가 및 삭제",
+                                                text = strings.addIncomeExpenseCategory("${strings.income}/${strings.expense}"),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1011,7 +1072,7 @@ fun PayManagementApp(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "거래 도구",
+                                            text = strings.recurringTransactions,
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -1020,7 +1081,7 @@ fun PayManagementApp(
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS) strings.fold else strings.expand,
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -1069,12 +1130,12 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = "반복 거래 관리",
+                                                text = strings.recurringTransactions,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "매달/매주 반복되는 거래 등록",
+                                                text = strings.autoAddDesc,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1103,12 +1164,12 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = "잔액권/상품권 관리",
+                                                text = strings.cardManagement,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "잔액권 및 상품권 조회 및 삭제",
+                                                text = strings.balanceCardManagement,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1126,7 +1187,7 @@ fun PayManagementApp(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "분석 & 예산",
+                                            text = "${strings.statistics} & ${strings.budgetSettings}",
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -1135,7 +1196,7 @@ fun PayManagementApp(
                                                 Icons.Default.KeyboardArrowUp
                                             else
                                                 Icons.Default.KeyboardArrowDown,
-                                            contentDescription = if (expandedMenu == ExpandableMenu.ANALYSIS) "접기" else "펼치기",
+                                            contentDescription = if (expandedMenu == ExpandableMenu.ANALYSIS) strings.fold else strings.expand,
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -1184,12 +1245,12 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = "계산기",
+                                                text = strings.calculator,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "소비 패턴 분석 및 계산",
+                                                text = strings.spendingTrend,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1218,12 +1279,12 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = "예산 설정",
+                                                text = strings.budgetSettings,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "카테고리별 월간 예산 설정",
+                                                text = strings.categoryBudget,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1252,12 +1313,12 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = "급여 기간 비교",
+                                                text = strings.payPeriodComparison,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = "이전/현재 급여 기간 지출 비교",
+                                                text = strings.compareWithPreviousPeriod,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1277,7 +1338,7 @@ fun PayManagementApp(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
-                                                text = "인앱 구매",
+                                                text = strings.supportDeveloper,
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.Medium
                                             )
@@ -1286,7 +1347,7 @@ fun PayManagementApp(
                                                     Icons.Default.KeyboardArrowUp
                                                 else
                                                     Icons.Default.KeyboardArrowDown,
-                                                contentDescription = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE) "접기" else "펼치기",
+                                                contentDescription = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE) strings.fold else strings.expand,
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
@@ -1335,12 +1396,12 @@ fun PayManagementApp(
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Column {
                                                 Text(
-                                                    text = "개발자 응원하기",
+                                                    text = strings.tipDonation,
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     fontWeight = FontWeight.Medium
                                                 )
                                                 Text(
-                                                    text = "커피, 점심, 저녁 사주기",
+                                                    text = "${strings.smallTip}, ${strings.mediumTip}, ${strings.largeTip}",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -1369,12 +1430,12 @@ fun PayManagementApp(
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Column {
                                                 Text(
-                                                    text = "광고 제거",
+                                                    text = strings.adRemoval,
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     fontWeight = FontWeight.Medium
                                                 )
                                                 Text(
-                                                    text = "1일, 3일, 7일, 30일",
+                                                    text = strings.adRemovalDesc,
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -1403,12 +1464,12 @@ fun PayManagementApp(
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Column {
                                                 Text(
-                                                    text = "쿠폰 입력",
+                                                    text = strings.enterCoupon,
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     fontWeight = FontWeight.Medium
                                                 )
                                                 Text(
-                                                    text = "쿠폰 코드로 광고 제거",
+                                                    text = strings.couponCode,
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -1418,11 +1479,34 @@ fun PayManagementApp(
                                 }
                             }
 
+                            // 언어 설정
+                            NavigationDrawerItem(
+                                label = {
+                                    Text(
+                                        text = strings.languageSettings,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                },
+                                selected = false,
+                                onClick = {
+                                    showLanguageDialog = true
+                                    scope.launch { drawerState.close() }
+                                },
+                                icon = {
+                                    Text(
+                                        text = "🌐",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                },
+                                modifier = Modifier.height(48.dp)
+                            )
+
                             // 관리자에게 문의
                             NavigationDrawerItem(
                                 label = {
                                     Text(
-                                        text = "관리자에게 문의",
+                                        text = strings.contactSupport,
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -1448,13 +1532,13 @@ fun PayManagementApp(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Text(
-                                            text = "앱 정보",
+                                            text = strings.aboutApp,
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "Version ${appInfo.getVersionName()}, Code ${appInfo.getVersionCode()}",
+                                            text = "${strings.version} ${appInfo.getVersionName()}, Code ${appInfo.getVersionCode()}",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -1491,7 +1575,7 @@ fun PayManagementApp(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "테마 설정",
+                                    text = strings.themeSettings,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

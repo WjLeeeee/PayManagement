@@ -5,6 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PaydayAdjustment
 
 @Composable
@@ -37,6 +38,8 @@ fun PaydaySetupContent(
     onCompleteSetup: () -> Unit,
     onErrorDismiss: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -46,8 +49,8 @@ fun PaydaySetupContent(
         Spacer(modifier = Modifier.height(40.dp))
 
         PaydaySetupHeader(
-            title = "월급날 설정",
-            description = "월급날을 선택하시면 해당 날짜 기준으로\n한 달 단위로 관리됩니다"
+            title = strings.paydaySetup,
+            description = strings.paydaySetupDescription
         )
 
         Spacer(modifier = Modifier.height(40.dp))

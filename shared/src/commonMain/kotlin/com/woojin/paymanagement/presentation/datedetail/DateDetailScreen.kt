@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionDialog
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.BackHandler
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -162,12 +163,14 @@ fun DateDetailScreen(
         }
     }
 
+    val strings = LocalStrings.current
+
     // 삭제 확인 다이얼로그
     if (uiState.transactionToDelete != null) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDeleteConfirmation() },
-            title = { Text("거래 삭제") },
-            text = { Text("이 거래를 삭제하시겠습니까?") },
+            title = { Text(strings.deleteTransactionTitle) },
+            text = { Text(strings.deleteTransactionConfirm) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -182,12 +185,12 @@ fun DateDetailScreen(
                         }
                     }
                 ) {
-                    Text("확인")
+                    Text(strings.confirm)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissDeleteConfirmation() }) {
-                    Text("취소")
+                    Text(strings.cancel)
                 }
             }
         )
@@ -197,11 +200,11 @@ fun DateDetailScreen(
     if (uiState.error != null) {
         AlertDialog(
             onDismissRequest = { viewModel.clearError() },
-            title = { Text("거래 삭제 불가") },
+            title = { Text(strings.cannotDeleteTransaction) },
             text = { Text(uiState.error) },
             confirmButton = {
                 TextButton(onClick = { viewModel.clearError() }) {
-                    Text("확인")
+                    Text(strings.confirm)
                 }
             }
         )

@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.woojin.paymanagement.strings.LocalStrings
 
 data class TutorialStep(
     val id: String,
@@ -141,6 +142,7 @@ private fun TutorialTooltip(
     calendarGridBounds: Rect?,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
     val density = LocalDensity.current
     val statusBarHeight = with(density) {
         WindowInsets.statusBars.getTop(this).toDp()
@@ -204,7 +206,7 @@ private fun TutorialTooltip(
                     ) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "건너뛰기",
+                            contentDescription = strings.tutorialSkip,
                             tint = Color.Gray,
                             modifier = Modifier.size(20.dp)
                         )
@@ -241,7 +243,7 @@ private fun TutorialTooltip(
                     if (currentStepIndex > 0) {
                         TextButton(onClick = onSkip) {
                             Text(
-                                "건너뛰기",
+                                strings.tutorialSkip,
                                 color = Color.Gray,
                                 fontWeight = FontWeight.Medium
                             )
@@ -261,7 +263,7 @@ private fun TutorialTooltip(
                         modifier = Modifier.height(40.dp)
                     ) {
                         Text(
-                            text = if (isLastStep) "완료" else "다음",
+                            text = if (isLastStep) strings.tutorialFinish else strings.tutorialNext,
                             color = Color.White,
                             fontWeight = FontWeight.Medium
                         )

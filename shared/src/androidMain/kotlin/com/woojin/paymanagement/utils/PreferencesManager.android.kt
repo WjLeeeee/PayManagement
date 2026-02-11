@@ -100,4 +100,21 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setPermissionGuideShown() {
         prefs.edit().putBoolean("permission_guide_shown", true).apply()
     }
+
+    // 언어 설정
+    actual fun getSystemLanguageCode(): String {
+        val locale = java.util.Locale.getDefault().language
+        return if (locale == "ko" || locale == "en") locale else "ko"
+    }
+
+    actual fun getLanguageCode(): String {
+        if (!prefs.contains("language_code")) {
+            return getSystemLanguageCode()
+        }
+        return prefs.getString("language_code", "ko") ?: "ko"
+    }
+
+    actual fun setLanguageCode(code: String) {
+        prefs.edit().putString("language_code", code).apply()
+    }
 }

@@ -70,6 +70,7 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialOverlay
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.coroutines.delay
@@ -98,6 +99,7 @@ fun CalendarScreen(
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null
 ) {
+    val strings = LocalStrings.current
     val uiState = viewModel.uiState
     val tutorialUiState = tutorialViewModel.uiState
 
@@ -205,7 +207,7 @@ fun CalendarScreen(
                     ) {
                         Icon(
                             Icons.Default.Menu,
-                            contentDescription = "메뉴",
+                            contentDescription = strings.openMenu,
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -227,7 +229,7 @@ fun CalendarScreen(
                     IconButton(onClick = onOpenDrawer) {
                         Icon(
                             Icons.Default.Menu,
-                            contentDescription = "메뉴",
+                            contentDescription = strings.openMenu,
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -321,12 +323,12 @@ fun CalendarScreen(
             items = listOf(
                 FabAction(
                     icon = "📱",
-                    label = "카드 결제 내역",
+                    label = strings.cardPaymentHistory,
                     onClick = onParsedTransactionsClick
                 ),
                 FabAction(
                     icon = "➕",
-                    label = "거래 추가",
+                    label = strings.addTransaction,
                     onClick = onAddTransactionClick
                 )
             )
@@ -362,8 +364,8 @@ fun CalendarScreen(
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
-            title = { Text("앱 종료") },
-            text = { Text("앱을 종료하시겠습니까?") },
+            title = { Text(strings.appExit) },
+            text = { Text(strings.exitConfirmMessage) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -380,12 +382,12 @@ fun CalendarScreen(
                         }
                     }
                 ) {
-                    Text("종료")
+                    Text(strings.exitConfirm)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showExitDialog = false }) {
-                    Text("취소")
+                    Text(strings.cancel)
                 }
             }
         )
@@ -420,7 +422,7 @@ fun CalendarScreen(
                             showPermissionGuideDialog = false
                         }
                     ) {
-                        Text("닫기")
+                        Text(strings.close)
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -431,7 +433,7 @@ fun CalendarScreen(
                             notificationPermissionChecker.openListenerSettings()
                         }
                     ) {
-                        Text("파싱권한")
+                        Text(strings.parsingPermission)
                     }
 
                     // 푸시 권한 버튼 (오른쪽)
@@ -440,7 +442,7 @@ fun CalendarScreen(
                             notificationPermissionChecker.openAppNotificationSettings()
                         }
                     ) {
-                        Text("푸시권한")
+                        Text(strings.pushPermission)
                     }
                 }
             },
@@ -455,11 +457,12 @@ private fun PayPeriodHeader(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
     val year = selectedDate.year
     val month = selectedDate.monthNumber
 
     Text(
-        text = "${year}년 ${month}월",
+        text = strings.monthYear(year, month),
         style = MaterialTheme.typography.titleLarge,
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
@@ -492,6 +495,8 @@ private fun PayPeriodSummaryCard(
         .filter { it.type == TransactionType.EXPENSE && it.category !in investmentCategories }
         .sumOf { it.displayAmount }
     val balance = income - expense
+
+    val strings = LocalStrings.current
 
     Card(
         modifier = Modifier
@@ -535,7 +540,7 @@ private fun PayPeriodSummaryCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "급여 기간 요약",
+                        text = strings.payPeriodSummary,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -547,7 +552,7 @@ private fun PayPeriodSummaryCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Lock,
-                            contentDescription = if (isMoneyVisible) "금액 숨기기" else "금액 보기",
+                            contentDescription = if (isMoneyVisible) strings.hideMoneyAmounts else strings.showMoneyAmounts,
                             tint = if (isMoneyVisible) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f) else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
@@ -572,13 +577,13 @@ private fun PayPeriodSummaryCard(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "수입",
+                                text = strings.income,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                         Text(
-                            text = "+${Utils.formatAmount(income)}원",
+                            text = "+${strings.amountWithUnit(Utils.formatAmount(income))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -597,13 +602,13 @@ private fun PayPeriodSummaryCard(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "지출",
+                                text = strings.expense,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
                         Text(
-                            text = "-${Utils.formatAmount(expense)}원",
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error,
@@ -622,7 +627,7 @@ private fun PayPeriodSummaryCard(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "잔액",
+                                text = strings.balance,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -634,7 +639,7 @@ private fun PayPeriodSummaryCard(
                                     balance < 0 -> "-"
                                     else -> ""
                                 }
-                            }${Utils.formatAmount(kotlin.math.abs(balance))}원",
+                            }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = when {
@@ -671,6 +676,8 @@ private fun CalendarGrid(
     val firstDayOfFirstMonth = LocalDate(payPeriod.startDate.year, payPeriod.startDate.month, 1)
     val firstDayOfWeek = (firstDayOfFirstMonth.dayOfWeek.ordinal + 1) % 7
 
+    val strings = LocalStrings.current
+
     Column(
         modifier = Modifier.onGloballyPositioned { coordinates ->
             val bounds = coordinates.boundsInWindow()
@@ -685,7 +692,7 @@ private fun CalendarGrid(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            listOf("일", "월", "화", "수", "목", "금", "토").forEach { day ->
+            strings.weekdaysShort.forEach { day ->
                 Text(
                     text = day,
                     modifier = Modifier.weight(1f),
@@ -845,6 +852,7 @@ private fun DailyTransactionCard(
     onClick: (LocalDate?) -> Unit = {},
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
 ) {
+    val strings = LocalStrings.current
     val dayTransactions = selectedDate?.let { date ->
         transactions.filter { it.date == date }
     } ?: emptyList()
@@ -894,14 +902,14 @@ private fun DailyTransactionCard(
                 ) {
                     if (isMoveMode) {
                         Text(
-                            text = "📍 이동할 날짜를 선택하세요",
+                            text = "📍 ${strings.selectDateToMove}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
                         )
                         Text(
-                            text = "취소",
+                            text = strings.cancel,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
@@ -914,12 +922,12 @@ private fun DailyTransactionCard(
                             text = if (selectedDate != null) {
                                 val count = dayTransactions.size
                                 val holidayName = holidayNames[selectedDate]
-                                val baseText = "${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일 거래 내역"
+                                val baseText = strings.dateTransactionHeader(selectedDate.monthNumber, selectedDate.dayOfMonth)
                                 val holidayText = if (holidayName != null) " ($holidayName)" else ""
-                                val countText = if (count > 0) " (${count}건)" else ""
+                                val countText = if (count > 0) " (${strings.transactionCount(count)})" else ""
                                 "📝 $baseText$holidayText$countText"
                             } else {
-                                "📝 날짜를 선택해서 메모 보기"
+                                "📝 ${strings.selectDateToViewMemo}"
                             },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
@@ -947,13 +955,13 @@ private fun DailyTransactionCard(
                     }
                 } else if (selectedDate != null) {
                     Text(
-                        text = "이 날짜에 거래 내역이 없습니다",
+                        text = strings.noTransactionsOnDate,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     Text(
-                        text = "캘린더에서 날짜를 클릭하여 해당 날짜의 메모를 확인하세요",
+                        text = strings.tapCalendarToViewMemo,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1007,6 +1015,7 @@ private fun TransactionItem(
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
+            val strings = LocalStrings.current
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1030,10 +1039,10 @@ private fun TransactionItem(
 
                 Text(
                     text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
-                        Utils.formatAmount(
+                        strings.amountWithUnit(Utils.formatAmount(
                             transaction.displayAmount
-                        )
-                    }원",
+                        ))
+                    }",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold
@@ -1044,20 +1053,20 @@ private fun TransactionItem(
             val paymentMethodText = when (transaction.type) {
                 TransactionType.INCOME -> {
                     when (transaction.incomeType) {
-                        com.woojin.paymanagement.data.IncomeType.CASH -> "현금"
-                        com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "잔액권 ${transaction.cardName ?: ""}"
-                        com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "상품권 ${transaction.cardName ?: ""}"
-                        null -> "현금"
+                        com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
+                        com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
+                        com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
+                        null -> strings.cash
                     }
                 }
 
                 TransactionType.EXPENSE -> {
                     when (transaction.paymentMethod) {
-                        com.woojin.paymanagement.data.PaymentMethod.CASH -> "현금"
-                        com.woojin.paymanagement.data.PaymentMethod.CARD -> "카드"
-                        com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "잔액권 ${transaction.cardName ?: ""}"
-                        com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "상품권 ${transaction.cardName ?: ""}"
-                        null -> "현금"
+                        com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
+                        com.woojin.paymanagement.data.PaymentMethod.CARD -> strings.card
+                        com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
+                        com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
+                        null -> strings.cash
                     }
                 }
             }
@@ -1092,6 +1101,7 @@ private fun YearMonthPickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (year: Int, month: Int) -> Unit
 ) {
+    val strings = LocalStrings.current
     var selectedYear by remember { mutableStateOf(currentYear) }
     var selectedMonth by remember { mutableStateOf(currentMonth) }
 
@@ -1108,7 +1118,7 @@ private fun YearMonthPickerDialog(
             ) {
                 // 제목
                 Text(
-                    text = "급여일 선택",
+                    text = strings.selectPayday,
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 24.dp)
@@ -1120,7 +1130,7 @@ private fun YearMonthPickerDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "년도",
+                        text = strings.yearLabel,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 12.dp)
@@ -1134,13 +1144,13 @@ private fun YearMonthPickerDialog(
                         IconButton(onClick = { selectedYear -= 1 }) {
                             Icon(
                                 Icons.Default.KeyboardArrowLeft,
-                                contentDescription = "이전 년도",
+                                contentDescription = strings.previousYear,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
 
                         Text(
-                            text = "${selectedYear}년",
+                            text = strings.yearDisplay(selectedYear),
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -1150,7 +1160,7 @@ private fun YearMonthPickerDialog(
                         IconButton(onClick = { selectedYear += 1 }) {
                             Icon(
                                 Icons.Default.KeyboardArrowRight,
-                                contentDescription = "다음 년도",
+                                contentDescription = strings.nextYear,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -1165,7 +1175,7 @@ private fun YearMonthPickerDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "월",
+                        text = strings.monthLabel,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 12.dp)
@@ -1181,13 +1191,13 @@ private fun YearMonthPickerDialog(
                         }) {
                             Icon(
                                 Icons.Default.KeyboardArrowLeft,
-                                contentDescription = "이전 월",
+                                contentDescription = strings.previousMonthLabel,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
 
                         Text(
-                            text = "${selectedMonth}월",
+                            text = strings.monthDisplayShort(selectedMonth),
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -1199,7 +1209,7 @@ private fun YearMonthPickerDialog(
                         }) {
                             Icon(
                                 Icons.Default.KeyboardArrowRight,
-                                contentDescription = "다음 월",
+                                contentDescription = strings.nextMonthLabel,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -1215,7 +1225,7 @@ private fun YearMonthPickerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("취소")
+                        Text(strings.cancel)
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1224,7 +1234,7 @@ private fun YearMonthPickerDialog(
                         onConfirm(selectedYear, selectedMonth)
                         onDismiss()
                     }) {
-                        Text("확인")
+                        Text(strings.confirm)
                     }
                 }
             }

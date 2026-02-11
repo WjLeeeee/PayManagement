@@ -36,6 +36,11 @@ expect class PreferencesManager {
     // 권한 안내 다이얼로그 표시 여부
     fun isPermissionGuideShown(): Boolean
     fun setPermissionGuideShown()
+
+    // 언어 설정
+    fun getSystemLanguageCode(): String // 시스템 로케일에서 언어 코드 가져오기
+    fun getLanguageCode(): String // "ko" or "en"
+    fun setLanguageCode(code: String)
 }
 
 enum class PaydayAdjustment {

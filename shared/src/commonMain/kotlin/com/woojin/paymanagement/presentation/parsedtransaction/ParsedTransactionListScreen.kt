@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.ParsedTransaction
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.BackHandler
 import com.woojin.paymanagement.utils.LifecycleObserverHelper
 import kotlinx.coroutines.launch
@@ -56,6 +57,7 @@ fun ParsedTransactionListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
     var hasPermission by remember { mutableStateOf(hasNotificationPermission) }
+    val strings = LocalStrings.current
 
     // 시스템 뒤로가기 버튼 처리 (Android에서만 동작, iOS에서는 자동으로 무시됨)
     BackHandler(onBack = onBack)
@@ -85,13 +87,13 @@ fun ParsedTransactionListScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "뒤로가기",
+                    contentDescription = strings.goBack,
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
 
             Text(
-                text = "카드 결제 내역",
+                text = strings.cardPaymentHistory,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
@@ -120,7 +122,7 @@ fun ParsedTransactionListScreen(
                 )
             ) {
                 Text(
-                    text = if (hasPermission) "🔔 알림" else "🔕 알림",
+                    text = if (hasPermission) strings.notificationOn else strings.notificationOff,
                     fontWeight = if (hasPermission) FontWeight.Bold else FontWeight.Normal
                 )
             }
@@ -129,7 +131,7 @@ fun ParsedTransactionListScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "알림에서 파싱된 거래 내역입니다. 항목을 클릭하여 거래를 추가하세요.",
+            text = strings.parsedTransactionDesc,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -151,7 +153,7 @@ fun ParsedTransactionListScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "오류: ${uiState.error}",
+                        text = strings.errorWithMessage(uiState.error ?: ""),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -163,13 +165,13 @@ fun ParsedTransactionListScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "파싱된 거래 내역이 없습니다",
+                            text = strings.noParsedTransactions,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "카드 결제 알림이 오면 자동으로 표시됩니다",
+                            text = strings.cardNotificationAutoDisplay,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -204,6 +206,8 @@ private fun ParsedTransactionItem(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -234,7 +238,7 @@ private fun ParsedTransactionItem(
 
                 // 금액
                 Text(
-                    text = "${transaction.amount.toInt()}원",
+                    text = strings.amountWithUnit(transaction.amount.toInt().toString()),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.SemiBold
@@ -244,7 +248,7 @@ private fun ParsedTransactionItem(
 
                 // 날짜
                 Text(
-                    text = "${transaction.date.monthNumber}월 ${transaction.date.dayOfMonth}일",
+                    text = strings.shortDate(transaction.date.monthNumber, transaction.date.dayOfMonth),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -252,7 +256,7 @@ private fun ParsedTransactionItem(
 
             // Delete button
             TextButton(onClick = onDelete) {
-                Text("삭제", color = MaterialTheme.colorScheme.error)
+                Text(strings.delete, color = MaterialTheme.colorScheme.error)
             }
         }
     }

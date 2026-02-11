@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PlatformBackHandler
 
 /**
@@ -54,15 +55,16 @@ fun TipDonationScreen(
     // Android 뒤로가기 버튼 처리
     PlatformBackHandler(onBack = onNavigateBack)
 
+    val strings = LocalStrings.current
     val uiState = viewModel.uiState
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("팁주기") },
+                title = { Text(strings.tipDonationScreenTitle) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로가기")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, strings.goBack)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -83,7 +85,7 @@ fun TipDonationScreen(
         ) {
             // 제목
             Text(
-                text = "개발자 응원하기",
+                text = strings.supportDeveloperTitle,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -91,7 +93,7 @@ fun TipDonationScreen(
 
             // 설명
             Text(
-                text = "앱이 도움이 되셨나요?\n개발자에게 커피 한 잔 사주세요!",
+                text = strings.tipDonationLongDesc,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -100,7 +102,7 @@ fun TipDonationScreen(
             // 팁 옵션들
             TipOption(
                 emoji = "☕",
-                title = "커피 사주기",
+                title = strings.buyCoffee,
                 amount = TipAmount.COFFEE,
                 isSelected = uiState.selectedTipAmount == TipAmount.COFFEE,
                 onClick = { viewModel.selectTipAmount(TipAmount.COFFEE) }
@@ -108,7 +110,7 @@ fun TipDonationScreen(
 
             TipOption(
                 emoji = "🍱",
-                title = "점심 사주기",
+                title = strings.buyLunch,
                 amount = TipAmount.LUNCH,
                 isSelected = uiState.selectedTipAmount == TipAmount.LUNCH,
                 onClick = { viewModel.selectTipAmount(TipAmount.LUNCH) }
@@ -116,7 +118,7 @@ fun TipDonationScreen(
 
             TipOption(
                 emoji = "🍽️",
-                title = "저녁 사주기",
+                title = strings.buyDinner,
                 amount = TipAmount.DINNER,
                 isSelected = uiState.selectedTipAmount == TipAmount.DINNER,
                 onClick = { viewModel.selectTipAmount(TipAmount.DINNER) }
@@ -135,9 +137,9 @@ fun TipDonationScreen(
             ) {
                 Text(
                     text = when {
-                        uiState.isPurchasing -> "결제 처리 중..."
-                        uiState.selectedTipAmount != null -> "₩${uiState.selectedTipAmount.krw} 결제하기"
-                        else -> "금액을 선택해주세요"
+                        uiState.isPurchasing -> strings.processingPayment
+                        uiState.selectedTipAmount != null -> strings.payAmountButton(uiState.selectedTipAmount.krw.toString())
+                        else -> strings.selectAmountPrompt
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
@@ -160,13 +162,13 @@ fun TipDonationScreen(
             },
             title = {
                 Text(
-                    text = "감사합니다!",
+                    text = strings.thankYouTitle,
                     textAlign = TextAlign.Center
                 )
             },
             text = {
                 Text(
-                    text = "개발자를 응원해주셔서 감사합니다.\n더 좋은 앱으로 보답하겠습니다!",
+                    text = strings.thankYouMessage,
                     textAlign = TextAlign.Center
                 )
             },
@@ -174,7 +176,7 @@ fun TipDonationScreen(
                 TextButton(onClick = {
                     viewModel.dismissThankYouDialog()
                 }) {
-                    Text("확인")
+                    Text(strings.confirm)
                 }
             }
         )
@@ -192,7 +194,7 @@ fun TipDonationScreen(
             },
             title = {
                 Text(
-                    text = "결제 실패",
+                    text = strings.paymentFailedTitle,
                     textAlign = TextAlign.Center
                 )
             },
@@ -204,7 +206,7 @@ fun TipDonationScreen(
             },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissError() }) {
-                    Text("확인")
+                    Text(strings.confirm)
                 }
             }
         )

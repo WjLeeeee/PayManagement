@@ -53,6 +53,7 @@ import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.strings.LocalStrings
 
 @Composable
 fun TransactionTypeSelector(
@@ -60,9 +61,11 @@ fun TransactionTypeSelector(
     onTypeSelected: (TransactionType) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
+
     Column(modifier = modifier) {
         Text(
-            text = "거래 유형",
+            text = strings.transactionType,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
@@ -95,7 +98,7 @@ fun TransactionTypeSelector(
                         )
                     )
                     Text(
-                        text = if (type == TransactionType.INCOME) "수입" else "지출",
+                        text = if (type == TransactionType.INCOME) strings.income else strings.expense,
                         modifier = Modifier.padding(start = 8.dp),
                         color = if (type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Medium
@@ -119,9 +122,11 @@ fun IncomeTypeSelector(
     onBalanceCardForChargeSelected: (BalanceCard?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
+
     Column(modifier = modifier) {
         Text(
-            text = "수입 유형",
+            text = strings.incomeType,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
@@ -151,9 +156,9 @@ fun IncomeTypeSelector(
                     )
                     Text(
                         text = when (incomeType) {
-                            IncomeType.CASH -> "현금"
-                            IncomeType.BALANCE_CARD -> "잔액권"
-                            IncomeType.GIFT_CARD -> "상품권"
+                            IncomeType.CASH -> strings.cash
+                            IncomeType.BALANCE_CARD -> strings.balanceCard
+                            IncomeType.GIFT_CARD -> strings.giftCard
                         },
                         modifier = Modifier.padding(start = 8.dp),
                         color = MaterialTheme.colorScheme.onSurface,
@@ -189,7 +194,7 @@ fun IncomeTypeSelector(
                             )
                         )
                         Text(
-                            text = "새 잔액권 추가",
+                            text = strings.newBalanceCard,
                             modifier = Modifier.padding(start = 8.dp),
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Medium
@@ -215,7 +220,7 @@ fun IncomeTypeSelector(
                             )
                         )
                         Text(
-                            text = "기존 잔액권 충전",
+                            text = strings.chargeExistingBalanceCard,
                             modifier = Modifier.padding(start = 8.dp),
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Medium
@@ -234,7 +239,7 @@ fun IncomeTypeSelector(
                     onValueChange = onCardNameChanged,
                     label = {
                         Text(
-                            text = "잔액권 이름 (예: 편의점 상품권)",
+                            text = strings.balanceCardNameHint,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     },
@@ -250,7 +255,7 @@ fun IncomeTypeSelector(
                     cards = availableBalanceCards,
                     selectedCard = selectedBalanceCardForCharge,
                     onCardSelected = onBalanceCardForChargeSelected,
-                    label = "충전할 잔액권 선택"
+                    label = strings.selectBalanceCardToCharge
                 )
             }
         }
@@ -264,7 +269,7 @@ fun IncomeTypeSelector(
                 onValueChange = onCardNameChanged,
                 label = {
                     Text(
-                        text = "상품권 이름 (예: 신세계 상품권)",
+                        text = strings.giftCardNameHint,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 },
@@ -291,9 +296,11 @@ fun PaymentMethodSelector(
     amount: String,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
+
     Column(modifier = modifier) {
         Text(
-            text = "결제 수단",
+            text = strings.paymentMethod,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
@@ -331,10 +338,10 @@ fun PaymentMethodSelector(
                         )
                         Text(
                             text = when (paymentMethod) {
-                                PaymentMethod.CASH -> "현금"
-                                PaymentMethod.CARD -> "카드"
-                                PaymentMethod.BALANCE_CARD -> "잔액권"
-                                PaymentMethod.GIFT_CARD -> "상품권"
+                                PaymentMethod.CASH -> strings.cash
+                                PaymentMethod.CARD -> strings.card
+                                PaymentMethod.BALANCE_CARD -> strings.balanceCard
+                                PaymentMethod.GIFT_CARD -> strings.giftCard
                             },
                             modifier = Modifier.padding(start = 8.dp),
                             color = MaterialTheme.colorScheme.onSurface,
@@ -353,7 +360,7 @@ fun PaymentMethodSelector(
                 cards = availableBalanceCards,
                 selectedCard = selectedBalanceCard,
                 onCardSelected = onBalanceCardSelected,
-                label = "잔액권 선택"
+                label = strings.selectBalanceCardLabel
             )
 
             if (selectedBalanceCard != null && amount.isNotBlank()) {
@@ -372,7 +379,7 @@ fun PaymentMethodSelector(
                 cards = availableGiftCards,
                 selectedCard = selectedGiftCard,
                 onCardSelected = onGiftCardSelected,
-                label = "상품권 선택"
+                label = strings.selectGiftCardLabel
             )
 
             if (selectedGiftCard != null && amount.isNotBlank()) {
@@ -395,6 +402,7 @@ fun CategoryDropdown(
     modifier: Modifier = Modifier,
     focusRequester: FocusRequester? = null
 ) {
+    val strings = LocalStrings.current
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
@@ -406,7 +414,7 @@ fun CategoryDropdown(
             value = selectedCategory,
             onValueChange = { },
             readOnly = true,
-            label = { Text("카테고리", color = MaterialTheme.colorScheme.onSurface) },
+            label = { Text(strings.category, color = MaterialTheme.colorScheme.onSurface) },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
@@ -448,6 +456,7 @@ private fun <T> CardSelectionDropdown(
     onCardSelected: (T?) -> Unit,
     label: String
 ) where T : Any {
+    val strings = LocalStrings.current
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
@@ -456,8 +465,8 @@ private fun <T> CardSelectionDropdown(
     ) {
         OutlinedTextField(
             value = when (selectedCard) {
-                is BalanceCard -> "${selectedCard.name} (${selectedCard.currentBalance.toInt()}원)"
-                is GiftCard -> "${selectedCard.name} (${selectedCard.remainingAmount.toInt()}원)"
+                is BalanceCard -> "${selectedCard.name} (${selectedCard.currentBalance.toInt()}${strings.currencySymbol})"
+                is GiftCard -> "${selectedCard.name} (${selectedCard.remainingAmount.toInt()}${strings.currencySymbol})"
                 else -> ""
             },
             onValueChange = { },
@@ -485,8 +494,8 @@ private fun <T> CardSelectionDropdown(
                     text = {
                         Text(
                             text = when (card) {
-                                is BalanceCard -> "${card.name} (${card.currentBalance.toInt()}원)"
-                                is GiftCard -> "${card.name} (${card.remainingAmount.toInt()}원)"
+                                is BalanceCard -> "${card.name} (${card.currentBalance.toInt()}${strings.currencySymbol})"
+                                is GiftCard -> "${card.name} (${card.remainingAmount.toInt()}${strings.currencySymbol})"
                                 else -> card.toString()
                             },
                             color = MaterialTheme.colorScheme.onSurface
@@ -508,6 +517,7 @@ private fun BalanceCardUsageInfo(
     expenseAmount: String,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
     val amount = expenseAmount.replace(",", "").toDoubleOrNull()
     if (amount != null && amount > 0) {
         val balanceCardAmount = balanceCard.currentBalance
@@ -517,11 +527,11 @@ private fun BalanceCardUsageInfo(
         val infoText = when {
             balanceCardAmount >= amount -> {
                 val remaining = balanceCardAmount - amount
-                "잔액권 ${amount.toInt()}원 사용, 잔액 ${remaining.toInt()}원"
+                strings.balanceCardFullUsage(amount.toInt(), remaining.toInt())
             }
             else -> {
                 val cashNeeded = amount - balanceCardAmount
-                "잔액권 ${balanceCardAmount.toInt()}원 + 현금 ${cashNeeded.toInt()}원 지출"
+                strings.balanceCardPartialUsage(balanceCardAmount.toInt(), cashNeeded.toInt())
             }
         }
 
@@ -540,6 +550,7 @@ private fun GiftCardUsageInfo(
     expenseAmount: String,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
     val amount = expenseAmount.replace(",", "").toDoubleOrNull()
     if (amount != null && amount > 0) {
         val giftCardAmount = giftCard.remainingAmount
@@ -549,14 +560,14 @@ private fun GiftCardUsageInfo(
         val infoText = when {
             giftCardAmount > amount -> {
                 val refund = giftCardAmount - amount
-                "상품권 ${amount.toInt()}원 사용, ${refund.toInt()}원 현금 환급"
+                strings.giftCardRefundUsage(amount.toInt(), refund.toInt())
             }
             giftCardAmount < amount -> {
                 val cashNeeded = amount - giftCardAmount
-                "상품권 ${giftCardAmount.toInt()}원 + 현금 ${cashNeeded.toInt()}원 지출"
+                strings.giftCardPartialUsage(giftCardAmount.toInt(), cashNeeded.toInt())
             }
             else -> {
-                "상품권 ${amount.toInt()}원 전액 사용"
+                strings.giftCardFullUsage(amount.toInt())
             }
         }
 
@@ -577,6 +588,8 @@ fun SettlementSection(
     onSettlementAmountChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
+
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -584,7 +597,7 @@ fun SettlementSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "더치페이/정산",
+                text = strings.dutchPaySettlement,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
@@ -613,8 +626,8 @@ fun SettlementSection(
                 OutlinedTextField(
                     value = settlementAmount,
                     onValueChange = onSettlementAmountChange,
-                    label = { Text("정산받을 금액", color = MaterialTheme.colorScheme.onSurface) },
-                    suffix = { Text("원", color = MaterialTheme.colorScheme.onSurface) },
+                    label = { Text(strings.settlementAmountLabel, color = MaterialTheme.colorScheme.onSurface) },
+                    suffix = { Text(strings.currencySymbol, color = MaterialTheme.colorScheme.onSurface) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -626,7 +639,7 @@ fun SettlementSection(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "💡 결제 금액에서 정산받을 금액을 뺀 나머지가 실제 내 부담액으로 표시됩니다",
+                    text = strings.settlementDescription,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp)
@@ -646,9 +659,11 @@ fun CategoryChipGrid(
     uiState: AddTransactionUiState,
     modifier: Modifier = Modifier
 ) {
+    val strings = LocalStrings.current
+
     Column(modifier = modifier) {
         Text(
-            text = "카테고리",
+            text = strings.category,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface

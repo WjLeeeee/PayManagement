@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PlatformBackHandler
 
 /**
@@ -51,6 +52,7 @@ fun CouponScreen(
     // Android 뒤로가기 버튼 처리
     PlatformBackHandler(onBack = onNavigateBack)
 
+    val strings = LocalStrings.current
     val uiState = viewModel.uiState
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -65,10 +67,10 @@ fun CouponScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("쿠폰 입력") },
+                title = { Text(strings.enterCoupon) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로가기")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, strings.goBack)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -91,7 +93,7 @@ fun CouponScreen(
         ) {
             // 제목
             Text(
-                text = "쿠폰 코드 입력",
+                text = strings.couponCodeInput,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -99,7 +101,7 @@ fun CouponScreen(
 
             // 설명
             Text(
-                text = "쿠폰 코드를 입력하시면 3일간 광고 없이 사용하실 수 있습니다.",
+                text = strings.couponDesc,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -111,8 +113,8 @@ fun CouponScreen(
             OutlinedTextField(
                 value = uiState.couponCode,
                 onValueChange = viewModel::onCouponCodeChange,
-                label = { Text("쿠폰 코드") },
-                placeholder = { Text("쿠폰 코드를 입력하세요") },
+                label = { Text(strings.couponCode) },
+                placeholder = { Text(strings.enterCouponCode) },
                 enabled = !uiState.isApplying,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
@@ -132,7 +134,7 @@ fun CouponScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-                Text(if (uiState.isApplying) "적용 중..." else "쿠폰 적용하기")
+                Text(if (uiState.isApplying) strings.applyingCoupon else strings.applyCouponButton)
             }
         }
     }
@@ -141,9 +143,9 @@ fun CouponScreen(
     if (uiState.showSuccessDialog) {
         AlertDialog(
             onDismissRequest = {},
-            title = { Text("쿠폰 적용 완료!") },
+            title = { Text(strings.couponApplyComplete) },
             text = {
-                Text("쿠폰이 성공적으로 적용되었습니다.\n3일간 광고 없이 사용하실 수 있습니다.\n\n앱을 재시작하면 적용됩니다.")
+                Text(strings.couponSuccessMessage)
             },
             confirmButton = {
                 TextButton(
@@ -152,7 +154,7 @@ fun CouponScreen(
                         onRequestRestart?.invoke() ?: onNavigateBack()
                     }
                 ) {
-                    Text("확인")
+                    Text(strings.confirm)
                 }
             }
         )
