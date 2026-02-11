@@ -30,13 +30,23 @@ class PayPeriodCalculator(
         
         return if (currentDate >= currentMonthPayday) {
             // 이번 달 월급날이 지났으면, 이번 달 월급날 ~ 다음 달 월급날 전날
-            val nextMonthDate = currentDate.plus(1, DateTimeUnit.MONTH)
-            val nextMonthPayday = calculateActualPayday(
-                nextMonthDate.year, 
-                nextMonthDate.month, 
-                payday, 
+            var nextMonthDate = currentDate.plus(1, DateTimeUnit.MONTH)
+            var nextMonthPayday = calculateActualPayday(
+                nextMonthDate.year,
+                nextMonthDate.month,
+                payday,
                 adjustment
             )
+            // 조정된 다음 급여일이 현재 급여일 이전이면 한 달 더 앞으로
+            if (nextMonthPayday <= currentMonthPayday) {
+                nextMonthDate = nextMonthDate.plus(1, DateTimeUnit.MONTH)
+                nextMonthPayday = calculateActualPayday(
+                    nextMonthDate.year,
+                    nextMonthDate.month,
+                    payday,
+                    adjustment
+                )
+            }
             PayPeriod(
                 startDate = currentMonthPayday,
                 endDate = nextMonthPayday.minus(1, DateTimeUnit.DAY),
@@ -44,13 +54,23 @@ class PayPeriodCalculator(
             )
         } else {
             // 이번 달 월급날이 아직 안 왔으면, 지난 달 월급날 ~ 이번 달 월급날 전날
-            val previousMonthDate = currentDate.minus(1, DateTimeUnit.MONTH)
-            val previousMonthPayday = calculateActualPayday(
-                previousMonthDate.year, 
-                previousMonthDate.month, 
-                payday, 
+            var previousMonthDate = currentDate.minus(1, DateTimeUnit.MONTH)
+            var previousMonthPayday = calculateActualPayday(
+                previousMonthDate.year,
+                previousMonthDate.month,
+                payday,
                 adjustment
             )
+            // 조정된 이전 급여일이 현재 급여일 이후이면 한 달 더 뒤로
+            if (previousMonthPayday >= currentMonthPayday) {
+                previousMonthDate = previousMonthDate.minus(1, DateTimeUnit.MONTH)
+                previousMonthPayday = calculateActualPayday(
+                    previousMonthDate.year,
+                    previousMonthDate.month,
+                    payday,
+                    adjustment
+                )
+            }
             PayPeriod(
                 startDate = previousMonthPayday,
                 endDate = currentMonthPayday.minus(1, DateTimeUnit.DAY),
@@ -61,14 +81,26 @@ class PayPeriodCalculator(
     
     suspend fun getNextPayPeriod(currentPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): PayPeriod {
         val nextStartDate = currentPeriod.endDate.plus(1, DateTimeUnit.DAY)
-        val nextMonthDate = nextStartDate.plus(1, DateTimeUnit.MONTH)
-        val nextEndDate = calculateActualPayday(
-            nextMonthDate.year, 
-            nextMonthDate.month, 
-            payday, 
+        var nextMonthDate = nextStartDate.plus(1, DateTimeUnit.MONTH)
+        var nextPayday = calculateActualPayday(
+            nextMonthDate.year,
+            nextMonthDate.month,
+            payday,
             adjustment
-        ).minus(1, DateTimeUnit.DAY)
-        
+        )
+        // 주말/공휴일 조정으로 인해 다음 급여일이 nextStartDate 이전이 될 수 있음
+        // 이 경우 한 달 더 앞으로 이동
+        if (nextPayday <= nextStartDate) {
+            nextMonthDate = nextMonthDate.plus(1, DateTimeUnit.MONTH)
+            nextPayday = calculateActualPayday(
+                nextMonthDate.year,
+                nextMonthDate.month,
+                payday,
+                adjustment
+            )
+        }
+        val nextEndDate = nextPayday.minus(1, DateTimeUnit.DAY)
+
         return PayPeriod(
             startDate = nextStartDate,
             endDate = nextEndDate,
@@ -78,14 +110,24 @@ class PayPeriodCalculator(
     
     suspend fun getPreviousPayPeriod(currentPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): PayPeriod {
         val previousEndDate = currentPeriod.startDate.minus(1, DateTimeUnit.DAY)
-        val previousMonthDate = currentPeriod.startDate.minus(1, DateTimeUnit.MONTH)
-        val previousStartDate = calculateActualPayday(
-            previousMonthDate.year, 
-            previousMonthDate.month, 
-            payday, 
+        // previousEndDate의 월을 기준으로 급여일 계산
+        var previousStartDate = calculateActualPayday(
+            previousEndDate.year,
+            previousEndDate.month,
+            payday,
             adjustment
         )
-        
+        // 계산된 급여일이 previousEndDate 이후이면 한 달 뒤로 이동
+        if (previousStartDate > previousEndDate) {
+            val oneMonthBack = previousEndDate.minus(1, DateTimeUnit.MONTH)
+            previousStartDate = calculateActualPayday(
+                oneMonthBack.year,
+                oneMonthBack.month,
+                payday,
+                adjustment
+            )
+        }
+
         return PayPeriod(
             startDate = previousStartDate,
             endDate = previousEndDate,

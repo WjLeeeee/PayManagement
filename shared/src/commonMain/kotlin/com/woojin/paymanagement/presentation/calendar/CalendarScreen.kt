@@ -672,10 +672,6 @@ private fun CalendarGrid(
     // 월급 기간에 포함되는 모든 날짜 계산
     val allDates = generateDateSequence(payPeriod.startDate, payPeriod.endDate)
 
-    // 첫 번째 달의 첫 주 계산
-    val firstDayOfFirstMonth = LocalDate(payPeriod.startDate.year, payPeriod.startDate.month, 1)
-    val firstDayOfWeek = (firstDayOfFirstMonth.dayOfWeek.ordinal + 1) % 7
-
     val strings = LocalStrings.current
 
     Column(
@@ -713,7 +709,8 @@ private fun CalendarGrid(
 //            modifier = Modifier.height(300.dp)
         ) {
             // Empty cells for days before first date starts
-            val emptyDaysAtStart = (payPeriod.startDate.dayOfMonth - 1 + firstDayOfWeek) % 7
+            // 시작일의 요일을 직접 계산 (월=0, 일=6)
+            val emptyDaysAtStart = payPeriod.startDate.dayOfWeek.ordinal
             items(emptyDaysAtStart) {
                 Box(modifier = Modifier.height(40.dp))
             }
@@ -727,8 +724,15 @@ private fun CalendarGrid(
                 val dayOfWeek = date.dayOfWeek.ordinal // 0=Monday, 6=Sunday
                 val isHoliday = holidays.contains(date)
 
+                // 급여기간 시작일 또는 월이 바뀌는 1일에 "월/일" 형식 표시
+                val displayText = if (date == payPeriod.startDate || date.dayOfMonth == 1) {
+                    "${date.monthNumber}/${date.dayOfMonth}"
+                } else {
+                    date.dayOfMonth.toString()
+                }
+
                 CalendarDay(
-                    day = date.dayOfMonth,
+                    displayText = displayText,
                     hasIncome = hasIncome,
                     hasExpense = hasExpense,
                     isSelected = selectedDate == date,
@@ -756,7 +760,7 @@ private fun generateDateSequence(startDate: LocalDate, endDate: LocalDate): List
 
 @Composable
 private fun CalendarDay(
-    day: Int,
+    displayText: String,
     hasIncome: Boolean,
     hasExpense: Boolean,
     isSelected: Boolean,
@@ -803,9 +807,10 @@ private fun CalendarDay(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            val isMonthLabel = displayText.contains("/")
             Text(
-                text = day.toString(),
-                fontSize = 14.sp,
+                text = displayText,
+                fontSize = if (isMonthLabel) 11.sp else 14.sp,
                 fontWeight = if (hasIncome || hasExpense) FontWeight.Bold else FontWeight.Normal,
                 color = if (isInCurrentPeriod) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
             )
