@@ -49,6 +49,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.BalanceCard
+import com.woojin.paymanagement.data.CustomPaymentMethod
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
@@ -294,6 +295,9 @@ fun PaymentMethodSelector(
     selectedGiftCard: GiftCard?,
     onGiftCardSelected: (GiftCard?) -> Unit,
     amount: String,
+    customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
+    selectedCustomCardName: String? = null,
+    onCustomCardNameSelected: (String?) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
@@ -350,6 +354,17 @@ fun PaymentMethodSelector(
                     }
                 }
             }
+        }
+
+        // 카드 선택 시 커스텀 카드 드롭다운
+        if (selectedPaymentMethod == PaymentMethod.CARD && customPaymentMethods.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            CustomCardSelectionDropdown(
+                customPaymentMethods = customPaymentMethods,
+                selectedCardName = selectedCustomCardName,
+                onCardNameSelected = onCustomCardNameSelected
+            )
         }
 
         // 잔액권 선택 및 안내
@@ -643,6 +658,61 @@ fun SettlementSection(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomCardSelectionDropdown(
+    customPaymentMethods: List<CustomPaymentMethod>,
+    selectedCardName: String?,
+    onCardNameSelected: (String?) -> Unit
+) {
+    val strings = LocalStrings.current
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedTextField(
+            value = selectedCardName ?: customPaymentMethods.firstOrNull()?.name ?: "",
+            onValueChange = { },
+            readOnly = true,
+            label = { Text(strings.selectCard, color = MaterialTheme.colorScheme.onSurface) },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+        ) {
+            // 커스텀 카드 목록
+            customPaymentMethods.forEach { method ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = method.name,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    onClick = {
+                        onCardNameSelected(method.name)
+                        expanded = false
+                    }
                 )
             }
         }

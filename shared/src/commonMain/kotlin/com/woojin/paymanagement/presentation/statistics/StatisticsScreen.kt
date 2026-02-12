@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.BalanceCardSummary
+import com.woojin.paymanagement.data.CardBreakdown
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
@@ -909,7 +910,8 @@ private fun PaymentMethodSection(
             CardSummaryCard(
                 expense = paymentSummary.cardExpense,
                 actualExpense = paymentSummary.cardActualExpense,
-                settlementIncome = paymentSummary.settlementIncome
+                settlementIncome = paymentSummary.settlementIncome,
+                cardBreakdowns = paymentSummary.cardBreakdowns
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -1031,7 +1033,8 @@ private fun CashSummaryCard(
 private fun CardSummaryCard(
     expense: Double,
     actualExpense: Double,
-    settlementIncome: Double
+    settlementIncome: Double,
+    cardBreakdowns: List<CardBreakdown> = emptyList()
 ) {
     val strings = LocalStrings.current
     Card(
@@ -1134,6 +1137,42 @@ private fun CardSummaryCard(
                             Text(
                                 text = "",
                                 style = MaterialTheme.typography.titleSmall
+                            )
+                        }
+                    }
+                }
+
+                // 카드별 내역 (2개 이상의 카드가 사용된 경우만 표시)
+                if (cardBreakdowns.size > 1 || (cardBreakdowns.size == 1 && cardBreakdowns.first().cardName != null)) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = strings.cardBreakdown,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    cardBreakdowns.forEach { breakdown ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = breakdown.cardName ?: strings.unspecifiedCard,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "-${strings.amountWithUnit(Utils.formatAmount(breakdown.expense))}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     }

@@ -152,6 +152,7 @@ fun RecurringTransactionScreen(
             RecurringTransactionDialog(
                 transaction = uiState.editingTransaction,
                 categories = uiState.categories,
+                customPaymentMethods = uiState.customPaymentMethods,
                 onDismiss = { viewModel.hideDialog() },
                 onSave = { transaction ->
                     viewModel.saveRecurringTransaction(transaction)

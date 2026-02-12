@@ -259,7 +259,7 @@ fun PayManagementApp(
             Screen.EditTransaction -> "거래_수정"
             Screen.ParsedTransactionList -> "파싱_거래_목록"
             Screen.CategoryManagement -> "카테고리_관리"
-            Screen.CardManagement -> "카드_관리"
+            Screen.CardManagement -> "결제수단_관리"
             Screen.BudgetSettings -> "예산_설정"
             Screen.MonthlyComparison -> "월별_비교"
             Screen.TipDonation -> "팁_후원"
@@ -1027,39 +1027,6 @@ fun PayManagementApp(
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.height(4.dp))
-
-                                    // 카테고리 관리
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .clickable {
-                                                navigateTo(Screen.CategoryManagement)
-                                                scope.launch { drawerState.close() }
-                                            }
-                                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                                        horizontalArrangement = Arrangement.Start,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "📂",
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Column {
-                                            Text(
-                                                text = strings.categoryManagement,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                            Text(
-                                                text = strings.addIncomeExpenseCategory("${strings.income}/${strings.expense}"),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
                                 }
                             }
 
@@ -1072,7 +1039,7 @@ fun PayManagementApp(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = strings.recurringTransactions,
+                                            text = strings.transactionTools,
                                             style = MaterialTheme.typography.bodyLarge,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -1144,7 +1111,7 @@ fun PayManagementApp(
 
                                     Spacer(modifier = Modifier.height(4.dp))
 
-                                    // 잔액권/상품권 관리
+                                    // 결제수단 관리 (잔액권/상품권 + 카드 관리 통합)
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1164,17 +1131,52 @@ fun PayManagementApp(
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Column {
                                             Text(
-                                                text = strings.cardManagement,
+                                                text = strings.paymentMethodManagement,
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = strings.balanceCardManagement,
+                                                text = strings.paymentMethodManagementDesc,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // 카테고리 관리
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                navigateTo(Screen.CategoryManagement)
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "📂",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = strings.categoryManagement,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = strings.addIncomeExpenseCategory("${strings.income}/${strings.expense}"),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
                                 }
                             }
 

@@ -42,6 +42,7 @@ class ImportDataUseCase(
             val hasBudget = backupData.budgetPlans.isNotEmpty() || backupData.categoryBudgets.isNotEmpty()
             val hasTransactions = backupData.transactions.isNotEmpty()
             val hasRecurringTransactions = backupData.recurringTransactions.isNotEmpty()
+            val hasCustomPaymentMethods = backupData.customPaymentMethods.isNotEmpty()
             val hasSettings = backupData.payday > 0  // 설정 정보가 있는지 확인
 
             // 기존 데이터 삭제 (선택적) - 실제로 가져올 데이터만 삭제
@@ -57,6 +58,7 @@ class ImportDataUseCase(
                 }
                 if (hasTransactions) databaseHelper.deleteAllTransactions()
                 if (hasRecurringTransactions) databaseHelper.deleteAllRecurringTransactions()
+                if (hasCustomPaymentMethods) databaseHelper.deleteAllCustomPaymentMethods()
             }
 
             // 설정 복원 (설정 정보가 있는 경우만)
@@ -164,6 +166,20 @@ class ImportDataUseCase(
                 }
             }
 
+            // 커스텀 결제수단 복원 (데이터가 있는 경우만)
+            if (hasCustomPaymentMethods) {
+                totalCount += backupData.customPaymentMethods.size
+                backupData.customPaymentMethods.forEach { backup ->
+                    try {
+                        val customPaymentMethod = backup.toCustomPaymentMethod()
+                        databaseHelper.insertCustomPaymentMethod(customPaymentMethod)
+                        successCount++
+                    } catch (e: Exception) {
+                        failureCount++
+                    }
+                }
+            }
+
             Result.success(
                 ImportResult(
                     totalCount = totalCount,
@@ -249,6 +265,14 @@ class ImportDataUseCase(
         memo = memo
     )
 
+    private fun CustomPaymentMethodBackup.toCustomPaymentMethod() = CustomPaymentMethod(
+        id = id,
+        name = name,
+        isActive = isActive,
+        sortOrder = sortOrder,
+        isDefault = isDefault
+    )
+
     private fun RecurringTransactionBackup.toRecurringTransaction() = RecurringTransaction(
         id = id,
         type = TransactionType.valueOf(type),
@@ -259,6 +283,7 @@ class ImportDataUseCase(
         paymentMethod = PaymentMethod.valueOf(paymentMethod),
         balanceCardId = balanceCardId,
         giftCardId = giftCardId,
+        cardName = cardName,
         pattern = RecurringPattern.valueOf(pattern),
         dayOfMonth = dayOfMonth,
         dayOfWeek = dayOfWeek,

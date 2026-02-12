@@ -40,11 +40,12 @@ private fun removeComma(value: String): String {
     return value.replace(",", "")
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecurringTransactionDialog(
     transaction: RecurringTransaction?,
     categories: List<Category>,
+    customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (RecurringTransaction) -> Unit
 ) {
@@ -66,6 +67,11 @@ fun RecurringTransactionDialog(
     var merchant by remember { mutableStateOf(transaction?.merchant ?: "") }
     var memo by remember { mutableStateOf(transaction?.memo ?: "") }
     var selectedPaymentMethod by remember { mutableStateOf(transaction?.paymentMethod ?: PaymentMethod.CASH) }
+    var selectedCardName by remember {
+        mutableStateOf(
+            transaction?.cardName ?: (customPaymentMethods.find { it.isDefault } ?: customPaymentMethods.firstOrNull())?.name
+        )
+    }
     var selectedPattern by remember { mutableStateOf(transaction?.pattern ?: RecurringPattern.MONTHLY) }
     var dayOfMonth by remember { mutableStateOf(transaction?.dayOfMonth ?: 1) }
     var dayOfWeek by remember { mutableStateOf(transaction?.dayOfWeek ?: 1) }
@@ -336,7 +342,10 @@ fun RecurringTransactionDialog(
                                         color = backgroundColor,
                                         shape = RoundedCornerShape(20.dp)
                                     )
-                                    .clickable { selectedPaymentMethod = method }
+                                    .clickable {
+                                        selectedPaymentMethod = method
+                                        if (method != PaymentMethod.CARD) selectedCardName = null
+                                    }
                                     .padding(horizontal = 16.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -346,6 +355,51 @@ fun RecurringTransactionDialog(
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     color = textColor
                                 )
+                            }
+                        }
+                    }
+
+                    // 카드 선택 시 커스텀 카드 드롭다운
+                    if (selectedPaymentMethod == PaymentMethod.CARD && customPaymentMethods.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        var cardDropdownExpanded by remember { mutableStateOf(false) }
+
+                        ExposedDropdownMenuBox(
+                            expanded = cardDropdownExpanded,
+                            onExpandedChange = { cardDropdownExpanded = !cardDropdownExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedCardName ?: customPaymentMethods.firstOrNull()?.name ?: "",
+                                onValueChange = { },
+                                readOnly = true,
+                                label = { Text(strings.selectCard) },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = cardDropdownExpanded)
+                                },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = cardDropdownExpanded,
+                                onDismissRequest = { cardDropdownExpanded = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            ) {
+                                customPaymentMethods.forEach { method ->
+                                    DropdownMenuItem(
+                                        text = { Text(method.name, color = MaterialTheme.colorScheme.onSurface) },
+                                        onClick = {
+                                            selectedCardName = method.name
+                                            cardDropdownExpanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -560,6 +614,7 @@ fun RecurringTransactionDialog(
                                     paymentMethod = selectedPaymentMethod,
                                     balanceCardId = transaction?.balanceCardId,
                                     giftCardId = transaction?.giftCardId,
+                                    cardName = if (selectedPaymentMethod == PaymentMethod.CARD) selectedCardName else null,
                                     pattern = selectedPattern,
                                     dayOfMonth = if (selectedPattern == RecurringPattern.MONTHLY) dayOfMonth else null,
                                     dayOfWeek = if (selectedPattern == RecurringPattern.WEEKLY) dayOfWeek else null,

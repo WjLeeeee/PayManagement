@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class BackupData(
-    val version: Int = 5, // 백업 데이터 버전 (v5: recurring transactions)
+    val version: Int = 6, // 백업 데이터 버전 (v6: custom payment methods)
     val exportDate: String = "", // 내보내기 날짜
     val payday: Int = 0, // 월급날
     val paydayAdjustment: String = "NONE", // 월급날 조정 (enum name)
@@ -17,7 +17,8 @@ data class BackupData(
     val categories: List<CategoryBackup> = emptyList(), // v3부터 추가
     val budgetPlans: List<BudgetPlanBackup> = emptyList(), // v3부터 추가
     val categoryBudgets: List<CategoryBudgetBackup> = emptyList(), // v3부터 추가
-    val recurringTransactions: List<RecurringTransactionBackup> = emptyList() // v5부터 추가
+    val recurringTransactions: List<RecurringTransactionBackup> = emptyList(), // v5부터 추가
+    val customPaymentMethods: List<CustomPaymentMethodBackup> = emptyList() // v6부터 추가
 )
 
 @Serializable
@@ -103,6 +104,7 @@ data class RecurringTransactionBackup(
     val paymentMethod: String,
     val balanceCardId: String? = null,
     val giftCardId: String? = null,
+    val cardName: String? = null, // 커스텀 카드명 (CARD 결제 시)
     val pattern: String, // "MONTHLY" or "WEEKLY"
     val dayOfMonth: Int? = null,
     val dayOfWeek: Int? = null,
@@ -110,4 +112,13 @@ data class RecurringTransactionBackup(
     val isActive: Boolean = true,
     val createdAt: Long,
     val lastExecutedDate: String? = null
+)
+
+@Serializable
+data class CustomPaymentMethodBackup(
+    val id: String,
+    val name: String,
+    val isActive: Boolean = true,
+    val sortOrder: Int = 0,
+    val isDefault: Boolean = false
 )

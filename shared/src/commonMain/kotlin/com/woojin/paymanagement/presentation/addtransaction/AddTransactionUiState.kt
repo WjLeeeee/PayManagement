@@ -2,6 +2,7 @@ package com.woojin.paymanagement.presentation.addtransaction
 
 import androidx.compose.ui.text.input.TextFieldValue
 import com.woojin.paymanagement.data.BalanceCard
+import com.woojin.paymanagement.data.CustomPaymentMethod
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
@@ -47,6 +48,10 @@ data class AddTransactionUiState(
     val error: String? = null,
     val isValidInput: Boolean = false,
     val saveEnabled: Boolean = false,
+
+    // 커스텀 결제수단 (카드)
+    val customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
+    val selectedCustomCardName: String? = null,
 
     // 예산 초과 알림
     val budgetExceededMessage: String? = null

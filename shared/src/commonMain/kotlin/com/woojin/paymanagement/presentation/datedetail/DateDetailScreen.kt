@@ -215,6 +215,7 @@ fun DateDetailScreen(
         RecurringTransactionDialog(
             transaction = uiState.recurringTransactionBase,
             categories = uiState.availableCategories,
+            customPaymentMethods = uiState.customPaymentMethods,
             onDismiss = { viewModel.hideRecurringTransactionDialog() },
             onSave = { recurringTransaction ->
                 viewModel.saveRecurringTransaction(recurringTransaction)

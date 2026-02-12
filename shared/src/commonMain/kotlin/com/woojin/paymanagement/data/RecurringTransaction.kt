@@ -35,6 +35,7 @@ data class RecurringTransaction(
     val paymentMethod: PaymentMethod,
     val balanceCardId: String? = null,
     val giftCardId: String? = null,
+    val cardName: String? = null,  // 커스텀 카드명 (CARD 결제 시)
     val pattern: RecurringPattern,
     val dayOfMonth: Int? = null,  // 1~31 (MONTHLY일 때 사용)
     val dayOfWeek: Int? = null,   // 1~7 (월~일, WEEKLY일 때 사용)

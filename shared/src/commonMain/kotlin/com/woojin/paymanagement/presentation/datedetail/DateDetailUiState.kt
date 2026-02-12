@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.presentation.datedetail
 
 import com.woojin.paymanagement.data.Category
+import com.woojin.paymanagement.data.CustomPaymentMethod
 import com.woojin.paymanagement.data.RecurringTransaction
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.domain.model.DailySummary
@@ -14,6 +15,7 @@ data class DateDetailUiState(
     val error: String? = null,
     val transactionToDelete: Transaction? = null, // 삭제 확인 대기 중인 거래
     val availableCategories: List<Category> = emptyList(),
+    val customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
     val expandedTransactionId: String? = null, // 확장된 거래 ID
     val showRecurringDialog: Boolean = false, // 반복거래 다이얼로그 표시 여부
     val recurringTransactionBase: RecurringTransaction? = null // 다이얼로그 초기값

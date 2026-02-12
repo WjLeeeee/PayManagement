@@ -102,7 +102,8 @@ data class PaymentMethodSummary(
     val cardActualExpense: Double = 0.0, // 더치페이 포함 실제 카드 사용액
     val settlementIncome: Double = 0.0, // 더치페이로 받은 금액
     val balanceCards: List<BalanceCardSummary> = emptyList(),
-    val giftCards: List<GiftCardSummary> = emptyList()
+    val giftCards: List<GiftCardSummary> = emptyList(),
+    val cardBreakdowns: List<CardBreakdown> = emptyList()
 )
 
 @Serializable
@@ -121,6 +122,21 @@ data class GiftCardSummary(
     val income: Double = 0.0, // 이 기간에 추가된 상품권
     val expense: Double = 0.0, // 이 기간에 사용된 상품권
     val currentBalance: Double = 0.0 // 현재 잔액
+)
+
+@Serializable
+data class CustomPaymentMethod(
+    val id: String,
+    val name: String,
+    val isActive: Boolean = true,
+    val sortOrder: Int = 0,
+    val isDefault: Boolean = false
+)
+
+@Serializable
+data class CardBreakdown(
+    val cardName: String?,  // null = 미지정
+    val expense: Double
 )
 
 object GiftCardUtils {
@@ -426,6 +442,21 @@ object PaymentMethodAnalyzer {
             )
         }.filter { it.currentBalance > 0 } // 잔액이 0인 것은 제외
 
+        // 카드별 지출 분석
+        val cardBreakdowns = if (cardExpense > 0) {
+            cardTransactions
+                .groupBy { it.cardName }
+                .map { (name, txns) ->
+                    CardBreakdown(
+                        cardName = name,
+                        expense = txns.sumOf { it.displayAmount }
+                    )
+                }
+                .sortedByDescending { it.expense }
+        } else {
+            emptyList()
+        }
+
         return PaymentMethodSummary(
             cashIncome = cashIncome,
             cashExpense = cashExpense,
@@ -433,7 +464,8 @@ object PaymentMethodAnalyzer {
             cardActualExpense = cardActualExpense,
             settlementIncome = settlementIncome,
             balanceCards = balanceCardSummaries,
-            giftCards = giftCardSummaries
+            giftCards = giftCardSummaries,
+            cardBreakdowns = cardBreakdowns
         )
     }
 }

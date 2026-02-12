@@ -1,4 +1,4 @@
--- Schema version 15
+-- Schema version 16
 
 -- Category 관련 테이블
 CREATE TABLE CategoryEntity (
@@ -97,6 +97,7 @@ CREATE TABLE RecurringTransactionEntity (
     paymentMethod TEXT NOT NULL,
     balanceCardId TEXT,
     giftCardId TEXT,
+    cardName TEXT,  -- 커스텀 카드명 (CARD 결제 시)
     pattern TEXT NOT NULL,  -- MONTHLY 또는 WEEKLY
     dayOfMonth INTEGER,  -- 1~31 (MONTHLY일 때)
     dayOfWeek INTEGER,   -- 1~7 (WEEKLY일 때, 1=월요일, 7=일요일)
@@ -367,8 +368,8 @@ WHERE category = ? AND type = 'EXPENSE' AND date >= ? AND date <= ?;
 
 -- RecurringTransaction 관련 쿼리들
 insertRecurringTransaction:
-INSERT INTO RecurringTransactionEntity(id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, giftCardId, pattern, dayOfMonth, dayOfWeek, weekendHandling, isActive, createdAt, lastExecutedDate)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO RecurringTransactionEntity(id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, giftCardId, cardName, pattern, dayOfMonth, dayOfWeek, weekendHandling, isActive, createdAt, lastExecutedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllRecurringTransactions:
 SELECT * FROM RecurringTransactionEntity
@@ -385,7 +386,7 @@ WHERE id = ?;
 
 updateRecurringTransaction:
 UPDATE RecurringTransactionEntity
-SET type = ?, category = ?, amount = ?, merchant = ?, memo = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, pattern = ?, dayOfMonth = ?, dayOfWeek = ?, weekendHandling = ?, isActive = ?
+SET type = ?, category = ?, amount = ?, merchant = ?, memo = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, pattern = ?, dayOfMonth = ?, dayOfWeek = ?, weekendHandling = ?, isActive = ?
 WHERE id = ?;
 
 updateRecurringTransactionLastExecuted:
@@ -450,3 +451,56 @@ DELETE FROM FailedNotificationEntity;
 deleteOldFailedNotifications:
 DELETE FROM FailedNotificationEntity
 WHERE createdAt < ?;
+
+-- CustomPaymentMethod 관련 테이블 및 쿼리들
+CREATE TABLE CustomPaymentMethodEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    isActive INTEGER NOT NULL DEFAULT 1,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    isDefault INTEGER NOT NULL DEFAULT 0
+);
+
+insertCustomPaymentMethod:
+INSERT INTO CustomPaymentMethodEntity(id, name, isActive, sortOrder, isDefault)
+VALUES (?, ?, ?, ?, ?);
+
+selectAllCustomPaymentMethods:
+SELECT * FROM CustomPaymentMethodEntity
+WHERE isActive = 1
+ORDER BY sortOrder ASC, name ASC;
+
+selectAllCustomPaymentMethodsIncludingInactive:
+SELECT * FROM CustomPaymentMethodEntity
+ORDER BY sortOrder ASC, name ASC;
+
+selectCustomPaymentMethodById:
+SELECT * FROM CustomPaymentMethodEntity
+WHERE id = ?;
+
+updateCustomPaymentMethod:
+UPDATE CustomPaymentMethodEntity
+SET name = ?, isActive = ?, sortOrder = ?, isDefault = ?
+WHERE id = ?;
+
+clearAllDefaultPaymentMethods:
+UPDATE CustomPaymentMethodEntity
+SET isDefault = 0
+WHERE isDefault = 1;
+
+deleteCustomPaymentMethod:
+UPDATE CustomPaymentMethodEntity
+SET isActive = 0
+WHERE id = ?;
+
+deleteCustomPaymentMethodPermanently:
+DELETE FROM CustomPaymentMethodEntity
+WHERE id = ?;
+
+deleteAllCustomPaymentMethods:
+DELETE FROM CustomPaymentMethodEntity;
+
+updateTransactionsCardName:
+UPDATE TransactionEntity
+SET cardName = ?
+WHERE cardName = ? AND paymentMethod = 'CARD';

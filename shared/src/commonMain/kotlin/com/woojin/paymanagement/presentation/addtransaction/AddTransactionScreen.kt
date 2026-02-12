@@ -125,7 +125,10 @@ fun AddTransactionScreen(
                 onBalanceCardSelected = viewModel::updateSelectedBalanceCard,
                 selectedGiftCard = uiState.selectedGiftCard,
                 onGiftCardSelected = viewModel::updateSelectedGiftCard,
-                amount = uiState.amount.text
+                amount = uiState.amount.text,
+                customPaymentMethods = uiState.customPaymentMethods,
+                selectedCustomCardName = uiState.selectedCustomCardName,
+                onCustomCardNameSelected = viewModel::updateSelectedCustomCardName
             )
         }
 

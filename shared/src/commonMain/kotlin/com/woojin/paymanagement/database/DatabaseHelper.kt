@@ -15,6 +15,7 @@ import com.woojin.paymanagement.data.BudgetPlan
 import com.woojin.paymanagement.data.CategoryBudget
 import com.woojin.paymanagement.data.RecurringTransaction
 import com.woojin.paymanagement.data.RecurringPattern
+import com.woojin.paymanagement.data.CustomPaymentMethod
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
@@ -597,6 +598,7 @@ class DatabaseHelper(
             paymentMethod = recurringTransaction.paymentMethod.name,
             balanceCardId = recurringTransaction.balanceCardId,
             giftCardId = recurringTransaction.giftCardId,
+            cardName = recurringTransaction.cardName,
             pattern = recurringTransaction.pattern.name,
             dayOfMonth = recurringTransaction.dayOfMonth?.toLong(),
             dayOfWeek = recurringTransaction.dayOfWeek?.toLong(),
@@ -617,6 +619,7 @@ class DatabaseHelper(
             paymentMethod = recurringTransaction.paymentMethod.name,
             balanceCardId = recurringTransaction.balanceCardId,
             giftCardId = recurringTransaction.giftCardId,
+            cardName = recurringTransaction.cardName,
             pattern = recurringTransaction.pattern.name,
             dayOfMonth = recurringTransaction.dayOfMonth?.toLong(),
             dayOfWeek = recurringTransaction.dayOfWeek?.toLong(),
@@ -652,6 +655,7 @@ class DatabaseHelper(
             paymentMethod = PaymentMethod.valueOf(this.paymentMethod),
             balanceCardId = this.balanceCardId,
             giftCardId = this.giftCardId,
+            cardName = this.cardName,
             pattern = RecurringPattern.valueOf(this.pattern),
             dayOfMonth = this.dayOfMonth?.toInt(),
             dayOfWeek = this.dayOfWeek?.toInt(),
@@ -740,6 +744,71 @@ class DatabaseHelper(
             bigText = this.bigText,
             failureReason = this.failureReason,
             createdAt = this.createdAt
+        )
+    }
+
+    // CustomPaymentMethod 관련 메서드들
+    fun getAllCustomPaymentMethods(): Flow<List<CustomPaymentMethod>> {
+        return queries.selectAllCustomPaymentMethods()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toCustomPaymentMethod() }
+            }
+    }
+
+    fun getAllCustomPaymentMethodsIncludingInactive(): Flow<List<CustomPaymentMethod>> {
+        return queries.selectAllCustomPaymentMethodsIncludingInactive()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toCustomPaymentMethod() }
+            }
+    }
+
+    suspend fun insertCustomPaymentMethod(customPaymentMethod: CustomPaymentMethod) {
+        queries.insertCustomPaymentMethod(
+            id = customPaymentMethod.id,
+            name = customPaymentMethod.name,
+            isActive = if (customPaymentMethod.isActive) 1L else 0L,
+            sortOrder = customPaymentMethod.sortOrder.toLong(),
+            isDefault = if (customPaymentMethod.isDefault) 1L else 0L
+        )
+    }
+
+    suspend fun updateCustomPaymentMethod(customPaymentMethod: CustomPaymentMethod) {
+        queries.updateCustomPaymentMethod(
+            name = customPaymentMethod.name,
+            isActive = if (customPaymentMethod.isActive) 1L else 0L,
+            sortOrder = customPaymentMethod.sortOrder.toLong(),
+            isDefault = if (customPaymentMethod.isDefault) 1L else 0L,
+            id = customPaymentMethod.id
+        )
+    }
+
+    suspend fun clearAllDefaultPaymentMethods() {
+        queries.clearAllDefaultPaymentMethods()
+    }
+
+    suspend fun deleteCustomPaymentMethod(id: String) {
+        queries.deleteCustomPaymentMethod(id)
+    }
+
+    suspend fun deleteAllCustomPaymentMethods() {
+        queries.deleteAllCustomPaymentMethods()
+    }
+
+    suspend fun updateTransactionsCardName(oldCardName: String, newCardName: String) {
+        queries.updateTransactionsCardName(newCardName, oldCardName)
+    }
+
+    private fun CustomPaymentMethodEntity.toCustomPaymentMethod(): CustomPaymentMethod {
+        return CustomPaymentMethod(
+            id = this.id,
+            name = this.name,
+            isActive = this.isActive == 1L,
+            sortOrder = this.sortOrder.toInt(),
+            isDefault = this.isDefault == 1L
         )
     }
 }

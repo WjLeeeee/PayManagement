@@ -728,4 +728,24 @@ interface AppStrings {
     val moveToNextWeekday: String
     val noCategoriesRegistered: String
     val memoOptionalShort: String
+
+    // ===== Custom Payment Method Management =====
+    val paymentMethodManagement: String
+    val addPaymentMethod: String
+    val editPaymentMethod: String
+    val deletePaymentMethod: String
+    val paymentMethodName: String
+    val paymentMethodManagementDesc: String
+    val defaultPaymentMethods: String
+    val customPaymentMethods: String
+    val unspecifiedCard: String
+    fun deletePaymentMethodConfirmMessage(name: String): String
+    fun totalPaymentMethodCount(defaultCount: Int, customCount: Int): String
+    fun defaultPaymentMethodCount(count: Int): String
+    fun customPaymentMethodCount(count: Int): String
+    val selectCard: String
+    val defaultCard: String
+    val setAsDefaultCard: String
+    val cardBreakdown: String
+    val transactionTools: String
 }
