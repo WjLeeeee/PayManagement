@@ -95,7 +95,12 @@ class AddTransactionViewModel(
 
 
     fun reset() {
-        uiState = AddTransactionUiState()
+        val currentCustomPaymentMethods = uiState.customPaymentMethods
+        val currentSelectedCardName = uiState.selectedCustomCardName
+        uiState = AddTransactionUiState(
+            customPaymentMethods = currentCustomPaymentMethods,
+            selectedCustomCardName = currentSelectedCardName
+        )
     }
 
     fun initialize(
@@ -285,9 +290,18 @@ class AddTransactionViewModel(
     }
 
     fun updatePaymentMethod(paymentMethod: PaymentMethod) {
+        val cardName = if (paymentMethod == PaymentMethod.CARD) {
+            // 카드 선택 시 기존 선택이 없으면 기본 카드로 설정
+            uiState.selectedCustomCardName ?: run {
+                val methods = uiState.customPaymentMethods
+                if (methods.isNotEmpty()) {
+                    (methods.find { it.isDefault } ?: methods.first()).name
+                } else null
+            }
+        } else null
         uiState = uiState.copy(
             selectedPaymentMethod = paymentMethod,
-            selectedCustomCardName = if (paymentMethod == PaymentMethod.CARD) uiState.selectedCustomCardName else null
+            selectedCustomCardName = cardName
         )
         validateInput()
     }
