@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.woojin.paymanagement.data.*
 import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.theme.SavingColor
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -159,6 +160,21 @@ fun RecurringTransactionDialog(
                             selectedLabelColor = Color.White
                         )
                     )
+
+                    FilterChip(
+                        onClick = { selectedType = TransactionType.SAVING },
+                        label = {
+                            Text(
+                                strings.saving,
+                                color = if (selectedType == TransactionType.SAVING) Color.White else MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        selected = selectedType == TransactionType.SAVING,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = SavingColor.color,
+                            selectedLabelColor = Color.White
+                        )
+                    )
                 }
 
                 HorizontalDivider()
@@ -183,11 +199,13 @@ fun RecurringTransactionDialog(
                             val backgroundColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                                 isSelected && selectedType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.lightBackground
                                 else -> MaterialTheme.colorScheme.surfaceVariant
                             }
                             val borderColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                                 isSelected && selectedType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.color
                                 else -> Color.Transparent
                             }
                             val textColor = when {
@@ -258,27 +276,33 @@ fun RecurringTransactionDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        focusedLabelColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        focusedBorderColor = when (selectedType) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> SavingColor.color
+                        },
+                        focusedLabelColor = when (selectedType) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> SavingColor.color
+                        }
                     )
                 )
 
-                // 사용처 입력 (필수)
-                OutlinedTextField(
-                    value = merchant,
-                    onValueChange = { merchant = it },
-                    label = { Text(strings.merchantLabel) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        focusedLabelColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                // 사용처 입력 (지출일 때만 필수)
+                if (selectedType == TransactionType.EXPENSE) {
+                    OutlinedTextField(
+                        value = merchant,
+                        onValueChange = { merchant = it },
+                        label = { Text(strings.merchantLabel) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.error,
+                            focusedLabelColor = MaterialTheme.colorScheme.error
+                        )
                     )
-                )
+                }
 
                 // 메모 입력 (선택)
                 OutlinedTextField(
@@ -288,10 +312,16 @@ fun RecurringTransactionDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        focusedLabelColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        focusedBorderColor = when (selectedType) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> SavingColor.color
+                        },
+                        focusedLabelColor = when (selectedType) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> SavingColor.color
+                        }
                     )
                 )
 
@@ -546,11 +576,13 @@ fun RecurringTransactionDialog(
                             val backgroundColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                                 isSelected && selectedType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.lightBackground
                                 else -> MaterialTheme.colorScheme.surfaceVariant
                             }
                             val borderColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                                 isSelected && selectedType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.color
                                 else -> Color.Transparent
                             }
                             val textColor = when {
@@ -603,18 +635,19 @@ fun RecurringTransactionDialog(
                         onClick = {
                             // 콤마 제거 후 Double로 변환
                             val amountValue = removeComma(amount.text).toDoubleOrNull() ?: 0.0
-                            if (amountValue > 0 && selectedCategory.isNotEmpty() && merchant.isNotEmpty()) {
+                            val isMerchantValid = selectedType != TransactionType.EXPENSE || merchant.isNotEmpty()
+                            if (amountValue > 0 && selectedCategory.isNotEmpty() && isMerchantValid) {
                                 val newTransaction = RecurringTransaction(
                                     id = transaction?.id ?: kotlin.random.Random.nextLong().toString(),
                                     type = selectedType,
                                     category = selectedCategory,
                                     amount = amountValue,
-                                    merchant = merchant,
+                                    merchant = if (selectedType == TransactionType.SAVING) "" else merchant,
                                     memo = memo,
-                                    paymentMethod = selectedPaymentMethod,
+                                    paymentMethod = if (selectedType == TransactionType.SAVING) PaymentMethod.CASH else selectedPaymentMethod,
                                     balanceCardId = transaction?.balanceCardId,
                                     giftCardId = transaction?.giftCardId,
-                                    cardName = if (selectedPaymentMethod == PaymentMethod.CARD) selectedCardName else null,
+                                    cardName = if (selectedType != TransactionType.SAVING && selectedPaymentMethod == PaymentMethod.CARD) selectedCardName else null,
                                     pattern = selectedPattern,
                                     dayOfMonth = if (selectedPattern == RecurringPattern.MONTHLY) dayOfMonth else null,
                                     dayOfWeek = if (selectedPattern == RecurringPattern.WEEKLY) dayOfWeek else null,
@@ -629,7 +662,7 @@ fun RecurringTransactionDialog(
                         enabled = removeComma(amount.text).toDoubleOrNull() != null &&
                                 removeComma(amount.text).toDoubleOrNull()!! > 0 &&
                                 selectedCategory.isNotEmpty() &&
-                                merchant.isNotEmpty(),
+                                (selectedType != TransactionType.EXPENSE || merchant.isNotEmpty()),
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(if (transaction == null) strings.add else strings.edit)

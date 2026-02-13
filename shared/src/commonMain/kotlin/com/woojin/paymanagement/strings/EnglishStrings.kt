@@ -113,6 +113,7 @@ object EnglishStrings : AppStrings {
     override val income = "Income"
     override val expense = "Expense"
     override val transfer = "Transfer"
+    override val saving = "Savings"
     override val transactionType = "Transaction Type"
 
     // ===== Categories =====
@@ -617,6 +618,9 @@ object EnglishStrings : AppStrings {
     override val incomeAnalysis = "Income Analysis"
     override val expenseAnalysis = "Expense Analysis"
     override val investmentActivityAnalysis = "Investment Activity Analysis"
+    override val savingActivitySummary = "Savings Activity Summary"
+    override val savingCategories = "Savings Categories"
+    override val addSavingCategory = "Add Savings Category"
     override val investmentActivitySummary = "Investment Activity Summary"
     override val investment = "Investment"
     override val stopLoss = "Stop Loss"

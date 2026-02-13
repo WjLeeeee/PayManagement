@@ -220,6 +220,22 @@ fun StatisticsScreen(
             }
         }
 
+        // Saving Activity Chart
+        statisticsData.chartData?.let { chartData ->
+            if (chartData.savingItems.isNotEmpty()) {
+                ChartSection(
+                    title = strings.savingActivitySummary,
+                    items = chartData.savingItems,
+                    total = chartData.totalSaving,
+                    availableCategories = uiState.availableCategories,
+                    transactions = statisticsData.transactions,
+                    transactionType = TransactionType.SAVING,
+                    groupSmallItems = false,
+                    filterByType = true
+                )
+            }
+        }
+
         // Payment Method Summary
         statisticsData.paymentSummary?.let { paymentSummary ->
             if (paymentSummary.cashIncome > 0 || paymentSummary.cashExpense > 0 || paymentSummary.cardExpense > 0 ||
@@ -872,6 +888,19 @@ private fun ChartLegendItem(
                                 "• $dateText - $merchant (${transaction.memo}) (${strings.amountWithUnit(amountText)})"
                             } else {
                                 "• $dateText - $merchant (${strings.amountWithUnit(amountText)})"
+                            }
+                            Text(
+                                text = displayText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TransactionType.SAVING -> {
+                            // 저축: 날짜 + 메모 (있으면) + 금액
+                            val displayText = if (transaction.memo.isNotBlank()) {
+                                "• $dateText - ${transaction.memo} (${strings.amountWithUnit(amountText)})"
+                            } else {
+                                "• $dateText (${strings.amountWithUnit(amountText)})"
                             }
                             Text(
                                 text = displayText,

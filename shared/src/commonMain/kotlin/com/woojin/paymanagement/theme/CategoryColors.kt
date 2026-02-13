@@ -2,6 +2,14 @@ package com.woojin.paymanagement.theme
 
 import androidx.compose.ui.graphics.Color
 
+/**
+ * 저축 거래 타입 전용 색상 (라이트/다크 모드 모두 가시성 확보)
+ */
+object SavingColor {
+    val color = Color(0xFF43A047) // 초록색 (저축/성장 느낌)
+    val lightBackground = Color(0xFFE8F5E9) // 연한 초록 배경
+}
+
 object CategoryColors {
 
     // 카테고리별 색상 정의

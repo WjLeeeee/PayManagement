@@ -64,6 +64,7 @@ interface AppStrings {
     val income: String
     val expense: String
     val transfer: String
+    val saving: String
     val transactionType: String
 
     // ===== Categories =====
@@ -567,6 +568,9 @@ interface AppStrings {
     val incomeAnalysis: String
     val expenseAnalysis: String
     val investmentActivityAnalysis: String
+    val savingActivitySummary: String
+    val savingCategories: String
+    val addSavingCategory: String
     val investmentActivitySummary: String
     val investment: String
     val stopLoss: String

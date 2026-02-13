@@ -50,6 +50,7 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.usecase.CalculatorUseCase
 import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.theme.SavingColor
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
@@ -245,6 +246,23 @@ fun CalculatorDialog(
                                 selectedLabelColor = Color.White
                             )
                         )
+
+                        FilterChip(
+                            onClick = {
+                                selectedTransactionType = TransactionType.SAVING
+                            },
+                            label = {
+                                Text(
+                                    strings.saving,
+                                    color = if (selectedTransactionType == TransactionType.SAVING) Color.White else MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            selected = selectedTransactionType == TransactionType.SAVING,
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = SavingColor.color,
+                                selectedLabelColor = Color.White
+                            )
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -275,11 +293,13 @@ fun CalculatorDialog(
                                     isSelected && selectedTransactionType == TransactionType.EXPENSE -> Color(
                                         0xFFFFEBEE
                                     ) // 연한 빨강
+                                    isSelected && selectedTransactionType == TransactionType.SAVING -> SavingColor.lightBackground
                                     else -> MaterialTheme.colorScheme.surfaceVariant
                                 }
                                 val borderColor = when {
                                     isSelected && selectedTransactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary // 파랑
                                     isSelected && selectedTransactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error // 빨강
+                                    isSelected && selectedTransactionType == TransactionType.SAVING -> SavingColor.color
                                     else -> Color.Transparent
                                 }
                                 val textColor = when {

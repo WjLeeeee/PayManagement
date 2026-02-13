@@ -65,15 +65,20 @@ class CategoryRepositoryImpl(
             Category(uuid4().toString(), "대출이자", "🏦", TransactionType.EXPENSE, sortOrder = 9),
             Category(uuid4().toString(), "모임통장", "👥", TransactionType.EXPENSE, sortOrder = 10),
             Category(uuid4().toString(), "교통비", "🚗", TransactionType.EXPENSE, sortOrder = 11),
-            Category(uuid4().toString(), "적금", "🐷", TransactionType.EXPENSE, sortOrder = 12),
-            Category(uuid4().toString(), "투자", "💹", TransactionType.EXPENSE, sortOrder = 13),
-            Category(uuid4().toString(), "손절", "📉", TransactionType.EXPENSE, sortOrder = 14),
-            Category(uuid4().toString(), "정기결제", "📅", TransactionType.EXPENSE, sortOrder = 15),
-            Category(uuid4().toString(), "기타지출", "💸", TransactionType.EXPENSE, sortOrder = 16)
+            Category(uuid4().toString(), "투자", "💹", TransactionType.EXPENSE, sortOrder = 12),
+            Category(uuid4().toString(), "손절", "📉", TransactionType.EXPENSE, sortOrder = 13),
+            Category(uuid4().toString(), "정기결제", "📅", TransactionType.EXPENSE, sortOrder = 14),
+            Category(uuid4().toString(), "기타지출", "💸", TransactionType.EXPENSE, sortOrder = 15)
+        )
+
+        // 저축 카테고리
+        val savingCategories = listOf(
+            Category(uuid4().toString(), "적금", "🐷", TransactionType.SAVING, sortOrder = 0),
+            Category(uuid4().toString(), "예금", "🏦", TransactionType.SAVING, sortOrder = 1)
         )
 
         // 모든 카테고리 삽입
-        (incomeCategories + expenseCategories).forEach { category ->
+        (incomeCategories + expenseCategories + savingCategories).forEach { category ->
             databaseHelper.insertCategory(category)
         }
     }

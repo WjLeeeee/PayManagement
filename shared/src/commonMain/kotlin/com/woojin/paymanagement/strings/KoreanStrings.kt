@@ -72,6 +72,7 @@ object KoreanStrings : AppStrings {
     override val income = "수입"
     override val expense = "지출"
     override val transfer = "이체"
+    override val saving = "저축"
     override val transactionType = "거래 유형"
 
     // ===== Categories =====
@@ -576,6 +577,9 @@ object KoreanStrings : AppStrings {
     override val incomeAnalysis = "수입 분석"
     override val expenseAnalysis = "지출 분석"
     override val investmentActivityAnalysis = "투자 활동 분석"
+    override val savingActivitySummary = "저축 활동 요약"
+    override val savingCategories = "저축 카테고리"
+    override val addSavingCategory = "저축 카테고리 추가"
     override val investmentActivitySummary = "투자 활동 요약"
     override val investment = "투자"
     override val stopLoss = "손절"

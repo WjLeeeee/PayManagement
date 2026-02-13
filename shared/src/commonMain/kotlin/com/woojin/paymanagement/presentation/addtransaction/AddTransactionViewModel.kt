@@ -387,16 +387,16 @@ class AddTransactionViewModel(
     private fun validateInput() {
         val isValidInput = uiState.amount.text.isNotBlank() &&
                           uiState.category.isNotBlank() &&
-                          // 지출일 때 사용처 필수
-                          (uiState.selectedType == TransactionType.INCOME || uiState.merchant.isNotBlank()) &&
-                          // 수입일 때 검증
-                          (uiState.selectedType == TransactionType.EXPENSE ||
+                          // 지출일 때 사용처 필수 (저축은 불필요)
+                          (uiState.selectedType != TransactionType.EXPENSE || uiState.merchant.isNotBlank()) &&
+                          // 수입일 때 검증 (저축/지출은 이 검증 불필요)
+                          (uiState.selectedType != TransactionType.INCOME ||
                            uiState.selectedIncomeType == IncomeType.CASH ||
                            (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && !uiState.isChargingExistingBalanceCard && uiState.cardName.isNotBlank()) ||
                            (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && uiState.isChargingExistingBalanceCard && uiState.selectedBalanceCardForCharge != null) ||
                            (uiState.selectedIncomeType == IncomeType.GIFT_CARD && uiState.cardName.isNotBlank())) &&
-                          // 지출일 때: 현금이거나 카드가 선택됨
-                          (uiState.selectedType == TransactionType.INCOME ||
+                          // 지출일 때: 현금이거나 카드가 선택됨 (저축은 이 검증 불필요)
+                          (uiState.selectedType != TransactionType.EXPENSE ||
                            uiState.selectedPaymentMethod == PaymentMethod.CASH ||
                            uiState.selectedPaymentMethod == PaymentMethod.CARD ||
                            (uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD && uiState.selectedBalanceCard != null) ||
@@ -486,7 +486,7 @@ class AddTransactionViewModel(
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
-                        merchant = if (uiState.selectedType == TransactionType.EXPENSE) uiState.merchant.ifBlank { null } else null,
+                        merchant = if (uiState.selectedType == TransactionType.EXPENSE) uiState.merchant.ifBlank { null } else null,  // SAVING도 null
                         memo = uiState.memo,
                         date = currentDate,
                         incomeType = if (uiState.selectedType == TransactionType.INCOME) uiState.selectedIncomeType else null,

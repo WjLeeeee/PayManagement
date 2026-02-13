@@ -51,8 +51,14 @@ fun CategoryManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 수입/지출 탭
-            TabRow(selectedTabIndex = if (uiState.selectedType == TransactionType.INCOME) 0 else 1) {
+            // 수입/지출/저축 탭
+            TabRow(
+                selectedTabIndex = when (uiState.selectedType) {
+                    TransactionType.INCOME -> 0
+                    TransactionType.EXPENSE -> 1
+                    TransactionType.SAVING -> 2
+                }
+            ) {
                 Tab(
                     selected = uiState.selectedType == TransactionType.INCOME,
                     onClick = { viewModel.selectType(TransactionType.INCOME) },
@@ -62,6 +68,11 @@ fun CategoryManagementScreen(
                     selected = uiState.selectedType == TransactionType.EXPENSE,
                     onClick = { viewModel.selectType(TransactionType.EXPENSE) },
                     text = { Text(strings.expense) }
+                )
+                Tab(
+                    selected = uiState.selectedType == TransactionType.SAVING,
+                    onClick = { viewModel.selectType(TransactionType.SAVING) },
+                    text = { Text(strings.saving) }
                 )
             }
 

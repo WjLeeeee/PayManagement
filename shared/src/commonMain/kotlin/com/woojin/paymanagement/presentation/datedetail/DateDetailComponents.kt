@@ -300,7 +300,11 @@ fun TransactionDetailItem(
                         .offset(y = 8.dp)
                         .clip(CircleShape)
                         .background(
-                            if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            when (transaction.type) {
+                                TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                                TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                            }
                         )
                 )
 
@@ -324,10 +328,10 @@ fun TransactionDetailItem(
                         )
 
                         // 결제수단/수입유형 표시
-                        val methodText = if (transaction.type == TransactionType.EXPENSE) {
-                            getPaymentMethodText(transaction.paymentMethod, strings)
-                        } else {
-                            getIncomeTypeText(transaction.incomeType, strings)
+                        val methodText = when (transaction.type) {
+                            TransactionType.EXPENSE -> getPaymentMethodText(transaction.paymentMethod, strings)
+                            TransactionType.INCOME -> getIncomeTypeText(transaction.incomeType, strings)
+                            TransactionType.SAVING -> ""
                         }
 
                         if (methodText.isNotBlank()) {
@@ -343,11 +347,19 @@ fun TransactionDetailItem(
 
                     // 금액
                     Text(
-                        text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
+                        text = "${when (transaction.type) {
+                            TransactionType.INCOME -> "+"
+                            TransactionType.EXPENSE -> "-"
+                            TransactionType.SAVING -> "-"
+                        }}${
                             strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))
                         }",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        color = when (transaction.type) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        },
                         fontWeight = FontWeight.Bold
                     )
 

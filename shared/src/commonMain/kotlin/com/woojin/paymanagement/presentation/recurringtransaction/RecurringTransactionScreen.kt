@@ -345,12 +345,14 @@ private fun RecurringTransactionItem(
                         text = when (transaction.type) {
                             TransactionType.INCOME -> "+${strings.amountWithUnit(Utils.formatAmount(transaction.amount))}"
                             TransactionType.EXPENSE -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
+                            TransactionType.SAVING -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
                         },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = when (transaction.type) {
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
                         }
                     )
 

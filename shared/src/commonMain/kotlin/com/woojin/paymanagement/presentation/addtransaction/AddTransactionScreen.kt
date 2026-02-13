@@ -151,8 +151,16 @@ fun AddTransactionScreen(
             ),
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = if (uiState.selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                focusedLabelColor = if (uiState.selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                focusedBorderColor = when (uiState.selectedType) {
+                    TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                    TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                    TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                },
+                focusedLabelColor = when (uiState.selectedType) {
+                    TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                    TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                    TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                }
             )
         )
 
@@ -253,7 +261,11 @@ fun AddTransactionScreen(
                     .height(40.dp),
                 enabled = uiState.saveEnabled && !uiState.isLoading,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (uiState.selectedType == TransactionType.INCOME) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                    containerColor = when (uiState.selectedType) {
+                        TransactionType.INCOME -> Color(0xFF4CAF50)
+                        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                    },
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {

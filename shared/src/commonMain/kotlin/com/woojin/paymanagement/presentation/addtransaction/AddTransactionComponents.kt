@@ -99,9 +99,17 @@ fun TransactionTypeSelector(
                         )
                     )
                     Text(
-                        text = if (type == TransactionType.INCOME) strings.income else strings.expense,
+                        text = when (type) {
+                            TransactionType.INCOME -> strings.income
+                            TransactionType.EXPENSE -> strings.expense
+                            TransactionType.SAVING -> strings.saving
+                        },
                         modifier = Modifier.padding(start = 8.dp),
-                        color = if (type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        color = when (type) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        },
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -751,11 +759,13 @@ fun CategoryChipGrid(
                 val backgroundColor = when {
                     isSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                     isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                    isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.lightBackground
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
                 val borderColor = when {
                     isSelected && transactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary // 파랑
                     isSelected && transactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error // 빨강
+                    isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
                     else -> Color.Transparent
                 }
                 val textColor = when {

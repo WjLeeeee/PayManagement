@@ -720,6 +720,7 @@ private fun CalendarGrid(
                 val dayTransactions = transactions.filter { it.date == date }
                 val hasIncome = dayTransactions.any { it.type == TransactionType.INCOME }
                 val hasExpense = dayTransactions.any { it.type == TransactionType.EXPENSE }
+                val hasSaving = dayTransactions.any { it.type == TransactionType.SAVING }
                 val isInCurrentPeriod = date >= payPeriod.startDate && date <= payPeriod.endDate
                 val dayOfWeek = date.dayOfWeek.ordinal // 0=Monday, 6=Sunday
                 val isHoliday = holidays.contains(date)
@@ -735,6 +736,7 @@ private fun CalendarGrid(
                     displayText = displayText,
                     hasIncome = hasIncome,
                     hasExpense = hasExpense,
+                    hasSaving = hasSaving,
                     isSelected = selectedDate == date,
                     isInCurrentPeriod = isInCurrentPeriod,
                     isToday = date == today,
@@ -763,6 +765,7 @@ private fun CalendarDay(
     displayText: String,
     hasIncome: Boolean,
     hasExpense: Boolean,
+    hasSaving: Boolean = false,
     isSelected: Boolean,
     isInCurrentPeriod: Boolean = true,
     isToday: Boolean = false,
@@ -811,12 +814,12 @@ private fun CalendarDay(
             Text(
                 text = displayText,
                 fontSize = if (isMonthLabel) 11.sp else 14.sp,
-                fontWeight = if (hasIncome || hasExpense) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (hasIncome || hasExpense || hasSaving) FontWeight.Bold else FontWeight.Normal,
                 color = if (isInCurrentPeriod) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // 인디케이터 점
-            if (hasIncome || hasExpense) {
+            if (hasIncome || hasExpense || hasSaving) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -835,6 +838,14 @@ private fun CalendarDay(
                                 .size(4.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.error)
+                        )
+                    }
+                    if (hasSaving) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .clip(CircleShape)
+                                .background(com.woojin.paymanagement.theme.SavingColor.color)
                         )
                     }
                 }
@@ -1012,7 +1023,11 @@ private fun TransactionItem(
                 .offset(y = 8.dp)
                 .clip(CircleShape)
                 .background(
-                    if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    when (transaction.type) {
+                        TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                    }
                 )
                 .align(Alignment.Top)
         )
@@ -1043,13 +1058,21 @@ private fun TransactionItem(
                 }
 
                 Text(
-                    text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
+                    text = "${when (transaction.type) {
+                        TransactionType.INCOME -> "+"
+                        TransactionType.EXPENSE -> "-"
+                        TransactionType.SAVING -> "-"
+                    }}${
                         strings.amountWithUnit(Utils.formatAmount(
                             transaction.displayAmount
                         ))
                     }",
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    color = when (transaction.type) {
+                        TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                    },
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -1074,6 +1097,8 @@ private fun TransactionItem(
                         null -> strings.cash
                     }
                 }
+
+                TransactionType.SAVING -> strings.saving
             }
 
             Spacer(modifier = Modifier.height(2.dp))

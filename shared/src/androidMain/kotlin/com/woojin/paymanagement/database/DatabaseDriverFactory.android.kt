@@ -538,6 +538,35 @@ actual class DatabaseDriverFactory(private val context: Context) {
             // 이미 존재하면 무시
         }
 
+        // 기존 "적금" 거래/카테고리/반복거래를 SAVING 타입으로 마이그레이션 (Schema v18)
+        try {
+            driver.execute(
+                null,
+                "UPDATE TransactionEntity SET type = 'SAVING' WHERE type = 'EXPENSE' AND category = '적금'",
+                0
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "UPDATE CategoryEntity SET type = 'SAVING' WHERE type = 'EXPENSE' AND name = '적금'",
+                0
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "UPDATE RecurringTransactionEntity SET type = 'SAVING' WHERE type = 'EXPENSE' AND category = '적금'",
+                0
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+
         return driver
     }
 }

@@ -610,12 +610,14 @@ private fun TransactionItem(
                     text = when (transaction.type) {
                         TransactionType.INCOME -> strings.incomeAmountDisplay(Utils.formatAmount(transaction.displayAmount))
                         TransactionType.EXPENSE -> strings.expenseAmountDisplay(Utils.formatAmount(transaction.displayAmount))
+                        TransactionType.SAVING -> strings.expenseAmountDisplay(Utils.formatAmount(transaction.displayAmount))
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = when (transaction.type) {
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
                     }
                 )
             }

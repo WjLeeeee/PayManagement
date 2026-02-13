@@ -43,9 +43,10 @@ class DateDetailViewModel(
             combine(
                 getCategoriesUseCase(TransactionType.INCOME),
                 getCategoriesUseCase(TransactionType.EXPENSE),
+                getCategoriesUseCase(TransactionType.SAVING),
                 getCustomPaymentMethodsUseCase()
-            ) { income, expense, customPaymentMethods ->
-                Pair(income + expense, customPaymentMethods)
+            ) { income, expense, saving, customPaymentMethods ->
+                Pair(income + expense + saving, customPaymentMethods)
             }.collect { (categories, customPaymentMethods) ->
                 uiState = uiState.copy(
                     availableCategories = categories,

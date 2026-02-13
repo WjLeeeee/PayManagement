@@ -1170,7 +1170,7 @@ fun PayManagementApp(
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Text(
-                                                text = strings.addIncomeExpenseCategory("${strings.income}/${strings.expense}"),
+                                                text = strings.addIncomeExpenseCategory("${strings.income}/${strings.expense}/${strings.saving}"),
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
