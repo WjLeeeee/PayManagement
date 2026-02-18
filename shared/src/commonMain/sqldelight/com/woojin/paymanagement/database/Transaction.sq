@@ -372,16 +372,16 @@ INSERT INTO RecurringTransactionEntity(id, type, category, amount, merchant, mem
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllRecurringTransactions:
-SELECT * FROM RecurringTransactionEntity
+SELECT id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, giftCardId, cardName, pattern, dayOfMonth, dayOfWeek, weekendHandling, isActive, createdAt, lastExecutedDate FROM RecurringTransactionEntity
 ORDER BY createdAt DESC;
 
 selectActiveRecurringTransactions:
-SELECT * FROM RecurringTransactionEntity
+SELECT id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, giftCardId, cardName, pattern, dayOfMonth, dayOfWeek, weekendHandling, isActive, createdAt, lastExecutedDate FROM RecurringTransactionEntity
 WHERE isActive = 1
 ORDER BY createdAt DESC;
 
 selectRecurringTransactionById:
-SELECT * FROM RecurringTransactionEntity
+SELECT id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, giftCardId, cardName, pattern, dayOfMonth, dayOfWeek, weekendHandling, isActive, createdAt, lastExecutedDate FROM RecurringTransactionEntity
 WHERE id = ?;
 
 updateRecurringTransaction:
