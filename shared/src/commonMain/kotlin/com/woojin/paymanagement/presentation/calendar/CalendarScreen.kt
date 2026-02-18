@@ -1055,6 +1055,35 @@ private fun TransactionItem(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
+                    // 결제 수단 표시 (카테고리 옆에 괄호로)
+                    val paymentMethodText = when (transaction.type) {
+                        TransactionType.INCOME -> {
+                            when (transaction.incomeType) {
+                                com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
+                                com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
+                                com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
+                                null -> strings.cash
+                            }
+                        }
+                        TransactionType.EXPENSE -> {
+                            when (transaction.paymentMethod) {
+                                com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
+                                com.woojin.paymanagement.data.PaymentMethod.CARD -> transaction.cardName ?: strings.card
+                                com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
+                                com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
+                                null -> strings.cash
+                            }
+                        }
+                        TransactionType.SAVING -> ""
+                    }
+                    if (paymentMethodText.isNotBlank()) {
+                        Text(
+                            text = "($paymentMethodText)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 Text(
@@ -1076,37 +1105,6 @@ private fun TransactionItem(
                     fontWeight = FontWeight.Bold
                 )
             }
-
-            // 결제 수단 표시
-            val paymentMethodText = when (transaction.type) {
-                TransactionType.INCOME -> {
-                    when (transaction.incomeType) {
-                        com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
-                        com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                        com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
-                        null -> strings.cash
-                    }
-                }
-
-                TransactionType.EXPENSE -> {
-                    when (transaction.paymentMethod) {
-                        com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
-                        com.woojin.paymanagement.data.PaymentMethod.CARD -> strings.card
-                        com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                        com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
-                        null -> strings.cash
-                    }
-                }
-
-                TransactionType.SAVING -> strings.saving
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = paymentMethodText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
 
             if (!transaction.merchant.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
