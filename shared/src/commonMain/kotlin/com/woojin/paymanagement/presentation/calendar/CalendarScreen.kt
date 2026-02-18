@@ -1106,14 +1106,12 @@ private fun TransactionItem(
                 )
             }
 
-            if (!transaction.merchant.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = transaction.merchant,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                )
-            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = transaction.merchant ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
         }
     }
 }
