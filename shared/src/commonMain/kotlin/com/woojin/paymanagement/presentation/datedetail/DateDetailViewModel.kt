@@ -12,6 +12,7 @@ import com.woojin.paymanagement.data.WeekendHandling
 import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import com.woojin.paymanagement.domain.usecase.GetCustomPaymentMethodsUseCase
 import com.woojin.paymanagement.domain.usecase.GetTransactionsByDateUseCase
 import com.woojin.paymanagement.domain.usecase.SaveRecurringTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -30,21 +31,27 @@ class DateDetailViewModel(
     private val deleteTransactionUseCase: DeleteTransactionUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val saveRecurringTransactionUseCase: SaveRecurringTransactionUseCase,
+    private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(DateDetailUiState())
         private set
 
     init {
-        // 카테고리 목록을 로드하여 UiState에 반영
+        // 카테고리 목록과 커스텀 결제수단을 로드하여 UiState에 반영
         coroutineScope.launch {
             combine(
                 getCategoriesUseCase(TransactionType.INCOME),
-                getCategoriesUseCase(TransactionType.EXPENSE)
-            ) { income, expense ->
-                income + expense
-            }.collect { categories ->
-                uiState = uiState.copy(availableCategories = categories)
+                getCategoriesUseCase(TransactionType.EXPENSE),
+                getCategoriesUseCase(TransactionType.SAVING),
+                getCustomPaymentMethodsUseCase()
+            ) { income, expense, saving, customPaymentMethods ->
+                Pair(income + expense + saving, customPaymentMethods)
+            }.collect { (categories, customPaymentMethods) ->
+                uiState = uiState.copy(
+                    availableCategories = categories,
+                    customPaymentMethods = customPaymentMethods
+                )
             }
         }
     }
@@ -144,6 +151,7 @@ class DateDetailViewModel(
             paymentMethod = this.paymentMethod ?: PaymentMethod.CASH,
             balanceCardId = this.balanceCardId,
             giftCardId = this.giftCardId,
+            cardName = this.cardName,
             pattern = RecurringPattern.MONTHLY,
             dayOfMonth = this.date.dayOfMonth,
             dayOfWeek = null,

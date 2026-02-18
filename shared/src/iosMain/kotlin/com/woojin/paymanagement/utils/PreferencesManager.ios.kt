@@ -5,21 +5,21 @@ import kotlinx.datetime.Clock
 
 actual class PreferencesManager {
     private val userDefaults = NSUserDefaults.standardUserDefaults
-    
+
     actual fun getPayday(): Int {
-        return userDefaults.integerForKey("payday").takeIf { 
-            userDefaults.objectForKey("payday") != null 
+        return userDefaults.integerForKey("payday").takeIf {
+            userDefaults.objectForKey("payday") != null
         }?.toInt() ?: 25 // 기본값 25일
     }
-    
+
     actual fun setPayday(day: Int) {
         userDefaults.setInteger(day.toLong(), forKey = "payday")
     }
-    
+
     actual fun isPaydaySet(): Boolean {
         return userDefaults.objectForKey("payday") != null
     }
-    
+
     actual fun getPaydayAdjustment(): PaydayAdjustment {
         val adjustment = userDefaults.stringForKey("payday_adjustment") ?: PaydayAdjustment.BEFORE_WEEKEND.name
         return try {
@@ -28,11 +28,11 @@ actual class PreferencesManager {
             PaydayAdjustment.BEFORE_WEEKEND
         }
     }
-    
+
     actual fun setPaydayAdjustment(adjustment: PaydayAdjustment) {
         userDefaults.setObject(adjustment.name, forKey = "payday_adjustment")
     }
-    
+
     actual fun isCalendarTutorialCompleted(): Boolean {
         return userDefaults.boolForKey("calendar_tutorial_completed").takeIf {
             userDefaults.objectForKey("calendar_tutorial_completed") != null
@@ -89,5 +89,51 @@ actual class PreferencesManager {
     actual fun isAdRemovalActive(): Boolean {
         val expiryTime = getAdRemovalExpiryTime()
         return expiryTime > Clock.System.now().toEpochMilliseconds()
+    }
+
+    // 쿠폰 관련
+    actual fun isCouponUsed(couponCode: String): Boolean {
+        return userDefaults.boolForKey("coupon_used_$couponCode").takeIf {
+            userDefaults.objectForKey("coupon_used_$couponCode") != null
+        } ?: false
+    }
+
+    actual fun markCouponAsUsed(couponCode: String) {
+        userDefaults.setBool(true, forKey = "coupon_used_$couponCode")
+    }
+
+    // 마지막으로 체크한 급여 기간 시작일
+    actual fun getLastCheckedPayPeriodStartDate(): String? {
+        return userDefaults.stringForKey("last_checked_pay_period_start_date")
+    }
+
+    actual fun setLastCheckedPayPeriodStartDate(date: String) {
+        userDefaults.setObject(date, forKey = "last_checked_pay_period_start_date")
+    }
+
+    // 권한 안내 다이얼로그 표시 여부
+    actual fun isPermissionGuideShown(): Boolean {
+        return userDefaults.boolForKey("permission_guide_shown").takeIf {
+            userDefaults.objectForKey("permission_guide_shown") != null
+        } ?: false
+    }
+
+    actual fun setPermissionGuideShown() {
+        userDefaults.setBool(true, forKey = "permission_guide_shown")
+    }
+
+    // 언어 설정
+    actual fun getSystemLanguageCode(): String {
+        val locale = platform.Foundation.NSLocale.preferredLanguages.firstOrNull() as? String ?: "ko"
+        val lang = locale.substringBefore("-").substringBefore("_")
+        return if (lang == "ko" || lang == "en") lang else "ko"
+    }
+
+    actual fun getLanguageCode(): String {
+        return userDefaults.stringForKey("language_code") ?: getSystemLanguageCode()
+    }
+
+    actual fun setLanguageCode(code: String) {
+        userDefaults.setObject(code, forKey = "language_code")
     }
 }

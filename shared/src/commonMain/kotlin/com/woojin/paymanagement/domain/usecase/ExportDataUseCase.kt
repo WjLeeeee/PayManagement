@@ -7,6 +7,8 @@ import com.woojin.paymanagement.data.TransactionBackup
 import com.woojin.paymanagement.data.CategoryBackup
 import com.woojin.paymanagement.data.BudgetPlanBackup
 import com.woojin.paymanagement.data.CategoryBudgetBackup
+import com.woojin.paymanagement.data.RecurringTransactionBackup
+import com.woojin.paymanagement.data.CustomPaymentMethodBackup
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.model.BackupType
 import com.woojin.paymanagement.utils.PreferencesManager
@@ -59,9 +61,19 @@ class ExportDataUseCase(
                 }
             } else emptyList()
 
+            // 반복거래 수집
+            val recurringTransactions = if (type == BackupType.ALL) {
+                databaseHelper.getAllRecurringTransactions().first()
+            } else emptyList()
+
+            // 커스텀 결제수단 수집
+            val customPaymentMethods = if (type == BackupType.ALL) {
+                databaseHelper.getAllCustomPaymentMethodsIncludingInactive().first()
+            } else emptyList()
+
             // 백업 데이터 생성
             val backupData = BackupData(
-                version = 4,
+                version = 6,
                 exportDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date.toString(),
                 payday = preferencesManager.getPayday(),
                 paydayAdjustment = preferencesManager.getPaydayAdjustment().name,
@@ -70,7 +82,9 @@ class ExportDataUseCase(
                 giftCards = giftCards.map { it.toBackup() },
                 categories = categories.map { it.toBackup() },
                 budgetPlans = budgetPlans.map { it.toBackup() },
-                categoryBudgets = allCategoryBudgets.map { it.toBackup() }
+                categoryBudgets = allCategoryBudgets.map { it.toBackup() },
+                recurringTransactions = recurringTransactions.map { it.toBackup() },
+                customPaymentMethods = customPaymentMethods.map { it.toBackup() }
             )
 
             // JSON 변환
@@ -142,5 +156,33 @@ class ExportDataUseCase(
         categoryEmoji = categoryEmoji,
         allocatedAmount = allocatedAmount,
         memo = memo
+    )
+
+    private fun com.woojin.paymanagement.data.RecurringTransaction.toBackup() = RecurringTransactionBackup(
+        id = id,
+        type = type.name,
+        category = category,
+        amount = amount,
+        merchant = merchant,
+        memo = memo,
+        paymentMethod = paymentMethod.name,
+        balanceCardId = balanceCardId,
+        giftCardId = giftCardId,
+        cardName = cardName,
+        pattern = pattern.name,
+        dayOfMonth = dayOfMonth,
+        dayOfWeek = dayOfWeek,
+        weekendHandling = weekendHandling.name,
+        isActive = isActive,
+        createdAt = createdAt,
+        lastExecutedDate = lastExecutedDate
+    )
+
+    private fun com.woojin.paymanagement.data.CustomPaymentMethod.toBackup() = CustomPaymentMethodBackup(
+        id = id,
+        name = name,
+        isActive = isActive,
+        sortOrder = sortOrder,
+        isDefault = isDefault
     )
 }

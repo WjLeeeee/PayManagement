@@ -45,30 +45,32 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.domain.model.DailySummary
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.strings.AppStrings
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.LocalDate
 
 /**
  * 결제수단을 한글로 변환합니다.
  */
-private fun getPaymentMethodText(paymentMethod: PaymentMethod?): String {
+private fun getPaymentMethodText(paymentMethod: PaymentMethod?, strings: AppStrings): String {
     return when (paymentMethod) {
-        PaymentMethod.CASH -> "현금"
-        PaymentMethod.CARD -> "카드"
-        PaymentMethod.BALANCE_CARD -> "잔액권"
-        PaymentMethod.GIFT_CARD -> "상품권"
+        PaymentMethod.CASH -> strings.cash
+        PaymentMethod.CARD -> strings.card
+        PaymentMethod.BALANCE_CARD -> strings.balanceCard
+        PaymentMethod.GIFT_CARD -> strings.giftCard
         null -> ""
     }
 }
 
 /**
- * 수입유형을 한글로 변환합니다.
+ * 수입유형을 다국어로 변환합니다.
  */
-private fun getIncomeTypeText(incomeType: IncomeType?): String {
+private fun getIncomeTypeText(incomeType: IncomeType?, strings: AppStrings): String {
     return when (incomeType) {
-        IncomeType.CASH -> "현금"
-        IncomeType.BALANCE_CARD -> "잔액권"
-        IncomeType.GIFT_CARD -> "상품권"
+        IncomeType.CASH -> strings.cash
+        IncomeType.BALANCE_CARD -> strings.balanceCard
+        IncomeType.GIFT_CARD -> strings.giftCard
         null -> ""
     }
 }
@@ -78,6 +80,7 @@ fun DateDetailHeader(
     selectedDate: LocalDate?,
     onBack: () -> Unit
 ) {
+    val strings = LocalStrings.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -85,16 +88,16 @@ fun DateDetailHeader(
         IconButton(onClick = onBack) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "뒤로가기",
+                contentDescription = strings.goBack,
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
 
         Text(
             text = if (selectedDate != null) {
-                "📅 ${selectedDate.year}년 ${selectedDate.monthNumber}월 ${selectedDate.dayOfMonth}일"
+                "📅 ${strings.fullDate(selectedDate.year, selectedDate.monthNumber, selectedDate.dayOfMonth)}"
             } else {
-                "📅 날짜 상세"
+                "📅 ${strings.dateDetail}"
             },
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
@@ -108,6 +111,7 @@ fun DateDetailHeader(
 fun DailySummaryCard(
     summary: DailySummary
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -122,7 +126,7 @@ fun DailySummaryCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "📊 일일 요약",
+                text = "📊 ${strings.dailySummary}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -145,13 +149,13 @@ fun DailySummaryCard(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "수입",
+                            text = strings.income,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
                     Text(
-                        text = "+${Utils.formatAmount(summary.totalIncome)}원",
+                        text = "+${strings.amountWithUnit(Utils.formatAmount(summary.totalIncome))}",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -169,13 +173,13 @@ fun DailySummaryCard(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "지출",
+                            text = strings.expense,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
                     }
                     Text(
-                        text = "-${Utils.formatAmount(summary.totalExpense)}원",
+                        text = "-${strings.amountWithUnit(Utils.formatAmount(summary.totalExpense))}",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error
@@ -193,7 +197,7 @@ fun DailySummaryCard(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "잔액",
+                            text = strings.balance,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -205,7 +209,7 @@ fun DailySummaryCard(
                                 summary.dailyBalance < 0 -> "-"
                                 else -> ""
                             }
-                        }${Utils.formatAmount(kotlin.math.abs(summary.dailyBalance))}원",
+                        }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(summary.dailyBalance)))}",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = when {
@@ -230,8 +234,9 @@ fun TransactionListHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val strings = LocalStrings.current
         Text(
-            text = "📝 거래 내역 (${transactionCount}건)",
+            text = "📝 ${strings.transactionListHeader(transactionCount)}",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -242,7 +247,7 @@ fun TransactionListHeader(
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(8.dp)
         ) {
-            Text("➕ 추가", color = Color.White)
+            Text("➕ ${strings.add}", color = Color.White)
         }
     }
 }
@@ -257,6 +262,7 @@ fun TransactionDetailItem(
     onSaveAsRecurring: () -> Unit,
     availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -294,7 +300,11 @@ fun TransactionDetailItem(
                         .offset(y = 8.dp)
                         .clip(CircleShape)
                         .background(
-                            if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            when (transaction.type) {
+                                TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                                TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                            }
                         )
                 )
 
@@ -318,10 +328,10 @@ fun TransactionDetailItem(
                         )
 
                         // 결제수단/수입유형 표시
-                        val methodText = if (transaction.type == TransactionType.EXPENSE) {
-                            getPaymentMethodText(transaction.paymentMethod)
-                        } else {
-                            getIncomeTypeText(transaction.incomeType)
+                        val methodText = when (transaction.type) {
+                            TransactionType.EXPENSE -> getPaymentMethodText(transaction.paymentMethod, strings)
+                            TransactionType.INCOME -> getIncomeTypeText(transaction.incomeType, strings)
+                            TransactionType.SAVING -> ""
                         }
 
                         if (methodText.isNotBlank()) {
@@ -337,11 +347,19 @@ fun TransactionDetailItem(
 
                     // 금액
                     Text(
-                        text = "${if (transaction.type == TransactionType.INCOME) "+" else "-"}${
-                            Utils.formatAmount(transaction.displayAmount)
-                        }원",
+                        text = "${when (transaction.type) {
+                            TransactionType.INCOME -> "+"
+                            TransactionType.EXPENSE -> "-"
+                            TransactionType.SAVING -> "-"
+                        }}${
+                            strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))
+                        }",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (transaction.type == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        color = when (transaction.type) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        },
                         fontWeight = FontWeight.Bold
                     )
 
@@ -377,7 +395,7 @@ fun TransactionDetailItem(
                     // 메모 (있는 경우만 표시)
                     if (transaction.memo.isNotBlank()) {
                         Text(
-                            text = "메모",
+                            text = strings.memo,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -408,11 +426,11 @@ fun TransactionDetailItem(
                         ) {
                             Icon(
                                 Icons.Default.Add,
-                                contentDescription = "반복거래로 저장",
+                                contentDescription = strings.saveAsRecurring,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("반복", style = MaterialTheme.typography.bodySmall)
+                            Text(strings.recurringShort, style = MaterialTheme.typography.bodySmall)
                         }
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -427,11 +445,11 @@ fun TransactionDetailItem(
                         ) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "편집",
+                                contentDescription = strings.edit,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("편집", style = MaterialTheme.typography.bodySmall)
+                            Text(strings.edit, style = MaterialTheme.typography.bodySmall)
                         }
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -446,11 +464,11 @@ fun TransactionDetailItem(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "삭제",
+                                contentDescription = strings.delete,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("삭제", style = MaterialTheme.typography.bodySmall)
+                            Text(strings.delete, style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -477,8 +495,9 @@ fun EmptyTransactionMessage() {
                 .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
+            val strings = LocalStrings.current
             Text(
-                text = "📭 이 날짜에 거래 내역이 없습니다",
+                text = "📭 ${strings.noTransactionsOnDate}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )

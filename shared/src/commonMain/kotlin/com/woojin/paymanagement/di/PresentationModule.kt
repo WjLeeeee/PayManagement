@@ -33,18 +33,18 @@ val presentationModule = module {
             coroutineScope = get()
         )
     }
-    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get()) }
-    factory { DateDetailViewModel(get(), get(), get(), get(), get(), get()) }
+    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { DateDetailViewModel(get(), get(), get(), get(), get(), get(), get()) }
     factory { PaydaySetupViewModel(get(), get(), get(), get()) }
     factory { StatisticsViewModel(get(), get(), get(), get(), get(), get(), get()) }
     factory { CalendarTutorialViewModel(get()) }
     factory { ParsedTransactionViewModel(get(), get(), get()) }
     factory { CategoryManagementViewModel(get(), get(), get(), get()) }
-    factory { CardManagementViewModel(get()) }
+    factory { CardManagementViewModel(get(), get(), get(), get(), get()) }
     factory { BudgetSettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { TipDonationViewModel(get(), get()) }
     factory { AdRemovalViewModel(get(), get()) }
     factory { CouponViewModel(get()) }
     factory { MonthlyComparisonViewModel(get(), get(), get(), get(), get()) }
-    factory { RecurringTransactionViewModel(get(), get(), get(), get(), get(), get()) }
+    factory { RecurringTransactionViewModel(get(), get(), get(), get(), get(), get(), get()) }
 }

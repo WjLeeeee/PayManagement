@@ -7,6 +7,7 @@ import com.woojin.paymanagement.data.RecurringTransaction
 import com.woojin.paymanagement.domain.repository.CategoryRepository
 import com.woojin.paymanagement.domain.usecase.CheckTodayRecurringTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteRecurringTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.GetCustomPaymentMethodsUseCase
 import com.woojin.paymanagement.domain.usecase.GetRecurringTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveRecurringTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +20,7 @@ class RecurringTransactionViewModel(
     private val deleteRecurringTransactionUseCase: DeleteRecurringTransactionUseCase,
     private val checkTodayRecurringTransactionsUseCase: CheckTodayRecurringTransactionsUseCase,
     private val categoryRepository: CategoryRepository,
+    private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(RecurringTransactionUiState())
@@ -35,14 +37,22 @@ class RecurringTransactionViewModel(
             combine(
                 getRecurringTransactionsUseCase(activeOnly = false),
                 checkTodayRecurringTransactionsUseCase(),
-                categoryRepository.getAllCategories()
-            ) { recurring, today, categories ->
-                Triple(recurring, today, categories)
-            }.collect { (recurring, today, categories) ->
+                categoryRepository.getAllCategories(),
+                getCustomPaymentMethodsUseCase()
+            ) { recurring, today, categories, customPaymentMethods ->
+                data class LoadResult(
+                    val recurring: List<RecurringTransaction>,
+                    val today: List<RecurringTransaction>,
+                    val categories: List<com.woojin.paymanagement.data.Category>,
+                    val customPaymentMethods: List<com.woojin.paymanagement.data.CustomPaymentMethod>
+                )
+                LoadResult(recurring, today, categories, customPaymentMethods)
+            }.collect { result ->
                 uiState = uiState.copy(
-                    recurringTransactions = recurring,
-                    todayTransactions = today,
-                    categories = categories,
+                    recurringTransactions = result.recurring,
+                    todayTransactions = result.today,
+                    categories = result.categories,
+                    customPaymentMethods = result.customPaymentMethods,
                     isLoading = false
                 )
             }

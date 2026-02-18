@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.RecurringPattern
 import com.woojin.paymanagement.data.RecurringTransaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.strings.AppStrings
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PlatformBackHandler
 import com.woojin.paymanagement.utils.Utils
 
@@ -31,6 +33,7 @@ fun RecurringTransactionScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddTransaction: (RecurringTransaction) -> Unit
 ) {
+    val strings = LocalStrings.current
     val uiState = viewModel.uiState
 
     // Android 뒤로가기 버튼 처리
@@ -39,10 +42,10 @@ fun RecurringTransactionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("반복 거래 관리") },
+                title = { Text(strings.recurringTransactionManagement) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "뒤로가기")
+                        Icon(Icons.Default.ArrowBack, strings.goBack)
                     }
                 },
                 windowInsets = WindowInsets(0.dp)
@@ -75,7 +78,7 @@ fun RecurringTransactionScreen(
                 if (uiState.todayTransactions.isNotEmpty()) {
                     item {
                         Text(
-                            text = "오늘 실행할 항목",
+                            text = strings.todayItems,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -121,7 +124,7 @@ fun RecurringTransactionScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "등록된 반복 거래가 없습니다",
+                                text = strings.noRegisteredRecurringTransactions,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -149,6 +152,7 @@ fun RecurringTransactionScreen(
             RecurringTransactionDialog(
                 transaction = uiState.editingTransaction,
                 categories = uiState.categories,
+                customPaymentMethods = uiState.customPaymentMethods,
                 onDismiss = { viewModel.hideDialog() },
                 onSave = { transaction ->
                     viewModel.saveRecurringTransaction(transaction)
@@ -162,6 +166,7 @@ fun RecurringTransactionScreen(
 private fun AddRecurringTransactionItem(
     onClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -195,12 +200,12 @@ private fun AddRecurringTransactionItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "추가",
+                    contentDescription = strings.add,
                     tint = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "반복 거래 추가",
+                    text = strings.addRecurringTransaction,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -220,6 +225,7 @@ private fun RecurringTransactionItem(
     onToggleActive: () -> Unit,
     onClick: (() -> Unit)?
 ) {
+    val strings = LocalStrings.current
     val categoryEmoji = categories.firstOrNull { it.name == transaction.category }?.emoji ?: "📝"
     val containerColors = if (isHighlighted) {
         listOf(
@@ -311,7 +317,7 @@ private fun RecurringTransactionItem(
                         IconButton(onClick = onEdit) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "수정",
+                                contentDescription = strings.edit,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -319,7 +325,7 @@ private fun RecurringTransactionItem(
                         IconButton(onClick = onDelete) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "삭제",
+                                contentDescription = strings.delete,
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -337,14 +343,16 @@ private fun RecurringTransactionItem(
                     // 금액
                     Text(
                         text = when (transaction.type) {
-                            TransactionType.INCOME -> "+${Utils.formatAmount(transaction.amount)}원"
-                            TransactionType.EXPENSE -> "${Utils.formatAmount(transaction.amount)}원"
+                            TransactionType.INCOME -> "+${strings.amountWithUnit(Utils.formatAmount(transaction.amount))}"
+                            TransactionType.EXPENSE -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
+                            TransactionType.SAVING -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
                         },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = when (transaction.type) {
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
                         }
                     )
 
@@ -354,7 +362,7 @@ private fun RecurringTransactionItem(
                         color = MaterialTheme.colorScheme.secondaryContainer
                     ) {
                         Text(
-                            text = getPatternText(transaction),
+                            text = getPatternText(transaction, strings),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -366,7 +374,7 @@ private fun RecurringTransactionItem(
                 // 결제 수단
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "결제수단: ${getPaymentMethodDisplayName(transaction.paymentMethod)}",
+                    text = strings.paymentMethodDisplay(getPaymentMethodDisplayName(transaction.paymentMethod, strings)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -379,7 +387,7 @@ private fun RecurringTransactionItem(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     ) {
                         Text(
-                            text = "탭하여 거래 추가하기",
+                            text = strings.tapToAddTransaction,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -392,33 +400,33 @@ private fun RecurringTransactionItem(
     }
 }
 
-private fun getPatternText(transaction: RecurringTransaction): String {
+private fun getPatternText(transaction: RecurringTransaction, strings: AppStrings): String {
     return when (transaction.pattern) {
         RecurringPattern.MONTHLY -> {
             val day = transaction.dayOfMonth ?: 1
-            "매달 ${day}일"
+            strings.recurringDayOfMonth(day)
         }
         RecurringPattern.WEEKLY -> {
             val dayName = when (transaction.dayOfWeek) {
-                1 -> "월요일"
-                2 -> "화요일"
-                3 -> "수요일"
-                4 -> "목요일"
-                5 -> "금요일"
-                6 -> "토요일"
-                7 -> "일요일"
+                1 -> strings.monday
+                2 -> strings.tuesday
+                3 -> strings.wednesday
+                4 -> strings.thursday
+                5 -> strings.friday
+                6 -> strings.saturday
+                7 -> strings.sunday
                 else -> "?"
             }
-            "매주 $dayName"
+            strings.recurringDayOfWeek(dayName)
         }
     }
 }
 
-private fun getPaymentMethodDisplayName(paymentMethod: com.woojin.paymanagement.data.PaymentMethod): String {
+private fun getPaymentMethodDisplayName(paymentMethod: com.woojin.paymanagement.data.PaymentMethod, strings: AppStrings): String {
     return when (paymentMethod) {
-        com.woojin.paymanagement.data.PaymentMethod.CASH -> "현금/체크카드"
-        com.woojin.paymanagement.data.PaymentMethod.CARD -> "신용카드"
-        com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "잔액권"
-        com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "상품권"
+        com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cashCheckCard
+        com.woojin.paymanagement.data.PaymentMethod.CARD -> strings.creditCard
+        com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> strings.balanceCard
+        com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> strings.giftCard
     }
 }

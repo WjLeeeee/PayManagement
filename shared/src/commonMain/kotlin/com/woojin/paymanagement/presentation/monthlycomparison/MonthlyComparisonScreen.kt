@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.BackHandler
 import com.woojin.paymanagement.utils.Utils
 import kotlin.math.round
@@ -46,6 +47,7 @@ fun MonthlyComparisonScreen(
     onBack: () -> Unit,
     showPreviousPeriodComparison: Boolean = false
 ) {
+    val strings = LocalStrings.current
     BackHandler(onBack = onBack)
 
     val uiState = viewModel.uiState
@@ -72,13 +74,13 @@ fun MonthlyComparisonScreen(
                 IconButton(onClick = onBack) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "뒤로가기",
+                        contentDescription = strings.goBack,
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Text(
-                    text = "급여 기간 비교",
+                    text = strings.payPeriodComparison,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -122,7 +124,7 @@ fun MonthlyComparisonScreen(
                 // Category Comparisons
                 if (uiState.categoryComparisons.isNotEmpty()) {
                     Text(
-                        text = "카테고리별 비교",
+                        text = strings.categoryComparison,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -139,7 +141,7 @@ fun MonthlyComparisonScreen(
                     }
                 } else {
                     Text(
-                        text = "비교할 데이터가 없습니다",
+                        text = strings.noComparisonData,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -243,6 +245,7 @@ private fun TotalComparisonCard(
     difference: Double,
     differencePercentage: Float
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -266,7 +269,7 @@ private fun TotalComparisonCard(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
-                    text = "📊 총 지출 비교",
+                    text = strings.totalExpenseComparison,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -283,12 +286,12 @@ private fun TotalComparisonCard(
                         horizontalAlignment = Alignment.Start
                     ) {
                         Text(
-                            text = "이전",
+                            text = strings.previous,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${Utils.formatAmount(previousTotal)}원",
+                            text = strings.amountWithUnit(Utils.formatAmount(previousTotal)),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -301,12 +304,12 @@ private fun TotalComparisonCard(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "현재",
+                            text = strings.current,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "${Utils.formatAmount(currentTotal)}원",
+                            text = strings.amountWithUnit(Utils.formatAmount(currentTotal)),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -321,9 +324,9 @@ private fun TotalComparisonCard(
                         if (difference != 0.0) {
                             Text(
                                 text = when {
-                                    difference > 0 -> "증가 ↑"
-                                    difference < 0 -> "절약 ↓"
-                                    else -> "동일"
+                                    difference > 0 -> strings.increasedArrow
+                                    difference < 0 -> strings.savingsArrow
+                                    else -> strings.same
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = when {
@@ -334,16 +337,16 @@ private fun TotalComparisonCard(
                             )
                         } else {
                             Text(
-                                text = "동일",
+                                text = strings.same,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Text(
                             text = if (difference == 0.0) {
-                                "0원"
+                                strings.amountWithUnit("0")
                             } else {
-                                "${if (difference > 0) "+" else ""}${Utils.formatAmount(kotlin.math.abs(difference))}원"
+                                "${if (difference > 0) "+" else ""}${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(difference)))}"
                             },
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
@@ -376,6 +379,7 @@ private fun CategoryComparisonCard(
     comparison: CategoryComparison,
     availableCategories: List<com.woojin.paymanagement.data.Category>
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -414,12 +418,12 @@ private fun CategoryComparisonCard(
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
-                        text = "이전",
+                        text = strings.previous,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "${Utils.formatAmount(comparison.previousMonthAmount)}원",
+                        text = strings.amountWithUnit(Utils.formatAmount(comparison.previousMonthAmount)),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
@@ -432,12 +436,12 @@ private fun CategoryComparisonCard(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "현재",
+                        text = strings.current,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "${Utils.formatAmount(comparison.currentMonthAmount)}원",
+                        text = strings.amountWithUnit(Utils.formatAmount(comparison.currentMonthAmount)),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -466,9 +470,9 @@ private fun CategoryComparisonCard(
                     }
                     Text(
                         text = if (comparison.isUnchanged) {
-                            "0원"
+                            strings.amountWithUnit("0")
                         } else {
-                            "${if (comparison.difference > 0) "+" else ""}${Utils.formatAmount(kotlin.math.abs(comparison.difference))}원"
+                            "${if (comparison.difference > 0) "+" else ""}${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(comparison.difference)))}"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,

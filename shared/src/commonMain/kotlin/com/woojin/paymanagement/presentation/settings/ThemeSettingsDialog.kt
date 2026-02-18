@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.ThemeMode
 
 @Composable
@@ -19,13 +20,14 @@ fun ThemeSettingsDialog(
     onThemeModeSelected: (ThemeMode) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalStrings.current
     var selectedMode by remember { mutableStateOf(currentThemeMode) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "테마 설정",
+                text = strings.themeSettings,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -58,9 +60,9 @@ fun ThemeSettingsDialog(
                         Column(modifier = Modifier.padding(start = 12.dp)) {
                             Text(
                                 text = when (mode) {
-                                    ThemeMode.SYSTEM -> "시스템 설정 따름"
-                                    ThemeMode.LIGHT -> "라이트 모드"
-                                    ThemeMode.DARK -> "다크 모드"
+                                    ThemeMode.SYSTEM -> strings.systemTheme
+                                    ThemeMode.LIGHT -> strings.lightTheme
+                                    ThemeMode.DARK -> strings.darkTheme
                                 },
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
@@ -68,7 +70,7 @@ fun ThemeSettingsDialog(
                             )
                             if (mode == ThemeMode.SYSTEM) {
                                 Text(
-                                    text = "기기의 테마 설정을 따릅니다",
+                                    text = strings.systemThemeDesc,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -88,12 +90,12 @@ fun ThemeSettingsDialog(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Text("적용")
+                Text(strings.apply)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("취소")
+                Text(strings.cancel)
             }
         },
         shape = RoundedCornerShape(16.dp)

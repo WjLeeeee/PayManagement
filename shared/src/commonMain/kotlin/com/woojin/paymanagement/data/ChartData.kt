@@ -14,9 +14,11 @@ data class ChartData(
     val incomeItems: List<ChartItem>,
     val expenseItems: List<ChartItem>,
     val investmentItems: List<ChartItem>,
+    val savingItems: List<ChartItem>,
     val totalIncome: Double,
     val totalExpense: Double,
-    val totalInvestment: Double
+    val totalInvestment: Double,
+    val totalSaving: Double
 )
 
 object ChartDataCalculator {
@@ -38,21 +40,30 @@ object ChartDataCalculator {
             it.category in INVESTMENT_CATEGORIES
         }
 
+        // 저축 거래 추출
+        val savingTransactions = transactions.filter {
+            it.type == TransactionType.SAVING
+        }
+
         val totalIncome = incomeTransactions.sumOf { it.displayAmount }
         val totalExpense = expenseTransactions.sumOf { it.displayAmount }
         val totalInvestment = investmentTransactions.sumOf { it.displayAmount }
+        val totalSaving = savingTransactions.sumOf { it.displayAmount }
 
         val incomeItems = calculateChartItems(incomeTransactions, totalIncome)
         val expenseItems = calculateChartItems(expenseTransactions, totalExpense)
         val investmentItems = calculateInvestmentChartItems(investmentTransactions)
+        val savingItems = calculateChartItems(savingTransactions, totalSaving)
 
         return ChartData(
             incomeItems = incomeItems,
             expenseItems = expenseItems,
             investmentItems = investmentItems,
+            savingItems = savingItems,
             totalIncome = totalIncome,
             totalExpense = totalExpense,
-            totalInvestment = totalInvestment
+            totalInvestment = totalInvestment,
+            totalSaving = totalSaving
         )
     }
     

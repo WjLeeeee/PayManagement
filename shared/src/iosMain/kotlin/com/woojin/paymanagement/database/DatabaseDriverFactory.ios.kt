@@ -536,6 +536,78 @@ actual class DatabaseDriverFactory {
             }
         }
 
+        // RecurringTransactionEntity에 cardName 컬럼 추가 (Schema v16)
+        try {
+            driver.execute(
+                null,
+                "ALTER TABLE RecurringTransactionEntity ADD COLUMN cardName TEXT",
+                0,
+                null
+            )
+        } catch (e: Exception) {
+            // 이미 존재하면 무시
+        }
+
+        // CustomPaymentMethodEntity 테이블이 없으면 생성 (Schema v16)
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS CustomPaymentMethodEntity (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                isActive INTEGER NOT NULL DEFAULT 1,
+                sortOrder INTEGER NOT NULL DEFAULT 0,
+                isDefault INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent(),
+            0,
+            null
+        )
+
+        // CustomPaymentMethodEntity에 isDefault 컬럼 추가 (Schema v17)
+        try {
+            driver.execute(
+                null,
+                "ALTER TABLE CustomPaymentMethodEntity ADD COLUMN isDefault INTEGER NOT NULL DEFAULT 0",
+                0,
+                null
+            )
+        } catch (e: Exception) {
+            // 이미 존재하면 무시
+        }
+
+        // 기존 "적금" 거래/카테고리/반복거래를 SAVING 타입으로 마이그레이션 (Schema v18)
+        try {
+            driver.execute(
+                null,
+                "UPDATE TransactionEntity SET type = 'SAVING' WHERE type = 'EXPENSE' AND category = '적금'",
+                0,
+                null
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "UPDATE CategoryEntity SET type = 'SAVING' WHERE type = 'EXPENSE' AND name = '적금'",
+                0,
+                null
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "UPDATE RecurringTransactionEntity SET type = 'SAVING' WHERE type = 'EXPENSE' AND category = '적금'",
+                0,
+                null
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+
         return driver
     }
 }

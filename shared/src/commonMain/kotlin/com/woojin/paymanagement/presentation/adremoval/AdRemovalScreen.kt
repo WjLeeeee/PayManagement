@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PlatformBackHandler
 
 /**
@@ -53,15 +54,16 @@ fun AdRemovalScreen(
     // Android 뒤로가기 버튼 처리
     PlatformBackHandler(onBack = onNavigateBack)
 
+    val strings = LocalStrings.current
     val uiState = viewModel.uiState
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("광고 제거") },
+                title = { Text(strings.removeAds) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로가기")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, strings.goBack)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -83,7 +85,7 @@ fun AdRemovalScreen(
         ) {
             // 제목
             Text(
-                text = "광고 없이 사용하기",
+                text = strings.useWithoutAds,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -91,7 +93,7 @@ fun AdRemovalScreen(
 
             // 설명
             Text(
-                text = "광고 없이 쾌적하게 앱을 사용하세요!\n기간을 선택하시면 해당 기간 동안 광고가 표시되지 않습니다.",
+                text = strings.adRemovalLongDesc,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -100,7 +102,7 @@ fun AdRemovalScreen(
             // 광고 제거 옵션들
             AdRemovalOption(
                 emoji = "📅",
-                title = "1일 이용권",
+                title = strings.oneDayPass,
                 period = AdRemovalPeriod.ONE_DAY,
                 isSelected = uiState.selectedPeriod == AdRemovalPeriod.ONE_DAY,
                 onClick = { viewModel.selectAdRemovalPeriod(AdRemovalPeriod.ONE_DAY) }
@@ -108,7 +110,7 @@ fun AdRemovalScreen(
 
             AdRemovalOption(
                 emoji = "📆",
-                title = "3일 이용권",
+                title = strings.threeDayPass,
                 period = AdRemovalPeriod.THREE_DAYS,
                 isSelected = uiState.selectedPeriod == AdRemovalPeriod.THREE_DAYS,
                 onClick = { viewModel.selectAdRemovalPeriod(AdRemovalPeriod.THREE_DAYS) }
@@ -116,7 +118,7 @@ fun AdRemovalScreen(
 
             AdRemovalOption(
                 emoji = "🗓️",
-                title = "7일 이용권",
+                title = strings.sevenDayPass,
                 period = AdRemovalPeriod.SEVEN_DAYS,
                 isSelected = uiState.selectedPeriod == AdRemovalPeriod.SEVEN_DAYS,
                 onClick = { viewModel.selectAdRemovalPeriod(AdRemovalPeriod.SEVEN_DAYS) }
@@ -124,7 +126,7 @@ fun AdRemovalScreen(
 
             AdRemovalOption(
                 emoji = "📅",
-                title = "30일 이용권",
+                title = strings.thirtyDayPass,
                 period = AdRemovalPeriod.THIRTY_DAYS,
                 isSelected = uiState.selectedPeriod == AdRemovalPeriod.THIRTY_DAYS,
                 onClick = { viewModel.selectAdRemovalPeriod(AdRemovalPeriod.THIRTY_DAYS) }
@@ -143,9 +145,9 @@ fun AdRemovalScreen(
             ) {
                 Text(
                     text = when {
-                        uiState.isPurchasing -> "결제 처리 중..."
-                        uiState.selectedPeriod != null -> "₩${uiState.selectedPeriod.krw} 결제하기"
-                        else -> "기간을 선택해주세요"
+                        uiState.isPurchasing -> strings.processingPayment
+                        uiState.selectedPeriod != null -> strings.payAmountButton(uiState.selectedPeriod.krw.toString())
+                        else -> strings.selectPeriod
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
@@ -168,13 +170,13 @@ fun AdRemovalScreen(
             },
             title = {
                 Text(
-                    text = "구매 완료!",
+                    text = strings.purchaseComplete,
                     textAlign = TextAlign.Center
                 )
             },
             text = {
                 Text(
-                    text = "광고 제거가 완료되었습니다.\n쾌적하게 앱을 사용하세요!",
+                    text = strings.adRemovalCompleteMessage,
                     textAlign = TextAlign.Center
                 )
             },

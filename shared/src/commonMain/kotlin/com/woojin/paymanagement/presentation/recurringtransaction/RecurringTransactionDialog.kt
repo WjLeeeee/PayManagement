@@ -21,6 +21,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.woojin.paymanagement.data.*
+import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.theme.SavingColor
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -39,14 +41,16 @@ private fun removeComma(value: String): String {
     return value.replace(",", "")
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecurringTransactionDialog(
     transaction: RecurringTransaction?,
     categories: List<Category>,
+    customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (RecurringTransaction) -> Unit
 ) {
+    val strings = LocalStrings.current
     // 초기 금액 설정 (소수점 제거 및 콤마 추가)
     val initialAmount = transaction?.amount?.toInt()?.toString() ?: ""
     val formattedInitialAmount = formatNumberWithComma(initialAmount)
@@ -64,6 +68,11 @@ fun RecurringTransactionDialog(
     var merchant by remember { mutableStateOf(transaction?.merchant ?: "") }
     var memo by remember { mutableStateOf(transaction?.memo ?: "") }
     var selectedPaymentMethod by remember { mutableStateOf(transaction?.paymentMethod ?: PaymentMethod.CASH) }
+    var selectedCardName by remember {
+        mutableStateOf(
+            transaction?.cardName ?: (customPaymentMethods.find { it.isDefault } ?: customPaymentMethods.firstOrNull())?.name
+        )
+    }
     var selectedPattern by remember { mutableStateOf(transaction?.pattern ?: RecurringPattern.MONTHLY) }
     var dayOfMonth by remember { mutableStateOf(transaction?.dayOfMonth ?: 1) }
     var dayOfWeek by remember { mutableStateOf(transaction?.dayOfWeek ?: 1) }
@@ -94,7 +103,7 @@ fun RecurringTransactionDialog(
             ) {
                 // Header
                 Text(
-                    text = if (transaction == null) "반복 거래 추가" else "반복 거래 수정",
+                    text = if (transaction == null) strings.addRecurringTransaction else strings.editRecurringTransaction,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -113,7 +122,7 @@ fun RecurringTransactionDialog(
                 ) {
                 // 거래 타입 선택
                 Text(
-                    text = "거래 유형",
+                    text = strings.transactionType,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -126,7 +135,7 @@ fun RecurringTransactionDialog(
                         onClick = { selectedType = TransactionType.INCOME },
                         label = {
                             Text(
-                                "수입",
+                                strings.income,
                                 color = if (selectedType == TransactionType.INCOME) Color.White else MaterialTheme.colorScheme.onSurface
                             )
                         },
@@ -141,7 +150,7 @@ fun RecurringTransactionDialog(
                         onClick = { selectedType = TransactionType.EXPENSE },
                         label = {
                             Text(
-                                "지출",
+                                strings.expense,
                                 color = if (selectedType == TransactionType.EXPENSE) Color.White else MaterialTheme.colorScheme.onSurface
                             )
                         },
@@ -151,13 +160,28 @@ fun RecurringTransactionDialog(
                             selectedLabelColor = Color.White
                         )
                     )
+
+                    FilterChip(
+                        onClick = { selectedType = TransactionType.SAVING },
+                        label = {
+                            Text(
+                                strings.saving,
+                                color = if (selectedType == TransactionType.SAVING) Color.White else MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        selected = selectedType == TransactionType.SAVING,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = SavingColor.color,
+                            selectedLabelColor = Color.White
+                        )
+                    )
                 }
 
                 HorizontalDivider()
 
                 // 카테고리 선택
                 Text(
-                    text = "카테고리",
+                    text = strings.category,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
@@ -175,11 +199,13 @@ fun RecurringTransactionDialog(
                             val backgroundColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                                 isSelected && selectedType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.lightBackground
                                 else -> MaterialTheme.colorScheme.surfaceVariant
                             }
                             val borderColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                                 isSelected && selectedType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.color
                                 else -> Color.Transparent
                             }
                             val textColor = when {
@@ -218,7 +244,7 @@ fun RecurringTransactionDialog(
                     }
                 } else {
                     Text(
-                        text = "등록된 카테고리가 없습니다",
+                        text = strings.noCategoriesRegistered,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -244,46 +270,58 @@ fun RecurringTransactionDialog(
                             )
                         }
                     },
-                    label = { Text("금액") },
-                    suffix = { Text("원") },
+                    label = { Text(strings.transactionAmount) },
+                    suffix = { Text(strings.currencySymbol) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        focusedLabelColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        focusedBorderColor = when (selectedType) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> SavingColor.color
+                        },
+                        focusedLabelColor = when (selectedType) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> SavingColor.color
+                        }
                     )
                 )
 
-                // 사용처 입력 (필수)
-                OutlinedTextField(
-                    value = merchant,
-                    onValueChange = { merchant = it },
-                    label = { Text("사용처") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        focusedLabelColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                // 사용처 입력 (지출일 때만 필수)
+                if (selectedType == TransactionType.EXPENSE) {
+                    OutlinedTextField(
+                        value = merchant,
+                        onValueChange = { merchant = it },
+                        label = { Text(strings.merchantLabel) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.error,
+                            focusedLabelColor = MaterialTheme.colorScheme.error
+                        )
                     )
-                )
+                }
 
                 // 메모 입력 (선택)
                 OutlinedTextField(
                     value = memo,
                     onValueChange = { memo = it },
-                    label = { Text("메모 (선택)") },
+                    label = { Text(strings.memoOptionalShort) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        focusedLabelColor = if (selectedType == TransactionType.INCOME)
-                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        focusedBorderColor = when (selectedType) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> SavingColor.color
+                        },
+                        focusedLabelColor = when (selectedType) {
+                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            TransactionType.SAVING -> SavingColor.color
+                        }
                     )
                 )
 
@@ -292,7 +330,7 @@ fun RecurringTransactionDialog(
                 // 결제 수단 선택 (지출일 때만)
                 if (selectedType == TransactionType.EXPENSE) {
                     Text(
-                        text = "결제 수단",
+                        text = strings.paymentMethod,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -304,10 +342,10 @@ fun RecurringTransactionDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         listOf(
-                            PaymentMethod.CASH to "현금/체크카드",
-                            PaymentMethod.CARD to "신용카드",
-                            PaymentMethod.BALANCE_CARD to "잔액권",
-                            PaymentMethod.GIFT_CARD to "상품권"
+                            PaymentMethod.CASH to strings.cashCheckCard,
+                            PaymentMethod.CARD to strings.creditCard,
+                            PaymentMethod.BALANCE_CARD to strings.balanceCard,
+                            PaymentMethod.GIFT_CARD to strings.giftCard
                         ).forEach { (method, label) ->
                             val isSelected = selectedPaymentMethod == method
                             val backgroundColor = when {
@@ -334,7 +372,10 @@ fun RecurringTransactionDialog(
                                         color = backgroundColor,
                                         shape = RoundedCornerShape(20.dp)
                                     )
-                                    .clickable { selectedPaymentMethod = method }
+                                    .clickable {
+                                        selectedPaymentMethod = method
+                                        if (method != PaymentMethod.CARD) selectedCardName = null
+                                    }
                                     .padding(horizontal = 16.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -348,12 +389,57 @@ fun RecurringTransactionDialog(
                         }
                     }
 
+                    // 카드 선택 시 커스텀 카드 드롭다운
+                    if (selectedPaymentMethod == PaymentMethod.CARD && customPaymentMethods.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        var cardDropdownExpanded by remember { mutableStateOf(false) }
+
+                        ExposedDropdownMenuBox(
+                            expanded = cardDropdownExpanded,
+                            onExpandedChange = { cardDropdownExpanded = !cardDropdownExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedCardName ?: customPaymentMethods.firstOrNull()?.name ?: "",
+                                onValueChange = { },
+                                readOnly = true,
+                                label = { Text(strings.selectCard) },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = cardDropdownExpanded)
+                                },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = cardDropdownExpanded,
+                                onDismissRequest = { cardDropdownExpanded = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            ) {
+                                customPaymentMethods.forEach { method ->
+                                    DropdownMenuItem(
+                                        text = { Text(method.name, color = MaterialTheme.colorScheme.onSurface) },
+                                        onClick = {
+                                            selectedCardName = method.name
+                                            cardDropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     HorizontalDivider()
                 }
 
                 // 반복 패턴 선택
                 Text(
-                    text = "반복 패턴",
+                    text = strings.recurringPatternLabel,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -364,7 +450,7 @@ fun RecurringTransactionDialog(
                 ) {
                     FilterChip(
                         onClick = { selectedPattern = RecurringPattern.MONTHLY },
-                        label = { Text("매달") },
+                        label = { Text(strings.monthly) },
                         selected = selectedPattern == RecurringPattern.MONTHLY,
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = if (selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
@@ -374,7 +460,7 @@ fun RecurringTransactionDialog(
 
                     FilterChip(
                         onClick = { selectedPattern = RecurringPattern.WEEKLY },
-                        label = { Text("매주") },
+                        label = { Text(strings.weekly) },
                         selected = selectedPattern == RecurringPattern.WEEKLY,
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = if (selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
@@ -386,7 +472,7 @@ fun RecurringTransactionDialog(
                 // 날짜 선택
                 if (selectedPattern == RecurringPattern.MONTHLY) {
                     Text(
-                        text = "매달 몇 일?",
+                        text = strings.whichDayOfMonth,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -405,7 +491,7 @@ fun RecurringTransactionDialog(
                         }
 
                         Text(
-                            text = "${dayOfMonth}일",
+                            text = strings.dayOfMonth(dayOfMonth),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f),
@@ -422,7 +508,7 @@ fun RecurringTransactionDialog(
 
                     // 주말 처리 방식 (매달 패턴일 때만 표시)
                     Text(
-                        text = "주말 처리",
+                        text = strings.weekendHandling,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -432,9 +518,9 @@ fun RecurringTransactionDialog(
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         listOf(
-                            com.woojin.paymanagement.data.WeekendHandling.AS_IS to "그대로 적용",
-                            com.woojin.paymanagement.data.WeekendHandling.PREVIOUS_WEEKDAY to "이전 평일로",
-                            com.woojin.paymanagement.data.WeekendHandling.NEXT_WEEKDAY to "다음 평일로"
+                            com.woojin.paymanagement.data.WeekendHandling.AS_IS to strings.applyAsIs,
+                            com.woojin.paymanagement.data.WeekendHandling.PREVIOUS_WEEKDAY to strings.moveToPreviousWeekday,
+                            com.woojin.paymanagement.data.WeekendHandling.NEXT_WEEKDAY to strings.moveToNextWeekday
                         ).forEach { (handling, label) ->
                             Row(
                                 modifier = Modifier
@@ -466,7 +552,7 @@ fun RecurringTransactionDialog(
                     HorizontalDivider()
                 } else {
                     Text(
-                        text = "매주 무슨 요일?",
+                        text = strings.whichDayOfWeek,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -478,23 +564,25 @@ fun RecurringTransactionDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         listOf(
-                            1 to "월요일",
-                            2 to "화요일",
-                            3 to "수요일",
-                            4 to "목요일",
-                            5 to "금요일",
-                            6 to "토요일",
-                            7 to "일요일"
+                            1 to strings.monday,
+                            2 to strings.tuesday,
+                            3 to strings.wednesday,
+                            4 to strings.thursday,
+                            5 to strings.friday,
+                            6 to strings.saturday,
+                            7 to strings.sunday
                         ).forEach { (value, label) ->
                             val isSelected = dayOfWeek == value
                             val backgroundColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                                 isSelected && selectedType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.lightBackground
                                 else -> MaterialTheme.colorScheme.surfaceVariant
                             }
                             val borderColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                                 isSelected && selectedType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.color
                                 else -> Color.Transparent
                             }
                             val textColor = when {
@@ -540,24 +628,26 @@ fun RecurringTransactionDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("취소")
+                        Text(strings.cancel)
                     }
 
                     Button(
                         onClick = {
                             // 콤마 제거 후 Double로 변환
                             val amountValue = removeComma(amount.text).toDoubleOrNull() ?: 0.0
-                            if (amountValue > 0 && selectedCategory.isNotEmpty() && merchant.isNotEmpty()) {
+                            val isMerchantValid = selectedType != TransactionType.EXPENSE || merchant.isNotEmpty()
+                            if (amountValue > 0 && selectedCategory.isNotEmpty() && isMerchantValid) {
                                 val newTransaction = RecurringTransaction(
                                     id = transaction?.id ?: kotlin.random.Random.nextLong().toString(),
                                     type = selectedType,
                                     category = selectedCategory,
                                     amount = amountValue,
-                                    merchant = merchant,
+                                    merchant = if (selectedType == TransactionType.SAVING) "" else merchant,
                                     memo = memo,
-                                    paymentMethod = selectedPaymentMethod,
+                                    paymentMethod = if (selectedType == TransactionType.SAVING) PaymentMethod.CASH else selectedPaymentMethod,
                                     balanceCardId = transaction?.balanceCardId,
                                     giftCardId = transaction?.giftCardId,
+                                    cardName = if (selectedType != TransactionType.SAVING && selectedPaymentMethod == PaymentMethod.CARD) selectedCardName else null,
                                     pattern = selectedPattern,
                                     dayOfMonth = if (selectedPattern == RecurringPattern.MONTHLY) dayOfMonth else null,
                                     dayOfWeek = if (selectedPattern == RecurringPattern.WEEKLY) dayOfWeek else null,
@@ -572,10 +662,10 @@ fun RecurringTransactionDialog(
                         enabled = removeComma(amount.text).toDoubleOrNull() != null &&
                                 removeComma(amount.text).toDoubleOrNull()!! > 0 &&
                                 selectedCategory.isNotEmpty() &&
-                                merchant.isNotEmpty(),
+                                (selectedType != TransactionType.EXPENSE || merchant.isNotEmpty()),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(if (transaction == null) "추가" else "수정")
+                        Text(if (transaction == null) strings.add else strings.edit)
                     }
                 }
             }

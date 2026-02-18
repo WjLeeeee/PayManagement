@@ -20,6 +20,7 @@ import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import com.woojin.paymanagement.domain.usecase.GetCustomPaymentMethodsUseCase
 import com.woojin.paymanagement.database.DatabaseHelper
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -42,16 +43,33 @@ class AddTransactionViewModel(
     private val getAvailableBalanceCardsUseCase: GetAvailableBalanceCardsUseCase,
     private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
     private val databaseHelper: DatabaseHelper
 ) : ViewModel() {
     var uiState by mutableStateOf(AddTransactionUiState())
         private set
 
     private var categoriesJob: Job? = null
+    private var customPaymentMethodsJob: Job? = null
 
     init {
         // 타입 변경 시 카테고리 로드
         loadCategories()
+        loadCustomPaymentMethods()
+    }
+
+    private fun loadCustomPaymentMethods() {
+        customPaymentMethodsJob?.cancel()
+        customPaymentMethodsJob = viewModelScope.launch {
+            getCustomPaymentMethodsUseCase().collectLatest { methods ->
+                uiState = uiState.copy(customPaymentMethods = methods)
+                // 편집 모드가 아니고 아직 카드가 선택되지 않았으면 기본 카드로 설정
+                if (!uiState.isEditMode && uiState.selectedCustomCardName == null && methods.isNotEmpty()) {
+                    val defaultCard = methods.find { it.isDefault } ?: methods.first()
+                    uiState = uiState.copy(selectedCustomCardName = defaultCard.name)
+                }
+            }
+        }
     }
 
     private fun loadCategories() {
@@ -77,7 +95,12 @@ class AddTransactionViewModel(
 
 
     fun reset() {
-        uiState = AddTransactionUiState()
+        val currentCustomPaymentMethods = uiState.customPaymentMethods
+        val currentSelectedCardName = uiState.selectedCustomCardName
+        uiState = AddTransactionUiState(
+            customPaymentMethods = currentCustomPaymentMethods,
+            selectedCustomCardName = currentSelectedCardName
+        )
     }
 
     fun initialize(
@@ -118,7 +141,8 @@ class AddTransactionViewModel(
                 availableBalanceCards = availableBalanceCards,
                 availableGiftCards = availableGiftCards,
                 isEditMode = true,
-                editTransaction = editTransaction
+                editTransaction = editTransaction,
+                selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null
             )
         } else {
             // 새 거래 추가 모드
@@ -215,6 +239,10 @@ class AddTransactionViewModel(
             val selectedCard = availableGiftCards.find { it.id == recurringTransaction.giftCardId }
             uiState = uiState.copy(selectedGiftCard = selectedCard)
         }
+        // 카드 결제 시 커스텀 카드명 설정
+        if (recurringTransaction.paymentMethod == PaymentMethod.CARD && recurringTransaction.cardName != null) {
+            uiState = uiState.copy(selectedCustomCardName = recurringTransaction.cardName)
+        }
 
         // 최신 카테고리 로드
         loadCategories()
@@ -262,8 +290,24 @@ class AddTransactionViewModel(
     }
 
     fun updatePaymentMethod(paymentMethod: PaymentMethod) {
-        uiState = uiState.copy(selectedPaymentMethod = paymentMethod)
+        val cardName = if (paymentMethod == PaymentMethod.CARD) {
+            // 카드 선택 시 기존 선택이 없으면 기본 카드로 설정
+            uiState.selectedCustomCardName ?: run {
+                val methods = uiState.customPaymentMethods
+                if (methods.isNotEmpty()) {
+                    (methods.find { it.isDefault } ?: methods.first()).name
+                } else null
+            }
+        } else null
+        uiState = uiState.copy(
+            selectedPaymentMethod = paymentMethod,
+            selectedCustomCardName = cardName
+        )
         validateInput()
+    }
+
+    fun updateSelectedCustomCardName(cardName: String?) {
+        uiState = uiState.copy(selectedCustomCardName = cardName)
     }
 
     fun updateSelectedBalanceCard(card: BalanceCard?) {
@@ -343,16 +387,16 @@ class AddTransactionViewModel(
     private fun validateInput() {
         val isValidInput = uiState.amount.text.isNotBlank() &&
                           uiState.category.isNotBlank() &&
-                          // 지출일 때 사용처 필수
-                          (uiState.selectedType == TransactionType.INCOME || uiState.merchant.isNotBlank()) &&
-                          // 수입일 때 검증
-                          (uiState.selectedType == TransactionType.EXPENSE ||
+                          // 지출일 때 사용처 필수 (저축은 불필요)
+                          (uiState.selectedType != TransactionType.EXPENSE || uiState.merchant.isNotBlank()) &&
+                          // 수입일 때 검증 (저축/지출은 이 검증 불필요)
+                          (uiState.selectedType != TransactionType.INCOME ||
                            uiState.selectedIncomeType == IncomeType.CASH ||
                            (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && !uiState.isChargingExistingBalanceCard && uiState.cardName.isNotBlank()) ||
                            (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && uiState.isChargingExistingBalanceCard && uiState.selectedBalanceCardForCharge != null) ||
                            (uiState.selectedIncomeType == IncomeType.GIFT_CARD && uiState.cardName.isNotBlank())) &&
-                          // 지출일 때: 현금이거나 카드가 선택됨
-                          (uiState.selectedType == TransactionType.INCOME ||
+                          // 지출일 때: 현금이거나 카드가 선택됨 (저축은 이 검증 불필요)
+                          (uiState.selectedType != TransactionType.EXPENSE ||
                            uiState.selectedPaymentMethod == PaymentMethod.CASH ||
                            uiState.selectedPaymentMethod == PaymentMethod.CARD ||
                            (uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD && uiState.selectedBalanceCard != null) ||
@@ -442,7 +486,7 @@ class AddTransactionViewModel(
                         amount = expenseAmount,
                         type = uiState.selectedType,
                         category = uiState.category,
-                        merchant = if (uiState.selectedType == TransactionType.EXPENSE) uiState.merchant.ifBlank { null } else null,
+                        merchant = if (uiState.selectedType == TransactionType.EXPENSE) uiState.merchant.ifBlank { null } else null,  // SAVING도 null
                         memo = uiState.memo,
                         date = currentDate,
                         incomeType = if (uiState.selectedType == TransactionType.INCOME) uiState.selectedIncomeType else null,
@@ -482,6 +526,9 @@ class AddTransactionViewModel(
                             // 수입 - 상품권
                             uiState.selectedType == TransactionType.INCOME &&
                             uiState.selectedIncomeType == IncomeType.GIFT_CARD -> uiState.cardName
+                            // 지출 - 카드 (커스텀 카드명)
+                            uiState.selectedType == TransactionType.EXPENSE &&
+                            uiState.selectedPaymentMethod == PaymentMethod.CARD -> uiState.selectedCustomCardName
                             // 지출 - 잔액권 사용
                             uiState.selectedType == TransactionType.EXPENSE &&
                             uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.name

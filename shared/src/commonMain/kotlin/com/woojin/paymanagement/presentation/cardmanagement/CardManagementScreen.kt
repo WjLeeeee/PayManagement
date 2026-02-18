@@ -11,6 +11,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,9 +23,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.BalanceCard
+import com.woojin.paymanagement.data.CustomPaymentMethod
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.Utils
 import com.woojin.paymanagement.utils.PlatformBackHandler
 import kotlinx.datetime.LocalDate
@@ -33,17 +39,17 @@ fun CardManagementScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState = viewModel.uiState
+    val strings = LocalStrings.current
 
-    // Android 뒤로가기 버튼 처리
     PlatformBackHandler(onBack = onNavigateBack)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("잔액권/상품권 관리") },
+                title = { Text(strings.paymentMethodManagement) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "뒤로가기")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, strings.goBack)
                     }
                 },
                 windowInsets = WindowInsets(0.dp)
@@ -55,68 +61,367 @@ fun CardManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 사용중/사용완료 탭
-            TabRow(selectedTabIndex = if (uiState.selectedTab == CardTab.ACTIVE) 0 else 1) {
+            // 카드 관리 | 잔액권/상품권 탭
+            TabRow(selectedTabIndex = if (uiState.selectedTab == CardTab.CARD_MANAGEMENT) 0 else 1) {
                 Tab(
-                    selected = uiState.selectedTab == CardTab.ACTIVE,
-                    onClick = { viewModel.selectTab(CardTab.ACTIVE) },
-                    text = { Text("사용중") }
+                    selected = uiState.selectedTab == CardTab.CARD_MANAGEMENT,
+                    onClick = { viewModel.selectTab(CardTab.CARD_MANAGEMENT) },
+                    text = { Text(strings.cardManagement) }
                 )
                 Tab(
-                    selected = uiState.selectedTab == CardTab.INACTIVE,
-                    onClick = { viewModel.selectTab(CardTab.INACTIVE) },
-                    text = { Text("사용완료") }
+                    selected = uiState.selectedTab == CardTab.BALANCE_GIFT,
+                    onClick = { viewModel.selectTab(CardTab.BALANCE_GIFT) },
+                    text = { Text(strings.balanceGiftCardManagement) }
                 )
             }
 
-            // 카드 리스트
-            if (uiState.balanceCards.isEmpty() && uiState.giftCards.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+            when (uiState.selectedTab) {
+                CardTab.BALANCE_GIFT -> BalanceGiftTabContent(uiState = uiState, viewModel = viewModel)
+                CardTab.CARD_MANAGEMENT -> CardManagementTabContent(uiState = uiState, viewModel = viewModel)
+            }
+        }
+
+        // 추가 다이얼로그
+        if (uiState.isAddDialogVisible) {
+            AddPaymentMethodDialog(
+                name = uiState.newMethodName,
+                onNameChange = { viewModel.updateNewMethodName(it) },
+                onConfirm = { viewModel.addMethod() },
+                onDismiss = { viewModel.hideAddDialog() }
+            )
+        }
+
+        // 수정 다이얼로그
+        if (uiState.isEditDialogVisible) {
+            EditPaymentMethodDialog(
+                name = uiState.editMethodName,
+                onNameChange = { viewModel.updateEditMethodName(it) },
+                onConfirm = { viewModel.updateMethod() },
+                onDismiss = { viewModel.hideEditDialog() }
+            )
+        }
+
+        // 변경 확인 다이얼로그
+        if (uiState.showConfirmDialog) {
+            ConfirmDialog(
+                message = uiState.confirmDialogMessage,
+                onConfirm = { viewModel.showConfirmDialogForUpdate() },
+                onDismiss = { viewModel.hideConfirmDialog() }
+            )
+        }
+
+        // 삭제 확인 다이얼로그
+        if (uiState.isDeleteDialogVisible) {
+            uiState.deletingMethod?.let { method ->
+                DeleteConfirmDialog(
+                    methodName = method.name,
+                    onConfirm = { viewModel.confirmDelete() },
+                    onDismiss = { viewModel.hideDeleteConfirmDialog() }
+                )
+            }
+        }
+
+        // 에러 표시
+        uiState.error?.let { errorMessage ->
+            AlertDialog(
+                onDismissRequest = { viewModel.clearError() },
+                text = { Text(errorMessage) },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.clearError() }) {
+                        Text(strings.confirm)
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun BalanceGiftTabContent(
+    uiState: CardManagementUiState,
+    viewModel: CardManagementViewModel
+) {
+    val strings = LocalStrings.current
+
+    if (uiState.balanceCards.isEmpty() && uiState.giftCards.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = strings.noActiveCards,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(uiState.balanceCards) { balanceCard ->
+                val cardItem = CardItem.Balance(balanceCard)
+                BalanceCardItem(
+                    balanceCard = balanceCard,
+                    isExpanded = uiState.expandedCardId == balanceCard.id,
+                    transactions = uiState.cardTransactions[balanceCard.id] ?: emptyList(),
+                    onClick = { viewModel.toggleCardExpansion(cardItem) }
+                )
+            }
+
+            items(uiState.giftCards) { giftCard ->
+                val cardItem = CardItem.Gift(giftCard)
+                GiftCardItem(
+                    giftCard = giftCard,
+                    isExpanded = uiState.expandedCardId == giftCard.id,
+                    transactions = uiState.cardTransactions[giftCard.id] ?: emptyList(),
+                    onClick = { viewModel.toggleCardExpansion(cardItem) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardManagementTabContent(
+    uiState: CardManagementUiState,
+    viewModel: CardManagementViewModel
+) {
+    val strings = LocalStrings.current
+    val defaultCount = 4
+    val customCount = uiState.customPaymentMethods.size
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // 상단 요약 카드
+        item {
+            SummaryCard(
+                totalText = strings.totalPaymentMethodCount(defaultCount, customCount),
+                defaultCount = defaultCount,
+                customCount = customCount
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(4.dp)) }
+
+        // 기본 결제수단 섹션
+        item {
+            SectionHeader(
+                title = strings.defaultPaymentMethods,
+                count = strings.defaultPaymentMethodCount(defaultCount)
+            )
+        }
+
+        val defaultMethods = listOf(
+            "💰" to strings.cash,
+            "💳" to strings.card,
+            "🎫" to strings.balanceCard,
+            "🎁" to strings.giftCard
+        )
+        items(defaultMethods) { (emoji, name) ->
+            DefaultPaymentMethodItem(emoji = emoji, name = name)
+        }
+
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+
+        // 등록된 카드 섹션
+        item {
+            SectionHeader(
+                title = strings.customPaymentMethods,
+                count = strings.customPaymentMethodCount(customCount)
+            )
+        }
+
+        // 추가 버튼
+        item {
+            AddPaymentMethodItem(onClick = { viewModel.showAddDialog() })
+        }
+
+        // 커스텀 결제수단 리스트
+        items(uiState.customPaymentMethods) { method ->
+            CustomPaymentMethodItem(
+                method = method,
+                onEdit = { viewModel.showEditDialog(method) },
+                onDelete = { viewModel.showDeleteConfirmDialog(method) },
+                onSetDefault = { viewModel.setDefaultMethod(method) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryCard(
+    totalText: String,
+    defaultCount: Int,
+    customCount: Int
+) {
+    val strings = LocalStrings.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Text(
+                    text = totalText,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = if (uiState.selectedTab == CardTab.ACTIVE) {
-                            "사용중인 카드가 없습니다"
-                        } else {
-                            "사용완료된 카드가 없습니다"
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    SummaryChip(
+                        label = strings.defaultPaymentMethods,
+                        count = defaultCount,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    SummaryChip(
+                        label = strings.customPaymentMethods,
+                        count = customCount,
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f),
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.weight(1f)
                     )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // 잔액권 카드들
-                    items(uiState.balanceCards) { balanceCard ->
-                        val cardItem = CardItem.Balance(balanceCard)
-                        BalanceCardItem(
-                            balanceCard = balanceCard,
-                            isExpanded = uiState.expandedCardId == balanceCard.id,
-                            transactions = uiState.cardTransactions[balanceCard.id] ?: emptyList(),
-                            onClick = {
-                                viewModel.toggleCardExpansion(cardItem)
-                            }
-                        )
-                    }
+            }
+        }
+    }
+}
 
-                    // 상품권 카드들
-                    items(uiState.giftCards) { giftCard ->
-                        val cardItem = CardItem.Gift(giftCard)
-                        GiftCardItem(
-                            giftCard = giftCard,
-                            isExpanded = uiState.expandedCardId == giftCard.id,
-                            transactions = uiState.cardTransactions[giftCard.id] ?: emptyList(),
-                            onClick = {
-                                viewModel.toggleCardExpansion(cardItem)
-                            }
+@Composable
+private fun SummaryChip(
+    label: String,
+    count: Int,
+    containerColor: androidx.compose.ui.graphics.Color,
+    contentColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = containerColor
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "$count",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = contentColor
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = contentColor.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(
+    title: String,
+    count: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Text(
+                text = count,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DefaultPaymentMethodItem(emoji: String, name: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f)
                         )
-                    }
-                }
+                    )
+                )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = emoji,
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -129,6 +434,8 @@ private fun BalanceCardItem(
     transactions: List<Transaction>,
     onClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -175,7 +482,7 @@ private fun BalanceCardItem(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = "잔액: ${Utils.formatAmount(balanceCard.currentBalance)}원",
+                            text = strings.balanceDisplay(Utils.formatAmount(balanceCard.currentBalance)),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -184,7 +491,6 @@ private fun BalanceCardItem(
                 }
             }
 
-            // 거래 내역 확장 영역
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = expandVertically(),
@@ -200,6 +506,8 @@ private fun BalanceCardItem(
 private fun TransactionHistorySection(
     transactions: List<Transaction>
 ) {
+    val strings = LocalStrings.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -212,7 +520,7 @@ private fun TransactionHistorySection(
         )
 
         Text(
-            text = "거래 내역",
+            text = strings.transactionHistory,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -227,7 +535,7 @@ private fun TransactionHistorySection(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "거래 내역이 없습니다",
+                    text = strings.noTransactionHistory,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -248,6 +556,8 @@ private fun TransactionHistorySection(
 private fun TransactionItem(
     transaction: Transaction
 ) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -263,7 +573,6 @@ private fun TransactionItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                // 날짜 및 카테고리
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -286,7 +595,6 @@ private fun TransactionItem(
                     )
                 }
 
-                // 메모 (있는 경우)
                 if (transaction.memo.isNotBlank()) {
                     Text(
                         text = transaction.memo,
@@ -297,18 +605,19 @@ private fun TransactionItem(
                 }
             }
 
-            // 금액
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = when (transaction.type) {
-                        TransactionType.INCOME -> "+${Utils.formatAmount(transaction.displayAmount)}원"
-                        TransactionType.EXPENSE -> "-${Utils.formatAmount(transaction.displayAmount)}원"
+                        TransactionType.INCOME -> strings.incomeAmountDisplay(Utils.formatAmount(transaction.displayAmount))
+                        TransactionType.EXPENSE -> strings.expenseAmountDisplay(Utils.formatAmount(transaction.displayAmount))
+                        TransactionType.SAVING -> strings.expenseAmountDisplay(Utils.formatAmount(transaction.displayAmount))
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = when (transaction.type) {
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
                     }
                 )
             }
@@ -327,6 +636,8 @@ private fun GiftCardItem(
     transactions: List<Transaction>,
     onClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -373,7 +684,7 @@ private fun GiftCardItem(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = "잔액: ${Utils.formatAmount(giftCard.remainingAmount)}원",
+                            text = strings.balanceDisplay(Utils.formatAmount(giftCard.remainingAmount)),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -382,7 +693,6 @@ private fun GiftCardItem(
                 }
             }
 
-            // 거래 내역 확장 영역
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = expandVertically(),
@@ -392,4 +702,268 @@ private fun GiftCardItem(
             }
         }
     }
+}
+
+// 커스텀 결제수단 관련 Composable들
+
+@Composable
+private fun AddPaymentMethodItem(onClick: () -> Unit) {
+    val strings = LocalStrings.current
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+                        )
+                    )
+                )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = strings.add,
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = strings.addPaymentMethod,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomPaymentMethodItem(
+    method: CustomPaymentMethod,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onSetDefault: () -> Unit
+) {
+    val strings = LocalStrings.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+                        )
+                    )
+                )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = "💳",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = method.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (method.isDefault) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text(
+                                text = strings.defaultCard,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+
+                Row {
+                    if (!method.isDefault) {
+                        IconButton(onClick = onSetDefault) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = strings.setAsDefaultCard,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = strings.edit,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = strings.delete,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddPaymentMethodDialog(
+    name: String,
+    onNameChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(strings.addPaymentMethod) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                label = { Text(strings.paymentMethodName) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(strings.add)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancel)
+            }
+        }
+    )
+}
+
+@Composable
+private fun EditPaymentMethodDialog(
+    name: String,
+    onNameChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(strings.editPaymentMethod) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                label = { Text(strings.paymentMethodName) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(strings.edit)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancel)
+            }
+        }
+    )
+}
+
+@Composable
+private fun ConfirmDialog(
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(strings.continueAction)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancel)
+            }
+        }
+    )
+}
+
+@Composable
+private fun DeleteConfirmDialog(
+    methodName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(strings.deletePaymentMethod) },
+        text = {
+            Text(strings.deletePaymentMethodConfirmMessage(methodName))
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(strings.delete)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancel)
+            }
+        }
+    )
 }

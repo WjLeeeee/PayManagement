@@ -2,6 +2,7 @@ package com.woojin.paymanagement.presentation.addtransaction
 
 import androidx.compose.ui.text.input.TextFieldValue
 import com.woojin.paymanagement.data.BalanceCard
+import com.woojin.paymanagement.data.CustomPaymentMethod
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
@@ -48,6 +49,10 @@ data class AddTransactionUiState(
     val isValidInput: Boolean = false,
     val saveEnabled: Boolean = false,
 
+    // 커스텀 결제수단 (카드)
+    val customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
+    val selectedCustomCardName: String? = null,
+
     // 예산 초과 알림
     val budgetExceededMessage: String? = null
 )
@@ -60,7 +65,8 @@ val AddTransactionUiState.categories: List<String>
         // 기본값 (데이터베이스가 아직 로드되지 않았을 때)
         when (selectedType) {
             TransactionType.INCOME -> listOf("급여", "식비", "당근", "K-패스 환급", "투자수익", "기타수입")
-            TransactionType.EXPENSE -> listOf("식비", "데이트", "생활비", "생활용품", "쇼핑", "문화생활", "경조사", "자기계발", "공과금", "대출이자", "모임통장", "교통비", "적금", "투자", "손절", "정기결제", "기타지출")
+            TransactionType.EXPENSE -> listOf("식비", "데이트", "생활비", "생활용품", "쇼핑", "문화생활", "경조사", "자기계발", "공과금", "대출이자", "모임통장", "교통비", "투자", "손절", "정기결제", "기타지출")
+            TransactionType.SAVING -> listOf("적금", "예금")
         }
     }
 

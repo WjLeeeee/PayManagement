@@ -35,9 +35,10 @@ class StatisticsViewModel(
         coroutineScope.launch {
             combine(
                 getCategoriesUseCase(TransactionType.INCOME),
-                getCategoriesUseCase(TransactionType.EXPENSE)
-            ) { income, expense ->
-                income + expense
+                getCategoriesUseCase(TransactionType.EXPENSE),
+                getCategoriesUseCase(TransactionType.SAVING)
+            ) { income, expense, saving ->
+                income + expense + saving
             }.collect { categories ->
                 uiState = uiState.copy(availableCategories = categories)
             }

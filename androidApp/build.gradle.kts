@@ -23,10 +23,10 @@ android {
     compileSdk = 35
     defaultConfig {
         applicationId = "com.woojin.paymanagement.android"
-        minSdk = 28
+        minSdk = 26
         targetSdk = 35
-        versionCode = 44
-        versionName = "1.8"
+        versionCode = 49
+        versionName = "2.0"
     }
 
     // 서명 설정
@@ -109,6 +109,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.config)
 
     debugImplementation(libs.compose.ui.tooling)
 }

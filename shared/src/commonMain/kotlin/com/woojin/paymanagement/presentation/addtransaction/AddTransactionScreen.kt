@@ -35,6 +35,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.BackHandler
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -50,6 +51,8 @@ fun AddTransactionScreen(
     onSave: (List<Transaction>, String?) -> Unit,  // budgetExceededMessage 추가
     onCancel: () -> Unit
 ) {
+    val strings = LocalStrings.current
+
     // 시스템 뒤로가기 버튼 처리
     BackHandler(onBack = onCancel)
 
@@ -78,7 +81,7 @@ fun AddTransactionScreen(
                 .verticalScroll(rememberScrollState())
     ) {
         Text(
-            text = if (uiState.isEditMode) "거래 편집" else "거래 추가",
+            text = if (uiState.isEditMode) strings.editTransaction else strings.addTransaction,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -122,7 +125,10 @@ fun AddTransactionScreen(
                 onBalanceCardSelected = viewModel::updateSelectedBalanceCard,
                 selectedGiftCard = uiState.selectedGiftCard,
                 onGiftCardSelected = viewModel::updateSelectedGiftCard,
-                amount = uiState.amount.text
+                amount = uiState.amount.text,
+                customPaymentMethods = uiState.customPaymentMethods,
+                selectedCustomCardName = uiState.selectedCustomCardName,
+                onCustomCardNameSelected = viewModel::updateSelectedCustomCardName
             )
         }
 
@@ -132,8 +138,8 @@ fun AddTransactionScreen(
         OutlinedTextField(
             value = uiState.amount,
             onValueChange = viewModel::updateAmount,
-            label = { Text("금액") },
-            suffix = { Text("원") },
+            label = { Text(strings.transactionAmount) },
+            suffix = { Text(strings.currencySymbol) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Number,
                 imeAction = ImeAction.Done
@@ -145,8 +151,16 @@ fun AddTransactionScreen(
             ),
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = if (uiState.selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                focusedLabelColor = if (uiState.selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                focusedBorderColor = when (uiState.selectedType) {
+                    TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                    TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                    TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                },
+                focusedLabelColor = when (uiState.selectedType) {
+                    TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                    TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                    TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                }
             )
         )
 
@@ -181,7 +195,7 @@ fun AddTransactionScreen(
                 "${it.year}-${it.monthNumber.toString().padStart(2, '0')}-${it.dayOfMonth.toString().padStart(2, '0')}"
             } ?: "",
             onValueChange = { },
-            label = { Text("날짜") },
+            label = { Text(strings.dateLabel) },
             readOnly = true,
             modifier = Modifier.fillMaxWidth()
         )
@@ -193,7 +207,7 @@ fun AddTransactionScreen(
             OutlinedTextField(
                 value = uiState.merchant,
                 onValueChange = viewModel::updateMerchant,
-                label = { Text("사용처") },
+                label = { Text(strings.merchantLabel) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -204,7 +218,7 @@ fun AddTransactionScreen(
         OutlinedTextField(
             value = uiState.memo,
             onValueChange = viewModel::updateMemo,
-            label = { Text("메모 (선택사항)") },
+            label = { Text(strings.memoOptional) },
             modifier = Modifier.fillMaxWidth(),
             maxLines = 3
         )
@@ -226,7 +240,7 @@ fun AddTransactionScreen(
                 )
             ) {
                 Text(
-                    text = "취소",
+                    text = strings.cancel,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -247,12 +261,16 @@ fun AddTransactionScreen(
                     .height(40.dp),
                 enabled = uiState.saveEnabled && !uiState.isLoading,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (uiState.selectedType == TransactionType.INCOME) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error,
+                    containerColor = when (uiState.selectedType) {
+                        TransactionType.INCOME -> Color(0xFF4CAF50)
+                        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                    },
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Text(
-                    text = if (uiState.isLoading) "저장 중..." else "저장",
+                    text = if (uiState.isLoading) strings.savingTransaction else strings.save,
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold

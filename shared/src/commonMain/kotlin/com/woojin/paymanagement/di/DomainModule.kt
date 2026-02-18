@@ -57,6 +57,12 @@ import com.woojin.paymanagement.domain.usecase.FetchHolidaysUseCase
 import com.woojin.paymanagement.domain.usecase.CheckBudgetExceededUseCase
 import com.woojin.paymanagement.domain.repository.BillingRepository
 import com.woojin.paymanagement.domain.repository.BillingRepositoryImpl
+import com.woojin.paymanagement.data.repository.CustomPaymentMethodRepositoryImpl
+import com.woojin.paymanagement.domain.repository.CustomPaymentMethodRepository
+import com.woojin.paymanagement.domain.usecase.GetCustomPaymentMethodsUseCase
+import com.woojin.paymanagement.domain.usecase.AddCustomPaymentMethodUseCase
+import com.woojin.paymanagement.domain.usecase.UpdateCustomPaymentMethodUseCase
+import com.woojin.paymanagement.domain.usecase.DeleteCustomPaymentMethodUseCase
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -72,6 +78,7 @@ val domainModule = module {
     singleOf(::RecurringTransactionRepositoryImpl) bind RecurringTransactionRepository::class
     singleOf(::BillingRepositoryImpl) bind BillingRepository::class
     singleOf(::HolidayRepositoryImpl) bind HolidayRepository::class
+    singleOf(::CustomPaymentMethodRepositoryImpl) bind CustomPaymentMethodRepository::class
     single<com.woojin.paymanagement.domain.repository.PreferencesRepository> {
         com.woojin.paymanagement.data.repository.PreferencesRepositoryImpl(get())
     }
@@ -149,4 +156,10 @@ val domainModule = module {
     factoryOf(::DeleteRecurringTransactionUseCase)
     factoryOf(::CheckTodayRecurringTransactionsUseCase)
     factoryOf(::MarkRecurringTransactionExecutedUseCase)
+
+    // CustomPaymentMethod Use Cases
+    factoryOf(::GetCustomPaymentMethodsUseCase)
+    factoryOf(::AddCustomPaymentMethodUseCase)
+    factoryOf(::UpdateCustomPaymentMethodUseCase)
+    factoryOf(::DeleteCustomPaymentMethodUseCase)
 }

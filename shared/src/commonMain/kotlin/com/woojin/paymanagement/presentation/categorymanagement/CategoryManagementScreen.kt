@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PlatformBackHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,6 +27,7 @@ fun CategoryManagementScreen(
     viewModel: CategoryManagementViewModel,
     onNavigateBack: () -> Unit
 ) {
+    val strings = LocalStrings.current
     val uiState = viewModel.uiState
 
     // Android 뒤로가기 버튼 처리
@@ -34,10 +36,10 @@ fun CategoryManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("카테고리 관리") },
+                title = { Text(strings.categoryManagement) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "뒤로가기")
+                        Icon(Icons.Default.ArrowBack, strings.goBack)
                     }
                 },
                 windowInsets = WindowInsets(0.dp)
@@ -49,17 +51,28 @@ fun CategoryManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 수입/지출 탭
-            TabRow(selectedTabIndex = if (uiState.selectedType == TransactionType.INCOME) 0 else 1) {
+            // 수입/지출/저축 탭
+            TabRow(
+                selectedTabIndex = when (uiState.selectedType) {
+                    TransactionType.INCOME -> 0
+                    TransactionType.EXPENSE -> 1
+                    TransactionType.SAVING -> 2
+                }
+            ) {
                 Tab(
                     selected = uiState.selectedType == TransactionType.INCOME,
                     onClick = { viewModel.selectType(TransactionType.INCOME) },
-                    text = { Text("수입") }
+                    text = { Text(strings.income) }
                 )
                 Tab(
                     selected = uiState.selectedType == TransactionType.EXPENSE,
                     onClick = { viewModel.selectType(TransactionType.EXPENSE) },
-                    text = { Text("지출") }
+                    text = { Text(strings.expense) }
+                )
+                Tab(
+                    selected = uiState.selectedType == TransactionType.SAVING,
+                    onClick = { viewModel.selectType(TransactionType.SAVING) },
+                    text = { Text(strings.saving) }
                 )
             }
 
@@ -139,7 +152,7 @@ fun CategoryManagementScreen(
                 text = { Text(errorMessage) },
                 confirmButton = {
                     TextButton(onClick = { viewModel.clearError() }) {
-                        Text("확인")
+                        Text(strings.confirm)
                     }
                 }
             )
@@ -151,6 +164,7 @@ fun CategoryManagementScreen(
 private fun AddCategoryItem(
     onClick: () -> Unit
 ) {
+    val strings = LocalStrings.current
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -184,12 +198,12 @@ private fun AddCategoryItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "추가",
+                    contentDescription = strings.add,
                     tint = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "카테고리 추가",
+                    text = strings.addCategory,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -205,6 +219,7 @@ private fun CategoryItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -255,14 +270,14 @@ private fun CategoryItem(
                     IconButton(onClick = onEdit) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "수정",
+                            contentDescription = strings.edit,
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     IconButton(onClick = onDelete) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "삭제",
+                            contentDescription = strings.delete,
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -281,22 +296,23 @@ private fun AddCategoryDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalStrings.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("카테고리 추가") },
+        title = { Text(strings.addCategory) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = emoji,
                     onValueChange = onEmojiChange,
-                    label = { Text("이모지") },
+                    label = { Text(strings.emojiLabel) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    label = { Text("카테고리 이름") },
+                    label = { Text(strings.categoryName) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -304,12 +320,12 @@ private fun AddCategoryDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("추가")
+                Text(strings.add)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("취소")
+                Text(strings.cancel)
             }
         }
     )
@@ -324,22 +340,23 @@ private fun EditCategoryDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalStrings.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("카테고리 수정") },
+        title = { Text(strings.editCategory) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = emoji,
                     onValueChange = onEmojiChange,
-                    label = { Text("이모지") },
+                    label = { Text(strings.emojiLabel) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    label = { Text("카테고리 이름") },
+                    label = { Text(strings.categoryName) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -347,12 +364,12 @@ private fun EditCategoryDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("수정")
+                Text(strings.edit)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("취소")
+                Text(strings.cancel)
             }
         }
     )
@@ -364,17 +381,18 @@ private fun ConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalStrings.current
     AlertDialog(
         onDismissRequest = onDismiss,
         text = { Text(message) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("계속")
+                Text(strings.continueAction)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("취소")
+                Text(strings.cancel)
             }
         }
     )
@@ -387,11 +405,12 @@ private fun DeleteConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val strings = LocalStrings.current
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("카테고리 삭제") },
+        title = { Text(strings.deleteCategory) },
         text = {
-            Text("$categoryEmoji $categoryName 카테고리를 정말 삭제하시겠습니까?")
+            Text(strings.deleteCategoryConfirmMessage(categoryEmoji, categoryName))
         },
         confirmButton = {
             TextButton(
@@ -400,12 +419,12 @@ private fun DeleteConfirmDialog(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("삭제")
+                Text(strings.delete)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("취소")
+                Text(strings.cancel)
             }
         }
     )

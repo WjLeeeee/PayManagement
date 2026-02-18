@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.woojin.paymanagement.strings.LocalStrings
 
 data class FabAction(
     val icon: String,
@@ -56,6 +57,7 @@ fun ExpandableFab(
     items: List<FabAction>,
     fabIcon: ImageVector = Icons.Default.Add
 ) {
+    val strings = LocalStrings.current
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 45f else 0f
     )
@@ -117,7 +119,7 @@ fun ExpandableFab(
         ) {
             Icon(
                 imageVector = fabIcon,
-                contentDescription = if (expanded) "닫기" else "메뉴 열기",
+                contentDescription = if (expanded) strings.close else strings.openMenu,
                 tint = Color.Black,
                 modifier = Modifier.rotate(rotation)
             )
