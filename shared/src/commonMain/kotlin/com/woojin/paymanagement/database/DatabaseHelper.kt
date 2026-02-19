@@ -802,6 +802,14 @@ class DatabaseHelper(
         queries.updateTransactionsCardName(newCardName, oldCardName)
     }
 
+    suspend fun updateTransactionCardNameByBalanceCardId(balanceCardId: String, newCardName: String) {
+        queries.updateTransactionCardNameByBalanceCardId(newCardName, balanceCardId)
+    }
+
+    suspend fun updateTransactionCardNameByGiftCardId(giftCardId: String, newCardName: String) {
+        queries.updateTransactionCardNameByGiftCardId(newCardName, giftCardId)
+    }
+
     private fun CustomPaymentMethodEntity.toCustomPaymentMethod(): CustomPaymentMethod {
         return CustomPaymentMethod(
             id = this.id,

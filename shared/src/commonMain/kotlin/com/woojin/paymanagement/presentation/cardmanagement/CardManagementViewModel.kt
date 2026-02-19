@@ -5,7 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.CustomPaymentMethod
+import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.usecase.GetCustomPaymentMethodsUseCase
 import com.woojin.paymanagement.domain.usecase.AddCustomPaymentMethodUseCase
@@ -286,5 +288,135 @@ class CardManagementViewModel(
 
     fun clearError() {
         uiState = uiState.copy(error = null)
+    }
+
+    // 잔액권 수정/삭제
+
+    fun showEditBalanceCardDialog(card: BalanceCard) {
+        uiState = uiState.copy(
+            isEditBalanceCardDialogVisible = true,
+            editingBalanceCard = card,
+            editBalanceCardName = card.name
+        )
+    }
+
+    fun hideEditBalanceCardDialog() {
+        uiState = uiState.copy(
+            isEditBalanceCardDialogVisible = false,
+            editingBalanceCard = null,
+            editBalanceCardName = ""
+        )
+    }
+
+    fun updateEditBalanceCardName(name: String) {
+        uiState = uiState.copy(editBalanceCardName = name)
+    }
+
+    fun updateBalanceCard() {
+        val card = uiState.editingBalanceCard ?: return
+        if (uiState.editBalanceCardName.isBlank()) return
+        viewModelScope.launch {
+            try {
+                val newName = uiState.editBalanceCardName.trim()
+                databaseHelper.updateBalanceCard(card.copy(name = newName))
+                // 해당 잔액권의 모든 거래내역 cardName도 업데이트
+                databaseHelper.updateTransactionCardNameByBalanceCardId(card.id, newName)
+                hideEditBalanceCardDialog()
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+            }
+        }
+    }
+
+    fun showDeleteBalanceCardDialog(card: BalanceCard) {
+        uiState = uiState.copy(
+            isDeleteBalanceCardDialogVisible = true,
+            deletingBalanceCard = card
+        )
+    }
+
+    fun hideDeleteBalanceCardDialog() {
+        uiState = uiState.copy(
+            isDeleteBalanceCardDialogVisible = false,
+            deletingBalanceCard = null
+        )
+    }
+
+    fun confirmDeleteBalanceCard() {
+        val card = uiState.deletingBalanceCard ?: return
+        viewModelScope.launch {
+            try {
+                databaseHelper.deleteBalanceCard(card.id)
+                hideDeleteBalanceCardDialog()
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+                hideDeleteBalanceCardDialog()
+            }
+        }
+    }
+
+    // 상품권 수정/삭제
+
+    fun showEditGiftCardDialog(card: GiftCard) {
+        uiState = uiState.copy(
+            isEditGiftCardDialogVisible = true,
+            editingGiftCard = card,
+            editGiftCardName = card.name
+        )
+    }
+
+    fun hideEditGiftCardDialog() {
+        uiState = uiState.copy(
+            isEditGiftCardDialogVisible = false,
+            editingGiftCard = null,
+            editGiftCardName = ""
+        )
+    }
+
+    fun updateEditGiftCardName(name: String) {
+        uiState = uiState.copy(editGiftCardName = name)
+    }
+
+    fun updateGiftCard() {
+        val card = uiState.editingGiftCard ?: return
+        if (uiState.editGiftCardName.isBlank()) return
+        viewModelScope.launch {
+            try {
+                val newName = uiState.editGiftCardName.trim()
+                databaseHelper.updateGiftCard(card.copy(name = newName))
+                // 해당 상품권의 모든 거래내역 cardName도 업데이트
+                databaseHelper.updateTransactionCardNameByGiftCardId(card.id, newName)
+                hideEditGiftCardDialog()
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+            }
+        }
+    }
+
+    fun showDeleteGiftCardDialog(card: GiftCard) {
+        uiState = uiState.copy(
+            isDeleteGiftCardDialogVisible = true,
+            deletingGiftCard = card
+        )
+    }
+
+    fun hideDeleteGiftCardDialog() {
+        uiState = uiState.copy(
+            isDeleteGiftCardDialogVisible = false,
+            deletingGiftCard = null
+        )
+    }
+
+    fun confirmDeleteGiftCard() {
+        val card = uiState.deletingGiftCard ?: return
+        viewModelScope.launch {
+            try {
+                databaseHelper.deleteGiftCard(card.id)
+                hideDeleteGiftCardDialog()
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+                hideDeleteGiftCardDialog()
+            }
+        }
     }
 }

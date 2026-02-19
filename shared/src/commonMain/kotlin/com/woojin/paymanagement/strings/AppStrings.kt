@@ -298,6 +298,8 @@ interface AppStrings {
     val giftCardManagement: String
     val addBalanceCard: String
     val addGiftCard: String
+    val editBalanceCard: String
+    val editGiftCard: String
     val initialBalance: String
     val currentBalance: String
     val usedBalance: String

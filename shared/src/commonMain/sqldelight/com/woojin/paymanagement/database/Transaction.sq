@@ -504,3 +504,13 @@ updateTransactionsCardName:
 UPDATE TransactionEntity
 SET cardName = ?
 WHERE cardName = ? AND paymentMethod = 'CARD';
+
+updateTransactionCardNameByBalanceCardId:
+UPDATE TransactionEntity
+SET cardName = ?
+WHERE balanceCardId = ?;
+
+updateTransactionCardNameByGiftCardId:
+UPDATE TransactionEntity
+SET cardName = ?
+WHERE giftCardId = ?;
