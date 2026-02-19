@@ -44,6 +44,7 @@ import com.google.android.gms.ads.MobileAds
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.woojin.paymanagement.android.config.RemoteConfigManager
+import com.woojin.paymanagement.android.config.UpdateType
 import com.woojin.paymanagement.App
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +64,9 @@ class MainActivity : ComponentActivity() {
     // Remote Config 관리자
     private lateinit var remoteConfigManager: RemoteConfigManager
 
+    // 업데이트 상태
+    private var updateType by mutableStateOf(UpdateType.NONE)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -79,14 +83,24 @@ class MainActivity : ComponentActivity() {
         crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
         crashlytics.setCustomKey("version_code", BuildConfig.VERSION_CODE)
 
+        // 버전 디버그 로그
+        val pmVersionCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            packageManager.getPackageInfo(packageName, 0).longVersionCode.toInt()
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, 0).versionCode
+        }
+        android.util.Log.d("VersionCheck", "BuildConfig.VERSION_CODE=${BuildConfig.VERSION_CODE}, PackageManager.versionCode=$pmVersionCode")
+
         // Firebase Remote Config 초기화
         remoteConfigManager = RemoteConfigManager()
         CoroutineScope(Dispatchers.IO).launch {
             remoteConfigManager.fetchAndActivate()
 
-            // 테스트용 로그
-            val featureType = remoteConfigManager.getString(RemoteConfigManager.KEY_FEATURE_TYPE)
-            android.util.Log.d("RemoteConfig", "feature_type = $featureType")
+            // 업데이트 체크
+            val currentVersionCode = BuildConfig.VERSION_CODE
+            updateType = remoteConfigManager.checkUpdateType(currentVersionCode)
+            android.util.Log.d("RemoteConfig", "updateType = $updateType, currentVersionCode = $currentVersionCode")
         }
 
         // Intent로부터 네비게이션 플래그 확인
@@ -148,6 +162,44 @@ class MainActivity : ComponentActivity() {
                     },
                     onThemeChanged = { recreate() }
                 )
+
+                // 업데이트 다이얼로그
+                if (updateType != UpdateType.NONE) {
+                    UpdateDialog(
+                        updateType = updateType,
+                        onConfirm = {
+                            // Play Store로 이동
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                android.net.Uri.parse("market://details?id=$packageName")
+                            ).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            try {
+                                startActivity(intent)
+                            } catch (e: Exception) {
+                                // Play Store 앱이 없으면 웹으로
+                                startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        android.net.Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                                    )
+                                )
+                            }
+                            if (updateType == UpdateType.FORCE) {
+                                finish()
+                            } else {
+                                updateType = UpdateType.NONE
+                            }
+                        },
+                        onDismiss = {
+                            // 선택적 업데이트만 취소 가능
+                            if (updateType == UpdateType.OPTIONAL) {
+                                updateType = UpdateType.NONE
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -478,5 +530,46 @@ fun StatusBarOverlayScreen(
             }
         }
     }
+}
+
+@Composable
+fun UpdateDialog(
+    updateType: UpdateType,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val isForce = updateType == UpdateType.FORCE
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = {
+            if (!isForce) onDismiss()
+        },
+        title = {
+            androidx.compose.material3.Text(
+                text = if (isForce) "업데이트 필요" else "새로운 버전 안내",
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+        },
+        text = {
+            androidx.compose.material3.Text(
+                text = if (isForce)
+                    "원활한 서비스 이용을 위해 최신 버전으로 업데이트가 필요합니다."
+                else
+                    "새로운 버전이 출시되었습니다. 업데이트하시겠습니까?"
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.Button(onClick = onConfirm) {
+                androidx.compose.material3.Text("업데이트")
+            }
+        },
+        dismissButton = if (!isForce) {
+            {
+                androidx.compose.material3.TextButton(onClick = onDismiss) {
+                    androidx.compose.material3.Text("나중에")
+                }
+            }
+        } else null
+    )
 }
 
