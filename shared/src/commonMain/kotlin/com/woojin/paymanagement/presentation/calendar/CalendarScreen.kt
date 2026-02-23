@@ -709,8 +709,9 @@ private fun CalendarGrid(
 //            modifier = Modifier.height(300.dp)
         ) {
             // Empty cells for days before first date starts
-            // 시작일의 요일을 직접 계산 (월=0, 일=6)
-            val emptyDaysAtStart = payPeriod.startDate.dayOfWeek.ordinal
+            // kotlinx.datetime ordinal은 ISO 8601 기준 (월=0, ..., 일=6)
+            // 헤더가 일~토(일=0, 월=1, ..., 토=6)이므로 +1 후 %7로 변환
+            val emptyDaysAtStart = (payPeriod.startDate.dayOfWeek.ordinal + 1) % 7
             items(emptyDaysAtStart) {
                 Box(modifier = Modifier.height(40.dp))
             }
