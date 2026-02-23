@@ -26,6 +26,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.woojin.paymanagement.utils.formatWithCommas
 import com.woojin.paymanagement.utils.parseAmountToDouble
@@ -53,7 +54,6 @@ class AddTransactionViewModel(
     private var customPaymentMethodsJob: Job? = null
 
     init {
-        // 타입 변경 시 카테고리 로드
         loadCategories()
         loadCustomPaymentMethods()
     }
@@ -113,52 +113,58 @@ class AddTransactionViewModel(
             reset()
         }
 
-        val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions)
-        val availableGiftCards = getAvailableGiftCardsUseCase(transactions)
+        viewModelScope.launch {
+            // DB에서 현재 활성 카드 ID를 직접 조회 (항상 최신 상태 반영)
+            val activeBalanceCardIds = databaseHelper.getActiveBalanceCards().first().map { it.id }.toSet()
+            val activeGiftCardIds = databaseHelper.getActiveGiftCards().first().map { it.id }.toSet()
 
-        val initialDate = editTransaction?.date
-            ?: selectedDate
-            ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds)
+            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds)
 
-        if (editTransaction != null) {
-            // 편집 모드 초기화
-            val initialAmount = editTransaction.amount.toLong().toString()
-            uiState = uiState.copy(
-                amount = TextFieldValue(
-                    text = if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()) else "",
-                    selection = TextRange(if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()).length else 0)
-                ),
-                selectedType = editTransaction.type,
-                selectedIncomeType = editTransaction.incomeType ?: IncomeType.CASH,
-                selectedPaymentMethod = editTransaction.paymentMethod ?: PaymentMethod.CASH,
-                cardName = editTransaction.cardName ?: "",
-                category = editTransaction.category,
-                merchant = editTransaction.merchant ?: "",
-                memo = editTransaction.memo,
-                date = initialDate,
-                isSettlement = editTransaction.isSettlement,
-                settlementAmount = editTransaction.settlementAmount?.toLong()?.toString() ?: "",
-                availableBalanceCards = availableBalanceCards,
-                availableGiftCards = availableGiftCards,
-                isEditMode = true,
-                editTransaction = editTransaction,
-                selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null
-            )
-        } else {
-            // 새 거래 추가 모드
-            uiState = uiState.copy(
-                date = initialDate,
-                availableBalanceCards = availableBalanceCards,
-                availableGiftCards = availableGiftCards,
-                isEditMode = false,
-                editTransaction = null
-            )
+            val initialDate = editTransaction?.date
+                ?: selectedDate
+                ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+            if (editTransaction != null) {
+                // 편집 모드 초기화
+                val initialAmount = editTransaction.amount.toLong().toString()
+                uiState = uiState.copy(
+                    amount = TextFieldValue(
+                        text = if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()) else "",
+                        selection = TextRange(if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()).length else 0)
+                    ),
+                    selectedType = editTransaction.type,
+                    selectedIncomeType = editTransaction.incomeType ?: IncomeType.CASH,
+                    selectedPaymentMethod = editTransaction.paymentMethod ?: PaymentMethod.CASH,
+                    cardName = editTransaction.cardName ?: "",
+                    category = editTransaction.category,
+                    merchant = editTransaction.merchant ?: "",
+                    memo = editTransaction.memo,
+                    date = initialDate,
+                    isSettlement = editTransaction.isSettlement,
+                    settlementAmount = editTransaction.settlementAmount?.toLong()?.toString() ?: "",
+                    availableBalanceCards = availableBalanceCards,
+                    availableGiftCards = availableGiftCards,
+                    isEditMode = true,
+                    editTransaction = editTransaction,
+                    selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null
+                )
+            } else {
+                // 새 거래 추가 모드
+                uiState = uiState.copy(
+                    date = initialDate,
+                    availableBalanceCards = availableBalanceCards,
+                    availableGiftCards = availableGiftCards,
+                    isEditMode = false,
+                    editTransaction = null
+                )
+            }
+
+            // 최신 카테고리 로드
+            loadCategories()
+
+            validateInput()
         }
-
-        // 최신 카테고리 로드
-        loadCategories()
-
-        validateInput()
     }
 
     fun initializeWithParsedTransaction(
@@ -167,38 +173,42 @@ class AddTransactionViewModel(
     ) {
         reset()
 
-        val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions)
-        val availableGiftCards = getAvailableGiftCardsUseCase(transactions)
-
-        val amountText = formatWithCommas(parsedTransaction.amount.toLong())
-
-        uiState = uiState.copy(
-            amount = TextFieldValue(
-                text = amountText,
-                selection = TextRange(amountText.length)
-            ),
-            selectedType = TransactionType.EXPENSE, // 카드 사용은 지출
-            selectedPaymentMethod = PaymentMethod.CARD, // 결제수단은 카드
-            merchant = parsedTransaction.merchantName, // 가맹점명을 사용처에
-            date = parsedTransaction.date, // 파싱된 날짜
-            availableBalanceCards = availableBalanceCards,
-            availableGiftCards = availableGiftCards,
-            isEditMode = false,
-            editTransaction = null
-        )
-
-        // 최신 카테고리 로드
-        loadCategories()
-
-        // merchant로 자동 카테고리 제안
         viewModelScope.launch {
+            // DB에서 현재 활성 카드 ID를 직접 조회 (항상 최신 상태 반영)
+            val activeBalanceCardIds = databaseHelper.getActiveBalanceCards().first().map { it.id }.toSet()
+            val activeGiftCardIds = databaseHelper.getActiveGiftCards().first().map { it.id }.toSet()
+
+            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds)
+            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds)
+
+            val amountText = formatWithCommas(parsedTransaction.amount.toLong())
+
+            uiState = uiState.copy(
+                amount = TextFieldValue(
+                    text = amountText,
+                    selection = TextRange(amountText.length)
+                ),
+                selectedType = TransactionType.EXPENSE, // 카드 사용은 지출
+                selectedPaymentMethod = PaymentMethod.CARD, // 결제수단은 카드
+                merchant = parsedTransaction.merchantName, // 가맹점명을 사용처에
+                date = parsedTransaction.date, // 파싱된 날짜
+                availableBalanceCards = availableBalanceCards,
+                availableGiftCards = availableGiftCards,
+                isEditMode = false,
+                editTransaction = null
+            )
+
+            // 최신 카테고리 로드
+            loadCategories()
+
+            // merchant로 자동 카테고리 제안
             val suggestedCategory = databaseHelper.getSuggestedCategory(parsedTransaction.merchantName)
             if (suggestedCategory != null) {
                 uiState = uiState.copy(category = suggestedCategory)
             }
-        }
 
-        validateInput()
+            validateInput()
+        }
     }
 
     fun initializeWithRecurringTransaction(
@@ -207,47 +217,53 @@ class AddTransactionViewModel(
     ) {
         reset()
 
-        val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions)
-        val availableGiftCards = getAvailableGiftCardsUseCase(transactions)
+        viewModelScope.launch {
+            // DB에서 현재 활성 카드 ID를 직접 조회 (항상 최신 상태 반영)
+            val activeBalanceCardIds = databaseHelper.getActiveBalanceCards().first().map { it.id }.toSet()
+            val activeGiftCardIds = databaseHelper.getActiveGiftCards().first().map { it.id }.toSet()
 
-        val amountText = formatWithCommas(recurringTransaction.amount.toLong())
-        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds)
+            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds)
 
-        uiState = uiState.copy(
-            amount = TextFieldValue(
-                text = amountText,
-                selection = TextRange(amountText.length)
-            ),
-            selectedType = recurringTransaction.type,
-            selectedPaymentMethod = recurringTransaction.paymentMethod,
-            category = recurringTransaction.category,
-            merchant = recurringTransaction.merchant,
-            memo = recurringTransaction.memo,
-            date = today, // 오늘 날짜로 설정
-            availableBalanceCards = availableBalanceCards,
-            availableGiftCards = availableGiftCards,
-            isEditMode = false,
-            editTransaction = null
-        )
+            val amountText = formatWithCommas(recurringTransaction.amount.toLong())
+            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
-        // 잔액권/상품권 결제 시 카드 선택
-        if (recurringTransaction.paymentMethod == PaymentMethod.BALANCE_CARD && recurringTransaction.balanceCardId != null) {
-            val selectedCard = availableBalanceCards.find { it.id == recurringTransaction.balanceCardId }
-            uiState = uiState.copy(selectedBalanceCard = selectedCard)
+            uiState = uiState.copy(
+                amount = TextFieldValue(
+                    text = amountText,
+                    selection = TextRange(amountText.length)
+                ),
+                selectedType = recurringTransaction.type,
+                selectedPaymentMethod = recurringTransaction.paymentMethod,
+                category = recurringTransaction.category,
+                merchant = recurringTransaction.merchant,
+                memo = recurringTransaction.memo,
+                date = today, // 오늘 날짜로 설정
+                availableBalanceCards = availableBalanceCards,
+                availableGiftCards = availableGiftCards,
+                isEditMode = false,
+                editTransaction = null
+            )
+
+            // 잔액권/상품권 결제 시 카드 선택
+            if (recurringTransaction.paymentMethod == PaymentMethod.BALANCE_CARD && recurringTransaction.balanceCardId != null) {
+                val selectedCard = availableBalanceCards.find { it.id == recurringTransaction.balanceCardId }
+                uiState = uiState.copy(selectedBalanceCard = selectedCard)
+            }
+            if (recurringTransaction.paymentMethod == PaymentMethod.GIFT_CARD && recurringTransaction.giftCardId != null) {
+                val selectedCard = availableGiftCards.find { it.id == recurringTransaction.giftCardId }
+                uiState = uiState.copy(selectedGiftCard = selectedCard)
+            }
+            // 카드 결제 시 커스텀 카드명 설정
+            if (recurringTransaction.paymentMethod == PaymentMethod.CARD && recurringTransaction.cardName != null) {
+                uiState = uiState.copy(selectedCustomCardName = recurringTransaction.cardName)
+            }
+
+            // 최신 카테고리 로드
+            loadCategories()
+
+            validateInput()
         }
-        if (recurringTransaction.paymentMethod == PaymentMethod.GIFT_CARD && recurringTransaction.giftCardId != null) {
-            val selectedCard = availableGiftCards.find { it.id == recurringTransaction.giftCardId }
-            uiState = uiState.copy(selectedGiftCard = selectedCard)
-        }
-        // 카드 결제 시 커스텀 카드명 설정
-        if (recurringTransaction.paymentMethod == PaymentMethod.CARD && recurringTransaction.cardName != null) {
-            uiState = uiState.copy(selectedCustomCardName = recurringTransaction.cardName)
-        }
-
-        // 최신 카테고리 로드
-        loadCategories()
-
-        validateInput()
     }
 
     fun updateAmount(newValue: TextFieldValue) {

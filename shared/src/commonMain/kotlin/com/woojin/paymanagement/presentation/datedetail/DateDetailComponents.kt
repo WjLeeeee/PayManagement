@@ -53,10 +53,10 @@ import kotlinx.datetime.LocalDate
 /**
  * 결제수단을 한글로 변환합니다.
  */
-private fun getPaymentMethodText(paymentMethod: PaymentMethod?, strings: AppStrings): String {
+private fun getPaymentMethodText(paymentMethod: PaymentMethod?, strings: AppStrings, cardName: String? = null): String {
     return when (paymentMethod) {
         PaymentMethod.CASH -> strings.cash
-        PaymentMethod.CARD -> strings.card
+        PaymentMethod.CARD -> cardName ?: strings.card
         PaymentMethod.BALANCE_CARD -> strings.balanceCard
         PaymentMethod.GIFT_CARD -> strings.giftCard
         null -> ""
@@ -329,7 +329,7 @@ fun TransactionDetailItem(
 
                         // 결제수단/수입유형 표시
                         val methodText = when (transaction.type) {
-                            TransactionType.EXPENSE -> getPaymentMethodText(transaction.paymentMethod, strings)
+                            TransactionType.EXPENSE -> getPaymentMethodText(transaction.paymentMethod, strings, transaction.cardName)
                             TransactionType.INCOME -> getIncomeTypeText(transaction.incomeType, strings)
                             TransactionType.SAVING -> ""
                         }

@@ -709,8 +709,9 @@ private fun CalendarGrid(
 //            modifier = Modifier.height(300.dp)
         ) {
             // Empty cells for days before first date starts
-            // 시작일의 요일을 직접 계산 (월=0, 일=6)
-            val emptyDaysAtStart = payPeriod.startDate.dayOfWeek.ordinal
+            // kotlinx.datetime ordinal은 ISO 8601 기준 (월=0, ..., 일=6)
+            // 헤더가 일~토(일=0, 월=1, ..., 토=6)이므로 +1 후 %7로 변환
+            val emptyDaysAtStart = (payPeriod.startDate.dayOfWeek.ordinal + 1) % 7
             items(emptyDaysAtStart) {
                 Box(modifier = Modifier.height(40.dp))
             }
@@ -1055,6 +1056,35 @@ private fun TransactionItem(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
+                    // 결제 수단 표시 (카테고리 옆에 괄호로)
+                    val paymentMethodText = when (transaction.type) {
+                        TransactionType.INCOME -> {
+                            when (transaction.incomeType) {
+                                com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
+                                com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
+                                com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
+                                null -> strings.cash
+                            }
+                        }
+                        TransactionType.EXPENSE -> {
+                            when (transaction.paymentMethod) {
+                                com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
+                                com.woojin.paymanagement.data.PaymentMethod.CARD -> transaction.cardName ?: strings.card
+                                com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
+                                com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
+                                null -> strings.cash
+                            }
+                        }
+                        TransactionType.SAVING -> ""
+                    }
+                    if (paymentMethodText.isNotBlank()) {
+                        Text(
+                            text = "($paymentMethodText)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 Text(
@@ -1077,45 +1107,12 @@ private fun TransactionItem(
                 )
             }
 
-            // 결제 수단 표시
-            val paymentMethodText = when (transaction.type) {
-                TransactionType.INCOME -> {
-                    when (transaction.incomeType) {
-                        com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
-                        com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                        com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
-                        null -> strings.cash
-                    }
-                }
-
-                TransactionType.EXPENSE -> {
-                    when (transaction.paymentMethod) {
-                        com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
-                        com.woojin.paymanagement.data.PaymentMethod.CARD -> strings.card
-                        com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                        com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
-                        null -> strings.cash
-                    }
-                }
-
-                TransactionType.SAVING -> strings.saving
-            }
-
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = paymentMethodText,
+                text = transaction.merchant ?: "",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             )
-
-            if (!transaction.merchant.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = transaction.merchant,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                )
-            }
         }
     }
 }

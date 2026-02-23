@@ -30,7 +30,19 @@ data class CardManagementUiState(
     val confirmDialogMessage: String = "",
     val pendingUpdate: (() -> Unit)? = null,
     val isDeleteDialogVisible: Boolean = false,
-    val deletingMethod: CustomPaymentMethod? = null
+    val deletingMethod: CustomPaymentMethod? = null,
+    // 잔액권 수정/삭제
+    val isEditBalanceCardDialogVisible: Boolean = false,
+    val editingBalanceCard: BalanceCard? = null,
+    val editBalanceCardName: String = "",
+    val isDeleteBalanceCardDialogVisible: Boolean = false,
+    val deletingBalanceCard: BalanceCard? = null,
+    // 상품권 수정/삭제
+    val isEditGiftCardDialogVisible: Boolean = false,
+    val editingGiftCard: GiftCard? = null,
+    val editGiftCardName: String = "",
+    val isDeleteGiftCardDialogVisible: Boolean = false,
+    val deletingGiftCard: GiftCard? = null
 )
 
 sealed class CardItem {

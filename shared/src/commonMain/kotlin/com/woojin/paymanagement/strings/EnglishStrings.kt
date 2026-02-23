@@ -348,6 +348,8 @@ object EnglishStrings : AppStrings {
     override val giftCardManagement = "Gift Card Management"
     override val addBalanceCard = "Add Balance Card"
     override val addGiftCard = "Add Gift Card"
+    override val editBalanceCard = "Edit Balance Card"
+    override val editGiftCard = "Edit Gift Card"
     override val initialBalance = "Initial Balance"
     override val currentBalance = "Current Balance"
     override val usedBalance = "Used Balance"

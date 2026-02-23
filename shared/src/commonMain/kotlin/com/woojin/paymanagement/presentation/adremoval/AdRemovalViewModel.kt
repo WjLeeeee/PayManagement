@@ -144,8 +144,8 @@ data class AdRemovalUiState(
  * 광고 제거 기간 옵션
  */
 enum class AdRemovalPeriod(val krw: String, val days: Int, val description: String) {
-    ONE_DAY("300", 1, "1일"),
-    THREE_DAYS("850", 3, "3일"),
-    SEVEN_DAYS("2,000", 7, "7일"),
-    THIRTY_DAYS("5,000", 30, "30일")
+    ONE_DAY("100", 1, "1일"),
+    THREE_DAYS("250", 3, "3일"),
+    SEVEN_DAYS("500", 7, "7일"),
+    THIRTY_DAYS("2,000", 30, "30일")
 }

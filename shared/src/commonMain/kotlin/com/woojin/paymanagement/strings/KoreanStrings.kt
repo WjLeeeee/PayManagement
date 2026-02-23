@@ -307,6 +307,8 @@ object KoreanStrings : AppStrings {
     override val giftCardManagement = "상품권 관리"
     override val addBalanceCard = "잔액권 추가"
     override val addGiftCard = "상품권 추가"
+    override val editBalanceCard = "잔액권 수정"
+    override val editGiftCard = "상품권 수정"
     override val initialBalance = "초기 잔액"
     override val currentBalance = "현재 잔액"
     override val usedBalance = "사용 잔액"

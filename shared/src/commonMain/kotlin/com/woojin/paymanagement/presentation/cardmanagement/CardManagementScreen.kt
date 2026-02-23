@@ -121,6 +121,108 @@ fun CardManagementScreen(
             }
         }
 
+        // 잔액권 수정 다이얼로그
+        if (uiState.isEditBalanceCardDialogVisible) {
+            AlertDialog(
+                onDismissRequest = { viewModel.hideEditBalanceCardDialog() },
+                title = { Text(strings.editBalanceCard) },
+                text = {
+                    OutlinedTextField(
+                        value = uiState.editBalanceCardName,
+                        onValueChange = { viewModel.updateEditBalanceCardName(it) },
+                        label = { Text(strings.balanceCard) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.updateBalanceCard() }) {
+                        Text(strings.edit)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.hideEditBalanceCardDialog() }) {
+                        Text(strings.cancel)
+                    }
+                }
+            )
+        }
+
+        // 잔액권 삭제 확인 다이얼로그
+        if (uiState.isDeleteBalanceCardDialogVisible) {
+            uiState.deletingBalanceCard?.let { card ->
+                AlertDialog(
+                    onDismissRequest = { viewModel.hideDeleteBalanceCardDialog() },
+                    title = { Text(strings.delete) },
+                    text = { Text(strings.deletePaymentMethodConfirmMessage(card.name)) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = { viewModel.confirmDeleteBalanceCard() },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text(strings.delete)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.hideDeleteBalanceCardDialog() }) {
+                            Text(strings.cancel)
+                        }
+                    }
+                )
+            }
+        }
+
+        // 상품권 수정 다이얼로그
+        if (uiState.isEditGiftCardDialogVisible) {
+            AlertDialog(
+                onDismissRequest = { viewModel.hideEditGiftCardDialog() },
+                title = { Text(strings.editGiftCard) },
+                text = {
+                    OutlinedTextField(
+                        value = uiState.editGiftCardName,
+                        onValueChange = { viewModel.updateEditGiftCardName(it) },
+                        label = { Text(strings.giftCard) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.updateGiftCard() }) {
+                        Text(strings.edit)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.hideEditGiftCardDialog() }) {
+                        Text(strings.cancel)
+                    }
+                }
+            )
+        }
+
+        // 상품권 삭제 확인 다이얼로그
+        if (uiState.isDeleteGiftCardDialogVisible) {
+            uiState.deletingGiftCard?.let { card ->
+                AlertDialog(
+                    onDismissRequest = { viewModel.hideDeleteGiftCardDialog() },
+                    title = { Text(strings.delete) },
+                    text = { Text(strings.deletePaymentMethodConfirmMessage(card.name)) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = { viewModel.confirmDeleteGiftCard() },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text(strings.delete)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.hideDeleteGiftCardDialog() }) {
+                            Text(strings.cancel)
+                        }
+                    }
+                )
+            }
+        }
+
         // 에러 표시
         uiState.error?.let { errorMessage ->
             AlertDialog(
@@ -166,7 +268,9 @@ private fun BalanceGiftTabContent(
                     balanceCard = balanceCard,
                     isExpanded = uiState.expandedCardId == balanceCard.id,
                     transactions = uiState.cardTransactions[balanceCard.id] ?: emptyList(),
-                    onClick = { viewModel.toggleCardExpansion(cardItem) }
+                    onClick = { viewModel.toggleCardExpansion(cardItem) },
+                    onEdit = { viewModel.showEditBalanceCardDialog(balanceCard) },
+                    onDelete = { viewModel.showDeleteBalanceCardDialog(balanceCard) }
                 )
             }
 
@@ -176,7 +280,9 @@ private fun BalanceGiftTabContent(
                     giftCard = giftCard,
                     isExpanded = uiState.expandedCardId == giftCard.id,
                     transactions = uiState.cardTransactions[giftCard.id] ?: emptyList(),
-                    onClick = { viewModel.toggleCardExpansion(cardItem) }
+                    onClick = { viewModel.toggleCardExpansion(cardItem) },
+                    onEdit = { viewModel.showEditGiftCardDialog(giftCard) },
+                    onDelete = { viewModel.showDeleteGiftCardDialog(giftCard) }
                 )
             }
         }
@@ -432,7 +538,9 @@ private fun BalanceCardItem(
     balanceCard: BalanceCard,
     isExpanded: Boolean,
     transactions: List<Transaction>,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val strings = LocalStrings.current
 
@@ -458,13 +566,14 @@ private fun BalanceCardItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onClick)
-                    .padding(16.dp),
+                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = "🎫",
@@ -486,6 +595,23 @@ private fun BalanceCardItem(
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Row {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = strings.edit,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = strings.delete,
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
@@ -634,7 +760,9 @@ private fun GiftCardItem(
     giftCard: GiftCard,
     isExpanded: Boolean,
     transactions: List<Transaction>,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val strings = LocalStrings.current
 
@@ -660,13 +788,14 @@ private fun GiftCardItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onClick)
-                    .padding(16.dp),
+                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = "🎁",
@@ -688,6 +817,23 @@ private fun GiftCardItem(
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Row {
+                    IconButton(onClick = onEdit) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = strings.edit,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = strings.delete,
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }

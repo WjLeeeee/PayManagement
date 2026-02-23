@@ -9,6 +9,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 
 /**
+ * 업데이트 유형
+ */
+enum class UpdateType {
+    NONE,           // 업데이트 불필요
+    OPTIONAL,       // 선택적 업데이트 (취소 가능)
+    FORCE           // 강제 업데이트 (취소 불가)
+}
+
+/**
  * Firebase Remote Config 관리 클래스
  */
 class RemoteConfigManager {
@@ -37,12 +46,29 @@ class RemoteConfigManager {
         return try {
             val result = remoteConfig.fetchAndActivate().await()
             _isReady.value = true
-            Log.d(TAG, "Remote Config fetch success. feature_type = ${getString(KEY_FEATURE_TYPE)}")
+            Log.d(TAG, "Remote Config fetch success. force_update_version=${getLong(KEY_FORCE_UPDATE_VERSION)}, optional_update_version=${getLong(KEY_OPTIONAL_UPDATE_VERSION)}")
             result
         } catch (e: Exception) {
             Log.e(TAG, "Remote Config fetch failed", e)
             _isReady.value = true // 실패해도 기본값 사용 가능
             false
+        }
+    }
+
+    /**
+     * 현재 앱의 versionCode를 기준으로 업데이트 유형 판별
+     * 우선순위: 강제 > 선택 > 없음
+     */
+    fun checkUpdateType(currentVersionCode: Int): UpdateType {
+        val forceVersion = getLong(KEY_FORCE_UPDATE_VERSION)
+        val optionalVersion = getLong(KEY_OPTIONAL_UPDATE_VERSION)
+
+        Log.d(TAG, "checkUpdateType: current=$currentVersionCode, force=$forceVersion, optional=$optionalVersion")
+
+        return when {
+            forceVersion > 0 && currentVersionCode < forceVersion -> UpdateType.FORCE
+            optionalVersion > 0 && currentVersionCode < optionalVersion -> UpdateType.OPTIONAL
+            else -> UpdateType.NONE
         }
     }
 
@@ -79,10 +105,15 @@ class RemoteConfigManager {
 
         // Remote Config 키 상수
         const val KEY_FEATURE_TYPE = "feature_type"
+        const val KEY_FORCE_UPDATE_VERSION = "force_update_version"
+        const val KEY_OPTIONAL_UPDATE_VERSION = "optional_update_version"
 
         // 기본값 (Firebase Console에서 값을 설정하기 전까지 사용)
+        // 0 = 업데이트 체크 안 함
         private val DEFAULT_VALUES = mapOf(
-            KEY_FEATURE_TYPE to "default"
+            KEY_FEATURE_TYPE to "default",
+            KEY_FORCE_UPDATE_VERSION to 0L,
+            KEY_OPTIONAL_UPDATE_VERSION to 0L
         )
     }
 }
