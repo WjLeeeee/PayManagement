@@ -25,6 +25,9 @@ data class BudgetSettingsUiState(
     val editingBudget: CategoryBudgetWithProgress? = null,
     val editAmount: TextFieldValue = TextFieldValue(""),
     val editMemo: String = "",  // 예산 수정 시 메모
+    val editAvailableCategories: List<Category> = emptyList(),  // 수정 다이얼로그용 선택 가능한 카테고리
+    val editSelectedCategories: Set<Category> = emptySet(),  // 수정 다이얼로그에서 선택된 카테고리
+    val editGroupName: String = "",  // 수정 다이얼로그에서 그룹명
     val availableCategories: List<Category> = emptyList(),
     val selectedCategories: Set<Category> = emptySet(),
     val groupName: String = "",

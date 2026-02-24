@@ -448,6 +448,24 @@ class DatabaseHelper(
         queries.updateCategoryBudget(allocatedAmount, memo, id)
     }
 
+    suspend fun updateCategoryBudgetFull(
+        id: String,
+        categoryIds: List<String>,
+        categoryName: String,
+        categoryEmoji: String,
+        allocatedAmount: Double,
+        memo: String? = null
+    ) {
+        queries.updateCategoryBudgetFull(
+            categoryIds = json.encodeToString(categoryIds),
+            categoryName = categoryName,
+            categoryEmoji = categoryEmoji,
+            allocatedAmount = allocatedAmount,
+            memo = memo,
+            id = id
+        )
+    }
+
     suspend fun deleteCategoryBudget(id: String) {
         queries.deleteCategoryBudget(id)
     }

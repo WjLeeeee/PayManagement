@@ -203,8 +203,9 @@ class BudgetSettingsViewModel(
     // 예산 설정 탭용: 템플릿만 로드 (지출 계산 안 함)
     private suspend fun loadCategoryBudgetsForTemplate(budgetPlanId: String) {
         getCategoryBudgetsUseCase(budgetPlanId).collect { categoryBudgets ->
-            // 모든 지출 카테고리 정보 가져오기
-            val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
+            // 모든 지출/저축 카테고리 정보 가져오기
+            val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first() +
+                getCategoriesUseCase(TransactionType.SAVING).first()
 
             // 카테고리 정보만 포함 (지출 계산 안 함)
             val budgetsWithProgress = categoryBudgets.map { budget ->
@@ -245,8 +246,9 @@ class BudgetSettingsViewModel(
         payPeriod: com.woojin.paymanagement.utils.PayPeriod
     ) {
         getCategoryBudgetsUseCase(budgetPlan.id).collect { categoryBudgets ->
-            // 모든 지출 카테고리 정보 가져오기
-            val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
+            // 모든 지출/저축 카테고리 정보 가져오기
+            val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first() +
+                getCategoriesUseCase(TransactionType.SAVING).first()
 
             // 각 카테고리별 사용 금액 계산
             val budgetsWithProgress = categoryBudgets.map { budget ->
@@ -447,8 +449,10 @@ class BudgetSettingsViewModel(
 
     fun showAddCategoryDialog() {
         viewModelScope.launch {
-            // 현재 예산이 설정되지 않은 지출 카테고리 조회
-            val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
+            // 현재 예산이 설정되지 않은 지출/저축 카테고리 조회
+            val expenseCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
+            val savingCategories = getCategoriesUseCase(TransactionType.SAVING).first()
+            val allCategories = expenseCategories + savingCategories
             val usedCategoryIds = uiState.categoryBudgets.flatMap { it.categoryBudget.categoryIds }.toSet()
             val availableCategories = allCategories.filter { it.id !in usedCategoryIds }
 
@@ -586,16 +590,39 @@ class BudgetSettingsViewModel(
     }
 
     fun showEditDialog(budget: CategoryBudgetWithProgress) {
-        val formattedAmount = formatWithCommas(budget.categoryBudget.allocatedAmount.toLong())
-        uiState = uiState.copy(
-            showEditDialog = true,
-            editingBudget = budget,
-            editAmount = TextFieldValue(
-                text = formattedAmount,
-                selection = TextRange(formattedAmount.length)
-            ),
-            editMemo = budget.categoryBudget.memo ?: ""
-        )
+        viewModelScope.launch {
+            val expenseCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
+            val savingCategories = getCategoriesUseCase(TransactionType.SAVING).first()
+            val allCategories = expenseCategories + savingCategories
+
+            // 다른 예산 아이템이 사용 중인 카테고리 IDs (현재 편집 대상 제외)
+            val otherUsedCategoryIds = uiState.categoryBudgets
+                .filter { it.categoryBudget.id != budget.categoryBudget.id }
+                .flatMap { it.categoryBudget.categoryIds }
+                .toSet()
+
+            // 현재 편집 중인 카테고리 + 아직 미배정 카테고리
+            val editAvailableCategories = allCategories.filter { it.id !in otherUsedCategoryIds }
+
+            // 현재 이미 선택된 카테고리 (편집 대상 budget의 카테고리)
+            val editSelectedCategories = allCategories
+                .filter { it.id in budget.categoryBudget.categoryIds }
+                .toSet()
+
+            val formattedAmount = formatWithCommas(budget.categoryBudget.allocatedAmount.toLong())
+            uiState = uiState.copy(
+                showEditDialog = true,
+                editingBudget = budget,
+                editAmount = TextFieldValue(
+                    text = formattedAmount,
+                    selection = TextRange(formattedAmount.length)
+                ),
+                editMemo = budget.categoryBudget.memo ?: "",
+                editAvailableCategories = editAvailableCategories,
+                editSelectedCategories = editSelectedCategories,
+                editGroupName = if (budget.categoryBudget.isGroup) budget.categoryBudget.categoryName else ""
+            )
+        }
     }
 
     fun hideEditDialog() {
@@ -603,8 +630,21 @@ class BudgetSettingsViewModel(
             showEditDialog = false,
             editingBudget = null,
             editAmount = TextFieldValue(""),
-            editMemo = ""
+            editMemo = "",
+            editAvailableCategories = emptyList(),
+            editSelectedCategories = emptySet(),
+            editGroupName = ""
         )
+    }
+
+    fun toggleEditCategorySelection(category: Category) {
+        val current = uiState.editSelectedCategories
+        val newSelection = if (category in current) current - category else current + category
+        uiState = uiState.copy(editSelectedCategories = newSelection)
+    }
+
+    fun updateEditGroupName(name: String) {
+        uiState = uiState.copy(editGroupName = name)
     }
 
     fun updateEditAmount(newValue: TextFieldValue) {
@@ -632,14 +672,36 @@ class BudgetSettingsViewModel(
     fun updateCategoryBudget() {
         val editing = uiState.editingBudget ?: return
         val amount = removeCommas(uiState.editAmount.text).toDoubleOrNull() ?: return
-
         if (amount <= 0) return
+
+        val selectedCategories = uiState.editSelectedCategories
+        if (selectedCategories.isEmpty()) return
 
         viewModelScope.launch {
             try {
                 uiState = uiState.copy(isSaving = true)
                 val memo = uiState.editMemo.ifBlank { null }
-                updateCategoryBudgetUseCase(editing.categoryBudget.id, amount, memo)
+                val categoryIds = selectedCategories.map { it.id }
+                val categoryName = if (selectedCategories.size == 1) {
+                    selectedCategories.first().name
+                } else {
+                    uiState.editGroupName.ifBlank {
+                        selectedCategories.joinToString(", ") { it.name }
+                    }
+                }
+                val categoryEmoji = if (selectedCategories.size == 1) {
+                    selectedCategories.first().emoji
+                } else {
+                    "📦"
+                }
+                updateCategoryBudgetUseCase(
+                    id = editing.categoryBudget.id,
+                    allocatedAmount = amount,
+                    memo = memo,
+                    categoryIds = categoryIds,
+                    categoryName = categoryName,
+                    categoryEmoji = categoryEmoji
+                )
                 hideEditDialog()
             } catch (e: CancellationException) {
                 throw e
