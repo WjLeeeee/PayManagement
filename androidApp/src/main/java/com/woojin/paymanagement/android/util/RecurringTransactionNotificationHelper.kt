@@ -41,6 +41,61 @@ object RecurringTransactionNotificationHelper {
     }
 
     /**
+     * 자동 실행 완료 알림 전송
+     */
+    fun sendAutoExecutedNotification(
+        context: Context,
+        transactions: List<com.woojin.paymanagement.data.RecurringTransaction>
+    ) {
+        try {
+            if (transactions.isEmpty()) return
+
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                putExtra(MainActivity.EXTRA_NAVIGATE_TO_RECURRING_TRANSACTIONS, true)
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                1,
+                intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            val firstTransaction = transactions.first()
+            val amount = firstTransaction.amount.toInt()
+            val formattedAmount = String.format("%,d", amount)
+
+            val contentText = if (transactions.size == 1) {
+                "${firstTransaction.category} ${formattedAmount}원이 자동 등록됐어요"
+            } else {
+                "${firstTransaction.category} ${formattedAmount}원 외 ${transactions.size - 1}건이 자동 등록됐어요"
+            }
+
+            val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle("✅ 반복 거래 자동 등록 완료")
+                .setContentText(contentText)
+                .setStyle(
+                    NotificationCompat.BigTextStyle()
+                        .bigText(contentText)
+                )
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .build()
+
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID + 1, notification)
+
+            Log.d(TAG, "Auto-executed notification sent for ${transactions.size} transactions")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send auto-executed notification", e)
+        }
+    }
+
+    /**
      * 반복 거래 알림 전송
      */
     fun sendRecurringTransactionNotification(

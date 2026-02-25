@@ -12,10 +12,12 @@ plugins {
 // Play Store 배포 설정
 play {
     serviceAccountCredentials.set(file("../play-store-credentials.json"))
-    track.set("internal")  // internal, alpha, beta, production 중 선택
+    track.set(project.findProperty("playTrack")?.toString() ?: "internal")
     defaultToAppBundles.set(true)  // AAB 파일 사용
     releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.COMPLETED)
     releaseName.set(provider { "${android.defaultConfig.versionCode} (${android.defaultConfig.versionName})" })
+    fromTrack.set(project.findProperty("fromTrack")?.toString() ?: "internal")
+    promoteTrack.set(project.findProperty("promoteTrack")?.toString() ?: "alpha")
 }
 
 android {
@@ -25,7 +27,7 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 53
+        versionCode = 56
         versionName = "2.1"
     }
 

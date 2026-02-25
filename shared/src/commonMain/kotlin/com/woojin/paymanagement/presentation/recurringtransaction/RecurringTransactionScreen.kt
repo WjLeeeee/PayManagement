@@ -74,6 +74,14 @@ fun RecurringTransactionScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // 자동 실행 토글 카드
+                item {
+                    AutoExecuteToggleCard(
+                        isEnabled = uiState.isAutoExecuteEnabled,
+                        onToggle = { viewModel.toggleAutoExecute() }
+                    )
+                }
+
                 // 오늘 실행할 항목 섹션
                 if (uiState.todayTransactions.isNotEmpty()) {
                     item {
@@ -157,6 +165,57 @@ fun RecurringTransactionScreen(
                 onSave = { transaction ->
                     viewModel.saveRecurringTransaction(transaction)
                 }
+            )
+        }
+    }
+}
+
+@Composable
+private fun AutoExecuteToggleCard(
+    isEnabled: Boolean,
+    onToggle: () -> Unit
+) {
+    val strings = LocalStrings.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isEnabled)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = strings.recurringAutoExecute,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isEnabled)
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    else
+                        MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = strings.recurringAutoExecuteDescription,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isEnabled)
+                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(
+                checked = isEnabled,
+                onCheckedChange = { onToggle() }
             )
         }
     }
@@ -289,7 +348,10 @@ private fun RecurringTransactionItem(
 
                         Column {
                             Text(
-                                text = transaction.merchant,
+                                text = if (transaction.type == TransactionType.SAVING && transaction.merchant.isBlank())
+                                    transaction.category
+                                else
+                                    transaction.merchant,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface

@@ -160,6 +160,11 @@ GROUP BY category
 ORDER BY COUNT(*) DESC
 LIMIT 1;
 
+searchTransactions:
+SELECT * FROM TransactionEntity
+WHERE merchant LIKE '%' || ? || '%' OR memo LIKE '%' || ? || '%'
+ORDER BY date DESC;
+
 -- BalanceCard 관련 쿼리들
 insertBalanceCard:
 INSERT INTO BalanceCardEntity(id, name, initialAmount, currentBalance, createdDate, isActive)
@@ -353,6 +358,11 @@ UPDATE CategoryBudgetEntity
 SET allocatedAmount = ?, memo = ?
 WHERE id = ?;
 
+updateCategoryBudgetFull:
+UPDATE CategoryBudgetEntity
+SET categoryIds = ?, categoryName = ?, categoryEmoji = ?, allocatedAmount = ?, memo = ?
+WHERE id = ?;
+
 deleteCategoryBudget:
 DELETE FROM CategoryBudgetEntity
 WHERE id = ?;
@@ -360,11 +370,11 @@ WHERE id = ?;
 deleteAllCategoryBudgets:
 DELETE FROM CategoryBudgetEntity;
 
--- 특정 기간의 카테고리별 지출 합계 조회
+-- 특정 기간의 카테고리별 지출/저축 합계 조회
 selectSpentAmountByCategory:
 SELECT COALESCE(SUM(amount), 0.0) AS spent
 FROM TransactionEntity
-WHERE category = ? AND type = 'EXPENSE' AND date >= ? AND date <= ?;
+WHERE category = ? AND type IN ('EXPENSE', 'SAVING') AND date >= ? AND date <= ?;
 
 -- RecurringTransaction 관련 쿼리들
 insertRecurringTransaction:

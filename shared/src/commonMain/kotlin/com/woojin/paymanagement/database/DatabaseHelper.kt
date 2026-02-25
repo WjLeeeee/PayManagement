@@ -117,6 +117,15 @@ class DatabaseHelper(
         queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName)
     }
 
+    fun searchTransactions(keyword: String): Flow<List<Transaction>> {
+        return queries.searchTransactions(keyword, keyword)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toTransaction() }
+            }
+    }
+
     /**
      * merchant로 가장 많이 사용된 카테고리를 제안
      * 카드 파싱된 거래에서 자동 카테고리 선택에 사용
@@ -446,6 +455,24 @@ class DatabaseHelper(
 
     suspend fun updateCategoryBudget(id: String, allocatedAmount: Double, memo: String? = null) {
         queries.updateCategoryBudget(allocatedAmount, memo, id)
+    }
+
+    suspend fun updateCategoryBudgetFull(
+        id: String,
+        categoryIds: List<String>,
+        categoryName: String,
+        categoryEmoji: String,
+        allocatedAmount: Double,
+        memo: String? = null
+    ) {
+        queries.updateCategoryBudgetFull(
+            categoryIds = json.encodeToString(categoryIds),
+            categoryName = categoryName,
+            categoryEmoji = categoryEmoji,
+            allocatedAmount = allocatedAmount,
+            memo = memo,
+            id = id
+        )
     }
 
     suspend fun deleteCategoryBudget(id: String) {

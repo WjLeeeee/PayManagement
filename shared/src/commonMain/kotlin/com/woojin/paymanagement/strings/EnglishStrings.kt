@@ -773,6 +773,8 @@ object EnglishStrings : AppStrings {
     override val recurringTransactionManagement = "Recurring Transactions"
     override val todayItems = "Today's Items"
     override val noRegisteredRecurringTransactions = "No recurring transactions"
+    override val recurringAutoExecute = "Auto-execute Recurring"
+    override val recurringAutoExecuteDescription = "Automatically records today's recurring transactions"
     override fun paymentMethodDisplay(method: String) = "Payment: $method"
     override val cashCheckCard = "Cash/Debit Card"
     override val recurringPatternLabel = "Recurrence Pattern"
@@ -804,4 +806,10 @@ object EnglishStrings : AppStrings {
     override val setAsDefaultCard = "Set as Default"
     override val cardBreakdown = "Card Breakdown"
     override val transactionTools = "Transaction Tools"
+
+    // ===== Transaction Search =====
+    override val transactionSearch = "Search Transactions"
+    override val searchHint = "Search by merchant or memo"
+    override val noSearchResults = "No results found"
+    override fun searchResultCount(count: Int) = "$count results"
 }

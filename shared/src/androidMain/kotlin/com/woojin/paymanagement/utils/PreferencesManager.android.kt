@@ -117,4 +117,13 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setLanguageCode(code: String) {
         prefs.edit().putString("language_code", code).apply()
     }
+
+    // 반복 거래 자동 실행
+    actual fun isRecurringAutoExecuteEnabled(): Boolean {
+        return prefs.getBoolean("recurring_auto_execute", false)
+    }
+
+    actual fun setRecurringAutoExecuteEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("recurring_auto_execute", enabled).apply()
+    }
 }

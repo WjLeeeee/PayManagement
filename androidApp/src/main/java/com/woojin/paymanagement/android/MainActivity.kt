@@ -51,10 +51,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.utils.AppInfo
+import com.woojin.paymanagement.utils.AutoExecuteNotifier
 import com.woojin.paymanagement.utils.FileHandler
 import com.woojin.paymanagement.utils.NotificationPermissionChecker
 import com.woojin.paymanagement.utils.PreferencesManager
 import com.woojin.paymanagement.analytics.Analytics
+import com.woojin.paymanagement.android.util.RecurringTransactionNotificationHelper
 
 class MainActivity : ComponentActivity() {
 
@@ -224,20 +226,20 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun scheduleRecurringTransactionCheck() {
-        // 정기 작업 스케줄링 (매일 오전 9시)
+        // 정기 작업 스케줄링 (매일 오전 8시)
         val workRequest =
             androidx.work.PeriodicWorkRequestBuilder<com.woojin.paymanagement.android.worker.RecurringTransactionWorker>(
                 repeatInterval = 1,
                 repeatIntervalTimeUnit = java.util.concurrent.TimeUnit.DAYS
             ).setInitialDelay(
-                calculateInitialDelayToNineAM(),
+                calculateInitialDelayToEightAM(),
                 java.util.concurrent.TimeUnit.MILLISECONDS
             ).build()
 
         androidx.work.WorkManager.getInstance(applicationContext)
             .enqueueUniquePeriodicWork(
                 "recurring_transaction_check",
-                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                androidx.work.ExistingPeriodicWorkPolicy.REPLACE,
                 workRequest
             )
 
@@ -245,19 +247,19 @@ class MainActivity : ComponentActivity() {
         com.woojin.paymanagement.android.util.RecurringTransactionNotificationHelper.initialize(this)
     }
 
-    private fun calculateInitialDelayToNineAM(): Long {
+    private fun calculateInitialDelayToEightAM(): Long {
         val calendar = java.util.Calendar.getInstance()
         val now = calendar.timeInMillis
 
-        // 오늘 오전 9시 설정
-        calendar.set(java.util.Calendar.HOUR_OF_DAY, 9)
+        // 오늘 오전 8시 설정
+        calendar.set(java.util.Calendar.HOUR_OF_DAY, 8)
         calendar.set(java.util.Calendar.MINUTE, 0)
         calendar.set(java.util.Calendar.SECOND, 0)
         calendar.set(java.util.Calendar.MILLISECOND, 0)
 
         var targetTime = calendar.timeInMillis
 
-        // 이미 오늘 오전 9시가 지났다면 내일 오전 9시로 설정
+        // 이미 오늘 오전 8시가 지났다면 내일 오전 8시로 설정
         if (targetTime <= now) {
             calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
             targetTime = calendar.timeInMillis
@@ -410,6 +412,17 @@ fun StatusBarOverlayScreen(
                     )
                 }
 
+                val autoExecuteNotifier = remember {
+                    object : AutoExecuteNotifier {
+                        override fun notify(transactions: List<com.woojin.paymanagement.data.RecurringTransaction>) {
+                            RecurringTransactionNotificationHelper.sendAutoExecutedNotification(
+                                context = context,
+                                transactions = transactions
+                            )
+                        }
+                    }
+                }
+
                 App(
                     modifier = Modifier
                         .weight(1f)
@@ -420,6 +433,7 @@ fun StatusBarOverlayScreen(
                     appInfo = appInfo,
                     fileHandler = fileHandler,
                     billingClient = billingClient,
+                    autoExecuteNotifier = autoExecuteNotifier,
                     interstitialAdManager = interstitialAdManager,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,

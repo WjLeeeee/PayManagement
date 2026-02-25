@@ -723,6 +723,8 @@ interface AppStrings {
     val recurringTransactionManagement: String
     val todayItems: String
     val noRegisteredRecurringTransactions: String
+    val recurringAutoExecute: String
+    val recurringAutoExecuteDescription: String
     fun paymentMethodDisplay(method: String): String
     val cashCheckCard: String
     val recurringPatternLabel: String
@@ -754,4 +756,10 @@ interface AppStrings {
     val setAsDefaultCard: String
     val cardBreakdown: String
     val transactionTools: String
+
+    // ===== Transaction Search =====
+    val transactionSearch: String
+    val searchHint: String
+    val noSearchResults: String
+    fun searchResultCount(count: Int): String
 }

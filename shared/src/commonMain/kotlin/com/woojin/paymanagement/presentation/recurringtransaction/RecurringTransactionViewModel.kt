@@ -10,6 +10,7 @@ import com.woojin.paymanagement.domain.usecase.DeleteRecurringTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCustomPaymentMethodsUseCase
 import com.woojin.paymanagement.domain.usecase.GetRecurringTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveRecurringTransactionUseCase
+import com.woojin.paymanagement.utils.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -21,12 +22,14 @@ class RecurringTransactionViewModel(
     private val checkTodayRecurringTransactionsUseCase: CheckTodayRecurringTransactionsUseCase,
     private val categoryRepository: CategoryRepository,
     private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
+    private val preferencesManager: PreferencesManager,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(RecurringTransactionUiState())
         private set
 
     init {
+        uiState = uiState.copy(isAutoExecuteEnabled = preferencesManager.isRecurringAutoExecuteEnabled())
         loadData()
     }
 
@@ -100,4 +103,11 @@ class RecurringTransactionViewModel(
             saveRecurringTransactionUseCase(updated, isUpdate = true)
         }
     }
+
+    fun toggleAutoExecute() {
+        val newValue = !uiState.isAutoExecuteEnabled
+        preferencesManager.setRecurringAutoExecuteEnabled(newValue)
+        uiState = uiState.copy(isAutoExecuteEnabled = newValue)
+    }
+
 }

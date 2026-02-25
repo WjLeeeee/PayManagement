@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.utils.Utils
 import com.woojin.paymanagement.strings.LocalStrings
@@ -105,6 +106,8 @@ fun BudgetSettingsScreen(
             EditCategoryBudgetDialog(
                 uiState = uiState,
                 onDismiss = { viewModel.hideEditDialog() },
+                onCategoryToggled = { viewModel.toggleEditCategorySelection(it) },
+                onGroupNameChanged = { viewModel.updateEditGroupName(it) },
                 onAmountChanged = { viewModel.updateEditAmount(it) },
                 onMemoChanged = { viewModel.updateEditMemo(it) },
                 onConfirm = { viewModel.updateCategoryBudget() }
@@ -1161,71 +1164,161 @@ fun AddCategoryBudgetDialog(
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EditCategoryBudgetDialog(
     uiState: BudgetSettingsUiState,
     onDismiss: () -> Unit,
+    onCategoryToggled: (Category) -> Unit,
+    onGroupNameChanged: (String) -> Unit,
     onAmountChanged: (TextFieldValue) -> Unit,
     onMemoChanged: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
     val strings = LocalStrings.current
-    val budget = uiState.editingBudget ?: return
+    uiState.editingBudget ?: return
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(strings.editBudgetTitle(budget.categoryBudget.categoryEmoji, budget.categoryBudget.categoryName)) },
+        title = { Text(strings.editBudgetTitle(
+            if (uiState.editSelectedCategories.size == 1) uiState.editSelectedCategories.first().emoji
+            else uiState.editingBudget?.categoryBudget?.categoryEmoji ?: "",
+            if (uiState.editSelectedCategories.size == 1) uiState.editSelectedCategories.first().name
+            else uiState.editGroupName.ifBlank { uiState.editingBudget?.categoryBudget?.categoryName ?: "" }
+        )) },
         text = {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 400.dp)
+                    .height(500.dp)
             ) {
-                Text(
-                    text = strings.allocatedAmount,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = uiState.editAmount,
-                    onValueChange = onAmountChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(strings.enterAmountPlaceholder) },
-                    suffix = { Text(strings.currencySymbol) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                // 카테고리 선택
+                item {
+                    Text(
+                        text = strings.selectCategoriesMultiple,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                item {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        uiState.editAvailableCategories.forEach { category ->
+                            val isSelected = category in uiState.editSelectedCategories
+                            val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            val borderColor = if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurface
 
-                Text(
-                    text = strings.memoOptional,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = uiState.editMemo,
-                    onValueChange = onMemoChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3,
-                    maxLines = 5,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                            Row(
+                                modifier = Modifier
+                                    .border(
+                                        width = if (isSelected) 2.dp else 1.dp,
+                                        color = borderColor,
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .background(color = backgroundColor, shape = RoundedCornerShape(20.dp))
+                                    .clickable { onCategoryToggled(category) }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(text = category.emoji, fontSize = 16.sp)
+                                Text(
+                                    text = category.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = textColor
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 여러 카테고리 선택 시 그룹명 입력
+                if (uiState.editSelectedCategories.size > 1) {
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = strings.groupNameLabel,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = uiState.editGroupName,
+                            onValueChange = onGroupNameChanged,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text(strings.groupNameLabel) },
+                            placeholder = {
+                                Text(uiState.editSelectedCategories.joinToString(", ") { it.name })
+                            },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
+                }
+
+                // 배분 금액
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = strings.allocatedAmount,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.editAmount,
+                        onValueChange = onAmountChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(strings.enterAmountPlaceholder) },
+                        suffix = { Text(strings.currencySymbol) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+
+                // 메모
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = strings.memoOptional,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.editMemo,
+                        onValueChange = onMemoChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3,
+                        maxLines = 5,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
-                enabled = uiState.editAmount.text.isNotEmpty()
+                enabled = uiState.editSelectedCategories.isNotEmpty() && uiState.editAmount.text.isNotEmpty()
             ) {
                 Text(strings.edit)
             }

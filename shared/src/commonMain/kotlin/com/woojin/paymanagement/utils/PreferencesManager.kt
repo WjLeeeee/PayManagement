@@ -41,6 +41,10 @@ expect class PreferencesManager {
     fun getSystemLanguageCode(): String // 시스템 로케일에서 언어 코드 가져오기
     fun getLanguageCode(): String // "ko" or "en"
     fun setLanguageCode(code: String)
+
+    // 반복 거래 자동 실행
+    fun isRecurringAutoExecuteEnabled(): Boolean
+    fun setRecurringAutoExecuteEnabled(enabled: Boolean)
 }
 
 enum class PaydayAdjustment {
