@@ -732,6 +732,8 @@ object KoreanStrings : AppStrings {
     override val recurringTransactionManagement = "반복 거래 관리"
     override val todayItems = "오늘 실행할 항목"
     override val noRegisteredRecurringTransactions = "등록된 반복 거래가 없습니다"
+    override val recurringAutoExecute = "반복 거래 자동 실행"
+    override val recurringAutoExecuteDescription = "오늘 예정된 반복 거래를 자동으로 등록합니다"
     override fun paymentMethodDisplay(method: String) = "결제수단: $method"
     override val cashCheckCard = "현금/체크카드"
     override val recurringPatternLabel = "반복 패턴"

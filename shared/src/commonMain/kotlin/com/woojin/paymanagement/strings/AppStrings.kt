@@ -723,6 +723,8 @@ interface AppStrings {
     val recurringTransactionManagement: String
     val todayItems: String
     val noRegisteredRecurringTransactions: String
+    val recurringAutoExecute: String
+    val recurringAutoExecuteDescription: String
     fun paymentMethodDisplay(method: String): String
     val cashCheckCard: String
     val recurringPatternLabel: String

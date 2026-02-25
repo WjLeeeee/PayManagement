@@ -11,5 +11,6 @@ data class RecurringTransactionUiState(
     val customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
     val isLoading: Boolean = false,
     val showAddDialog: Boolean = false,
-    val editingTransaction: RecurringTransaction? = null
+    val editingTransaction: RecurringTransaction? = null,
+    val isAutoExecuteEnabled: Boolean = false
 )

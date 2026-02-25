@@ -136,4 +136,15 @@ actual class PreferencesManager {
     actual fun setLanguageCode(code: String) {
         userDefaults.setObject(code, forKey = "language_code")
     }
+
+    // 반복 거래 자동 실행
+    actual fun isRecurringAutoExecuteEnabled(): Boolean {
+        return userDefaults.boolForKey("recurring_auto_execute").takeIf {
+            userDefaults.objectForKey("recurring_auto_execute") != null
+        } ?: false
+    }
+
+    actual fun setRecurringAutoExecuteEnabled(enabled: Boolean) {
+        userDefaults.setBool(enabled, forKey = "recurring_auto_execute")
+    }
 }

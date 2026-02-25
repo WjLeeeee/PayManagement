@@ -106,6 +106,7 @@ fun App(
     appInfo: com.woojin.paymanagement.utils.AppInfo,
     fileHandler: com.woojin.paymanagement.utils.FileHandler,
     billingClient: com.woojin.paymanagement.utils.BillingClient,
+    autoExecuteNotifier: com.woojin.paymanagement.utils.AutoExecuteNotifier = com.woojin.paymanagement.utils.NoOpAutoExecuteNotifier(),
     interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
@@ -127,7 +128,7 @@ fun App(
 
     // Koin 초기화
     LaunchedEffect(Unit) {
-        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo, fileHandler, billingClient)
+        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo, fileHandler, billingClient, autoExecuteNotifier)
         isKoinInitialized = true
     }
 
@@ -174,7 +175,8 @@ private fun initializeKoin(
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker,
     appInfo: com.woojin.paymanagement.utils.AppInfo,
     fileHandler: com.woojin.paymanagement.utils.FileHandler,
-    billingClient: com.woojin.paymanagement.utils.BillingClient
+    billingClient: com.woojin.paymanagement.utils.BillingClient,
+    autoExecuteNotifier: com.woojin.paymanagement.utils.AutoExecuteNotifier = com.woojin.paymanagement.utils.NoOpAutoExecuteNotifier()
 ) {
     try {
         val koin = startKoin {
@@ -187,6 +189,7 @@ private fun initializeKoin(
                     single<com.woojin.paymanagement.utils.AppInfo> { appInfo }
                     single<com.woojin.paymanagement.utils.FileHandler> { fileHandler }
                     single<com.woojin.paymanagement.utils.BillingClient> { billingClient }
+                    single<com.woojin.paymanagement.utils.AutoExecuteNotifier> { autoExecuteNotifier }
                     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
                 },
                 // 공통 의존성들

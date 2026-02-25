@@ -46,5 +46,5 @@ val presentationModule = module {
     factory { AdRemovalViewModel(get(), get()) }
     factory { CouponViewModel(get()) }
     factory { MonthlyComparisonViewModel(get(), get(), get(), get(), get()) }
-    factory { RecurringTransactionViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    factory { RecurringTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
 }
