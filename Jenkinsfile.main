@@ -1,0 +1,141 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code...'
+                checkout scm
+            }
+        }
+
+        stage('Setup Credentials') {
+            steps {
+                echo 'Setting up credentials...'
+                withCredentials([
+                    file(credentialsId: 'play-store-credentials', variable: 'PLAY_CREDENTIALS')
+                ]) {
+                    sh '''
+                        cp $PLAY_CREDENTIALS play-store-credentials.json
+                        echo "sdk.dir=/Users/leewoojin/Library/Android/sdk" > local.properties
+                    '''
+                }
+            }
+        }
+
+        stage('Approve: Closed Testing') {
+            steps {
+                timeout(time: 24, unit: 'HOURS') {
+                    input message: '내부 테스트 → 비공개 테스트(Closed Testing)로 승격할까요?', ok: '승격'
+                }
+            }
+        }
+
+        stage('Promote: Internal → Closed Testing') {
+            steps {
+                echo 'Promoting Internal → Closed Testing (alpha)...'
+                sh './gradlew :androidApp:promoteReleaseArtifact -PfromTrack=internal -PpromoteTrack=alpha'
+            }
+        }
+
+        stage('Approve: Open Testing') {
+            steps {
+                timeout(time: 24, unit: 'HOURS') {
+                    input message: '비공개 테스트 → 공개 테스트(Open Testing)로 승격할까요?', ok: '승격'
+                }
+            }
+        }
+
+        stage('Promote: Closed → Open Testing') {
+            steps {
+                echo 'Promoting Closed Testing → Open Testing (beta)...'
+                sh './gradlew :androidApp:promoteReleaseArtifact -PfromTrack=alpha -PpromoteTrack=beta'
+            }
+        }
+
+        stage('Approve: Production') {
+            steps {
+                timeout(time: 24, unit: 'HOURS') {
+                    input message: '공개 테스트 → 프로덕션으로 최종 승격할까요?', ok: '최종 승격'
+                }
+            }
+        }
+
+        stage('Promote: Open Testing → Production') {
+            steps {
+                echo 'Promoting Open Testing → Production...'
+                sh './gradlew :androidApp:promoteReleaseArtifact -PfromTrack=beta -PpromoteTrack=production'
+            }
+        }
+    }
+
+    post {
+        success {
+            script {
+                withCredentials([string(credentialsId: 'discord-webhook', variable: 'WEBHOOK_URL')]) {
+                    def message = """
+{
+  "embeds": [{
+    "title": "🚀 프로덕션 승격 완료!",
+    "description": "PayManagement 앱이 프로덕션에 배포되었습니다.",
+    "color": 5763719,
+    "fields": [
+      {"name": "📱 앱 이름", "value": "PayManagement", "inline": true},
+      {"name": "📦 최종 트랙", "value": "Production", "inline": true},
+      {"name": "✨ 경로", "value": "내부 → 비공개 → 공개 → 프로덕션", "inline": false},
+      {"name": "⏰ 배포 시간", "value": "${new Date().format('yyyy-MM-dd HH:mm:ss')}", "inline": false}
+    ],
+    "footer": {"text": "Jenkins CI/CD"},
+    "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")}"
+  }]
+}
+"""
+                    sh """
+                        curl -H "Content-Type: application/json" \
+                             -X POST \
+                             -d '${message}' \
+                             \${WEBHOOK_URL}
+                    """
+                }
+            }
+        }
+
+        failure {
+            script {
+                withCredentials([string(credentialsId: 'discord-webhook', variable: 'WEBHOOK_URL')]) {
+                    def message = """
+{
+  "embeds": [{
+    "title": "❌ 승격 실패!",
+    "description": "PayManagement 앱 트랙 승격 중 오류가 발생했습니다.",
+    "color": 16711680,
+    "fields": [
+      {"name": "📱 앱 이름", "value": "PayManagement", "inline": true},
+      {"name": "⚠️ 상태", "value": "승격 실패", "inline": true},
+      {"name": "⏰ 실패 시간", "value": "${new Date().format('yyyy-MM-dd HH:mm:ss')}", "inline": false},
+      {"name": "🔗 에러 로그", "value": "[Jenkins에서 확인](${env.BUILD_URL}console)", "inline": false}
+    ],
+    "footer": {"text": "Jenkins CI/CD"},
+    "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")}"
+  }]
+}
+"""
+                    sh """
+                        curl -H "Content-Type: application/json" \
+                             -X POST \
+                             -d '${message}' \
+                             \${WEBHOOK_URL}
+                    """
+                }
+            }
+        }
+
+        cleanup {
+            echo 'Cleaning up credentials...'
+            sh '''
+                rm -f play-store-credentials.json
+                rm -f local.properties
+            '''
+        }
+    }
+}
