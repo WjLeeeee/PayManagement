@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -95,6 +96,7 @@ fun CalendarScreen(
     onAddTransactionClick: () -> Unit = {},
     onPayPeriodChanged: (PayPeriod) -> Unit = {},
     onParsedTransactionsClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
     onAppExit: () -> Unit = {},
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null
@@ -219,17 +221,35 @@ fun CalendarScreen(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
+
+                    IconButton(
+                        onClick = onSearchClick,
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    ) {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = strings.search,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             } else {
                 // Pay Period가 null인 경우에도 메뉴 버튼 표시
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Start
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     IconButton(onClick = onOpenDrawer) {
                         Icon(
                             Icons.Default.Menu,
                             contentDescription = strings.openMenu,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = onSearchClick) {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = strings.search,
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }

@@ -117,6 +117,15 @@ class DatabaseHelper(
         queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName)
     }
 
+    fun searchTransactions(keyword: String): Flow<List<Transaction>> {
+        return queries.searchTransactions(keyword, keyword)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toTransaction() }
+            }
+    }
+
     /**
      * merchant로 가장 많이 사용된 카테고리를 제안
      * 카드 파싱된 거래에서 자동 카테고리 선택에 사용

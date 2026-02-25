@@ -756,4 +756,10 @@ interface AppStrings {
     val setAsDefaultCard: String
     val cardBreakdown: String
     val transactionTools: String
+
+    // ===== Transaction Search =====
+    val transactionSearch: String
+    val searchHint: String
+    val noSearchResults: String
+    fun searchResultCount(count: Int): String
 }

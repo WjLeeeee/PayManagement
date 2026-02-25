@@ -806,4 +806,10 @@ object EnglishStrings : AppStrings {
     override val setAsDefaultCard = "Set as Default"
     override val cardBreakdown = "Card Breakdown"
     override val transactionTools = "Transaction Tools"
+
+    // ===== Transaction Search =====
+    override val transactionSearch = "Search Transactions"
+    override val searchHint = "Search by merchant or memo"
+    override val noSearchResults = "No results found"
+    override fun searchResultCount(count: Int) = "$count results"
 }

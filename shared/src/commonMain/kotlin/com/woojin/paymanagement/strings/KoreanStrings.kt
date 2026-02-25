@@ -765,4 +765,10 @@ object KoreanStrings : AppStrings {
     override val setAsDefaultCard = "기본 카드로 설정"
     override val cardBreakdown = "카드별 내역"
     override val transactionTools = "거래 도구"
+
+    // ===== Transaction Search =====
+    override val transactionSearch = "거래 검색"
+    override val searchHint = "사용처 또는 메모로 검색"
+    override val noSearchResults = "검색 결과가 없습니다"
+    override fun searchResultCount(count: Int) = "${count}건"
 }

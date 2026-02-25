@@ -71,6 +71,7 @@ import com.woojin.paymanagement.presentation.monthlycomparison.MonthlyComparison
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionListScreen
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.settings.ThemeSettingsDialog
+import com.woojin.paymanagement.presentation.search.SearchScreen
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
 import com.woojin.paymanagement.utils.LifecycleObserverHelper
 import com.woojin.paymanagement.utils.PreferencesManager
@@ -269,6 +270,7 @@ fun PayManagementApp(
             Screen.AdRemoval -> "광고_제거"
             Screen.Coupon -> "쿠폰_입력"
             Screen.RecurringTransaction -> "반복_거래"
+            Screen.TransactionSearch -> "거래_검색"
         }
 
         analyticsLogger.logScreenView(
@@ -1793,6 +1795,7 @@ fun PayManagementApp(
                         showListenerPermissionDialog = true
                     }
                 },
+                onSearchClick = { navigateTo(Screen.TransactionSearch) },
                 onAppExit = onAppExit
             )
         }
@@ -2178,6 +2181,15 @@ fun PayManagementApp(
                 }
             )
         }
+
+        Screen.TransactionSearch -> {
+            val searchViewModel = remember { koinInject<com.woojin.paymanagement.presentation.search.SearchViewModel>() }
+
+            SearchScreen(
+                viewModel = searchViewModel,
+                onNavigateBack = { navigateBack() }
+            )
+        }
         }
     } // Scaffold 닫기
 
@@ -2228,7 +2240,8 @@ enum class Screen {
     TipDonation,
     AdRemoval,
     Coupon,
-    RecurringTransaction
+    RecurringTransaction,
+    TransactionSearch
 }
 
 enum class ExpandableMenu {

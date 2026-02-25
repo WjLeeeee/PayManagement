@@ -12,6 +12,7 @@ import com.woojin.paymanagement.presentation.monthlycomparison.MonthlyComparison
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionViewModel
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupViewModel
 import com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionViewModel
+import com.woojin.paymanagement.presentation.search.SearchViewModel
 import com.woojin.paymanagement.presentation.statistics.StatisticsViewModel
 import com.woojin.paymanagement.presentation.tipdonation.TipDonationViewModel
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel
@@ -47,4 +48,5 @@ val presentationModule = module {
     factory { CouponViewModel(get()) }
     factory { MonthlyComparisonViewModel(get(), get(), get(), get(), get()) }
     factory { RecurringTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { SearchViewModel(get(), get(), get()) }
 }
