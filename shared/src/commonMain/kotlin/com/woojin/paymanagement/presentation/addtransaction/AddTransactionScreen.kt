@@ -2,6 +2,7 @@ package com.woojin.paymanagement.presentation.addtransaction
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,7 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.BackHandler
+import com.woojin.paymanagement.utils.formatWithCommas
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
@@ -163,6 +165,31 @@ fun AddTransactionScreen(
                 }
             )
         )
+
+        // 금액 퀵 버튼
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val quickAmountColor = when (uiState.selectedType) {
+                TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+            }
+            listOf(1_000L, 5_000L, 10_000L, 50_000L).forEach { quickAmount ->
+                OutlinedButton(
+                    onClick = { viewModel.addQuickAmount(quickAmount) },
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "+${formatWithCommas(quickAmount)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = quickAmountColor
+                    )
+                }
+            }
+        }
 
         // Settlement Section (for expense only)
         if (uiState.selectedType == TransactionType.EXPENSE) {

@@ -266,6 +266,19 @@ class AddTransactionViewModel(
         }
     }
 
+    fun addQuickAmount(amount: Long) {
+        val current = removeCommas(uiState.amount.text).toLongOrNull() ?: 0L
+        val newAmount = current + amount
+        val formatted = formatWithCommas(newAmount)
+        uiState = uiState.copy(
+            amount = TextFieldValue(
+                text = formatted,
+                selection = TextRange(formatted.length)
+            )
+        )
+        validateInput()
+    }
+
     fun updateAmount(newValue: TextFieldValue) {
         val digitsOnly = removeCommas(newValue.text)
 
