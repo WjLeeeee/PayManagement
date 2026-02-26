@@ -43,7 +43,7 @@ class AddTransactionViewModel(
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getAvailableBalanceCardsUseCase: GetAvailableBalanceCardsUseCase,
     private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase,
-    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val getCategoriesUseCase: com.woojin.paymanagement.domain.usecase.GetCategoriesSortedByUsageUseCase,
     private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
     private val databaseHelper: DatabaseHelper
 ) : ViewModel() {

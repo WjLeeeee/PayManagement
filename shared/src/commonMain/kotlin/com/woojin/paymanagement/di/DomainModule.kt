@@ -35,6 +35,7 @@ import com.woojin.paymanagement.domain.usecase.DeleteParsedTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.ExportDataUseCase
 import com.woojin.paymanagement.domain.usecase.ImportDataUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import com.woojin.paymanagement.domain.usecase.GetCategoriesSortedByUsageUseCase
 import com.woojin.paymanagement.domain.usecase.AddCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryUseCase
@@ -132,6 +133,7 @@ val domainModule = module {
 
     // Category Use Cases
     factoryOf(::GetCategoriesUseCase)
+    factoryOf(::GetCategoriesSortedByUsageUseCase)
     factoryOf(::AddCategoryUseCase)
     factoryOf(::UpdateCategoryUseCase)
     factoryOf(::DeleteCategoryUseCase)

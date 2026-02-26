@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.TransactionType
-import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
+import com.woojin.paymanagement.domain.usecase.GetCategoriesSortedByUsageUseCase
 import com.woojin.paymanagement.domain.usecase.AddCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryUseCase
 import kotlinx.coroutines.Job
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import com.benasher44.uuid.uuid4
 
 class CategoryManagementViewModel(
-    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val getCategoriesUseCase: GetCategoriesSortedByUsageUseCase,
     private val addCategoryUseCase: AddCategoryUseCase,
     private val updateCategoryUseCase: com.woojin.paymanagement.domain.usecase.UpdateCategoryUseCase,
     private val deleteCategoryUseCase: DeleteCategoryUseCase
