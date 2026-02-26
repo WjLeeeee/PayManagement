@@ -147,4 +147,12 @@ actual class PreferencesManager {
     actual fun setRecurringAutoExecuteEnabled(enabled: Boolean) {
         userDefaults.setBool(enabled, forKey = "recurring_auto_execute")
     }
+
+    actual fun getBudgetNotificationShownKeys(): String {
+        return userDefaults.stringForKey("budget_notification_shown_keys") ?: ""
+    }
+
+    actual fun setBudgetNotificationShownKeys(keys: String) {
+        userDefaults.setObject(keys, forKey = "budget_notification_shown_keys")
+    }
 }
