@@ -312,37 +312,18 @@ class CalendarViewModel(
 
     /**
      * 공휴일 자동 로딩 체크
-     * 현재 보는 날짜가 마지막 저장 날짜 - 2개월 이내면 6개월치 추가 로드
+     * 현재 보는 연도 또는 다음 연도 데이터가 없으면 해당 연도를 추가 로드
      */
     private fun checkAndLoadHolidays(currentViewDate: LocalDate) {
         coroutineScope.launch {
             try {
-                // DB에서 마지막 저장된 공휴일 날짜 조회
-                val latestDateStr = holidayRepository.getLatestHolidayDate() ?: return@launch
+                val yearsToCheck = listOf(currentViewDate.year, currentViewDate.year + 1)
+                val missingYears = yearsToCheck.filter { year ->
+                    holidayRepository.getHolidaysByYear(year).isEmpty()
+                }
 
-                // YYYYMMDD 형식을 LocalDate로 변환
-                val latestYear = latestDateStr.substring(0, 4).toInt()
-                val latestMonth = latestDateStr.substring(4, 6).toInt()
-                val latestDay = latestDateStr.substring(6, 8).toInt()
-                val latestDate = LocalDate(latestYear, latestMonth, latestDay)
-
-                // 마지막 저장 날짜 - 2개월
-                val thresholdDate = latestDate.minus(2, DateTimeUnit.MONTH)
-
-                // 현재 보는 날짜가 임계값 이후면 추가 로딩
-                if (currentViewDate >= thresholdDate) {
-                    println("공휴일 자동 로딩: 현재 날짜 $currentViewDate, 마지막 저장 $latestDate")
-
-                    // 마지막 저장 날짜의 다음 달부터 6개월치 로드
-                    val nextMonth = latestDate.plus(1, DateTimeUnit.MONTH)
-                    holidayRepository.fetchAndSaveHolidaysForMonths(
-                        serviceKey = HOLIDAY_API_KEY,
-                        startYear = nextMonth.year,
-                        startMonth = nextMonth.monthNumber,
-                        monthCount = 6
-                    ).onSuccess {
-                        println("공휴일 6개월치 추가 로딩 완료")
-                    }.onFailure { error ->
+                if (missingYears.isNotEmpty()) {
+                    holidayRepository.fetchAndSaveHolidays(HOLIDAY_API_KEY, missingYears).onFailure { error ->
                         println("공휴일 자동 로딩 실패: ${error.message}")
                     }
                 }

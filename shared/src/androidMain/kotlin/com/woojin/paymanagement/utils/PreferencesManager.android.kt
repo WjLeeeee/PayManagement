@@ -134,4 +134,10 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setBudgetNotificationShownKeys(keys: String) {
         prefs.edit().putString("budget_notification_shown_keys", keys).apply()
     }
+
+    actual fun isReviewRequested(): Boolean = prefs.getBoolean("review_requested", false)
+
+    actual fun setReviewRequested() {
+        prefs.edit().putBoolean("review_requested", true).apply()
+    }
 }

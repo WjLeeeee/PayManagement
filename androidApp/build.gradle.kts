@@ -104,6 +104,9 @@ dependencies {
     //Meta Audience Network 어뎁터
     implementation("com.google.ads.mediation:facebook:6.21.0.0")
 
+    // In-App Review
+    implementation("com.google.android.play:review-ktx:2.0.2")
+
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 

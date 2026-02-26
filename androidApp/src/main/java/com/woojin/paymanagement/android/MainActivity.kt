@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.ads.MobileAds
+import com.google.android.play.core.review.ReviewManagerFactory
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.woojin.paymanagement.android.config.RemoteConfigManager
@@ -442,6 +443,17 @@ fun StatusBarOverlayScreen(
                     onRecurringTransactionsNavigationHandled = onRecurringTransactionsNavigationHandled,
                     onAdRemovalNavigationHandled = { shouldNavigateToAdRemoval = false },
                     onThemeChanged = { onThemeChanged() },
+                    onRequestReview = {
+                        val reviewManager = ReviewManagerFactory.create(context)
+                        reviewManager.requestReviewFlow().addOnCompleteListener { request ->
+                            if (request.isSuccessful) {
+                                reviewManager.launchReviewFlow(
+                                    context as androidx.activity.ComponentActivity,
+                                    request.result
+                                )
+                            }
+                        }
+                    },
                     nativeAdContent = {
                         // 광고 로딩 성공 시에만 표시
                         if (nativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
