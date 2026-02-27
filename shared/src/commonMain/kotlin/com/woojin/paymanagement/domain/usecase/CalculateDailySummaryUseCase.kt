@@ -14,12 +14,17 @@ class CalculateDailySummaryUseCase {
             .filter { it.type == TransactionType.EXPENSE }
             .sumOf { it.displayAmount }
 
+        val totalSaving = transactions
+            .filter { it.type == TransactionType.SAVING }
+            .sumOf { it.displayAmount }
+
         val dailyBalance = totalIncome - totalExpense
 
         return DailySummary(
             totalIncome = totalIncome,
             totalExpense = totalExpense,
-            dailyBalance = dailyBalance
+            dailyBalance = dailyBalance,
+            totalSaving = totalSaving
         )
     }
 }

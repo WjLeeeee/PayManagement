@@ -47,6 +47,7 @@ import com.woojin.paymanagement.domain.model.DailySummary
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.strings.AppStrings
 import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.theme.SavingColor
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.LocalDate
 
@@ -217,6 +218,42 @@ fun DailySummaryCard(
                             summary.dailyBalance < 0 -> MaterialTheme.colorScheme.error
                             else -> MaterialTheme.colorScheme.onSurface
                         }
+                    )
+                }
+            }
+
+            // 저축 합계 (저축 거래가 있을 때만 표시)
+            if (summary.totalSaving > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                androidx.compose.material3.HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    thickness = 0.5.dp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "🐷",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = strings.saving,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SavingColor.color
+                        )
+                    }
+                    Text(
+                        text = "-${strings.amountWithUnit(Utils.formatAmount(summary.totalSaving))}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = SavingColor.color
                     )
                 }
             }

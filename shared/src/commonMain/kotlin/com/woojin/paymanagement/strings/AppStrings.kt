@@ -762,4 +762,17 @@ interface AppStrings {
     val searchHint: String
     val noSearchResults: String
     fun searchResultCount(count: Int): String
+
+    // ===== Search Filter =====
+    val filter: String
+    val filterReset: String
+    val filterTransactionType: String
+    val filterCategory: String
+    val filterAmountRange: String
+    val filterDateRange: String
+    val filterMinAmount: String
+    val filterMaxAmount: String
+    val filterStartDate: String
+    val filterEndDate: String
+    val filterAll: String
 }
