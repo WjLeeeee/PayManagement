@@ -771,4 +771,17 @@ object KoreanStrings : AppStrings {
     override val searchHint = "사용처 또는 메모로 검색"
     override val noSearchResults = "검색 결과가 없습니다"
     override fun searchResultCount(count: Int) = "${count}건"
+
+    // ===== Search Filter =====
+    override val filter = "필터"
+    override val filterReset = "초기화"
+    override val filterTransactionType = "거래 유형"
+    override val filterCategory = "카테고리"
+    override val filterAmountRange = "금액 범위"
+    override val filterDateRange = "날짜 범위"
+    override val filterMinAmount = "최소"
+    override val filterMaxAmount = "최대"
+    override val filterStartDate = "시작일"
+    override val filterEndDate = "종료일"
+    override val filterAll = "전체"
 }

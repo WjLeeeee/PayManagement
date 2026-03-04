@@ -123,7 +123,8 @@ fun App(
     onContactSupport: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
     hasNativeAd: Boolean = false,
-    permissionGuideImage: @Composable (() -> Unit)? = null
+    permissionGuideImage: @Composable (() -> Unit)? = null,
+    onRequestReview: () -> Unit = {}
 ) {
     var isKoinInitialized by remember { mutableStateOf(false) }
 
@@ -131,6 +132,20 @@ fun App(
     LaunchedEffect(Unit) {
         initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo, fileHandler, billingClient, autoExecuteNotifier)
         isKoinInitialized = true
+    }
+
+    // 앱 리뷰 요청 조건 체크 (거래가 추가될 때마다 재확인)
+    LaunchedEffect(isKoinInitialized) {
+        if (!isKoinInitialized) return@LaunchedEffect
+        if (preferencesManager.isReviewRequested()) return@LaunchedEffect
+
+        val databaseHelper: DatabaseHelper = koinInject()
+        databaseHelper.getAllTransactions().collect { transactions ->
+            if (transactions.size >= 10 && !preferencesManager.isReviewRequested()) {
+                preferencesManager.setReviewRequested()
+                onRequestReview()
+            }
+        }
     }
 
     var languageCode by remember { mutableStateOf(preferencesManager.getLanguageCode()) }

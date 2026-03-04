@@ -23,6 +23,7 @@ class PaydaySetupViewModel(
     companion object {
         private val HOLIDAY_API_KEY = com.woojin.paymanagement.BuildKonfig.HOLIDAY_API_KEY
     }
+
     var uiState by mutableStateOf(PaydaySetupUiState())
         private set
 
@@ -64,7 +65,6 @@ class PaydaySetupViewModel(
 
                 // 공휴일 데이터 가져오기 (백그라운드에서 실행, 실패해도 설정 완료)
                 fetchHolidaysUseCase(HOLIDAY_API_KEY).onFailure { exception ->
-                    // 로그만 남기고 설정은 완료
                     println("공휴일 데이터 가져오기 실패: ${exception.message}")
                 }
 

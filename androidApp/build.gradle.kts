@@ -27,7 +27,7 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 56
+        versionCode = 58
         versionName = "2.1"
     }
 
@@ -103,6 +103,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-ads:23.0.0")
     //Meta Audience Network 어뎁터
     implementation("com.google.ads.mediation:facebook:6.21.0.0")
+
+    // In-App Review
+    implementation("com.google.android.play:review-ktx:2.0.2")
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")

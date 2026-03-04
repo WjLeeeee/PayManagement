@@ -39,6 +39,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
@@ -514,6 +515,9 @@ private fun PayPeriodSummaryCard(
     val expense = periodTransactions
         .filter { it.type == TransactionType.EXPENSE && it.category !in investmentCategories }
         .sumOf { it.displayAmount }
+    val saving = periodTransactions
+        .filter { it.type == TransactionType.SAVING }
+        .sumOf { it.displayAmount }
     val balance = income - expense
 
     val strings = LocalStrings.current
@@ -667,6 +671,43 @@ private fun PayPeriodSummaryCard(
                                 balance < 0 -> MaterialTheme.colorScheme.error
                                 else -> MaterialTheme.colorScheme.onSurface
                             },
+                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                        )
+                    }
+                }
+
+                // 저축 합계 (저축 거래가 있을 때만 표시)
+                if (saving > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        thickness = 0.5.dp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "🐷",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = strings.saving,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = com.woojin.paymanagement.theme.SavingColor.color
+                            )
+                        }
+                        Text(
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(saving))}",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = com.woojin.paymanagement.theme.SavingColor.color,
                             modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
                         )
                     }

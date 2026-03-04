@@ -43,7 +43,7 @@ class AddTransactionViewModel(
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getAvailableBalanceCardsUseCase: GetAvailableBalanceCardsUseCase,
     private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase,
-    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val getCategoriesUseCase: com.woojin.paymanagement.domain.usecase.GetCategoriesSortedByUsageUseCase,
     private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
     private val databaseHelper: DatabaseHelper
 ) : ViewModel() {
@@ -264,6 +264,19 @@ class AddTransactionViewModel(
 
             validateInput()
         }
+    }
+
+    fun addQuickAmount(amount: Long) {
+        val current = removeCommas(uiState.amount.text).toLongOrNull() ?: 0L
+        val newAmount = current + amount
+        val formatted = formatWithCommas(newAmount)
+        uiState = uiState.copy(
+            amount = TextFieldValue(
+                text = formatted,
+                selection = TextRange(formatted.length)
+            )
+        )
+        validateInput()
     }
 
     fun updateAmount(newValue: TextFieldValue) {

@@ -812,4 +812,17 @@ object EnglishStrings : AppStrings {
     override val searchHint = "Search by merchant or memo"
     override val noSearchResults = "No results found"
     override fun searchResultCount(count: Int) = "$count results"
+
+    // ===== Search Filter =====
+    override val filter = "Filter"
+    override val filterReset = "Reset"
+    override val filterTransactionType = "Transaction Type"
+    override val filterCategory = "Category"
+    override val filterAmountRange = "Amount Range"
+    override val filterDateRange = "Date Range"
+    override val filterMinAmount = "Min"
+    override val filterMaxAmount = "Max"
+    override val filterStartDate = "Start Date"
+    override val filterEndDate = "End Date"
+    override val filterAll = "All"
 }

@@ -45,6 +45,14 @@ expect class PreferencesManager {
     // 반복 거래 자동 실행
     fun isRecurringAutoExecuteEnabled(): Boolean
     fun setRecurringAutoExecuteEnabled(enabled: Boolean)
+
+    // 예산 알림 표시 여부 (급여기간별 1회)
+    fun getBudgetNotificationShownKeys(): String
+    fun setBudgetNotificationShownKeys(keys: String)
+
+    // 앱 리뷰 요청
+    fun isReviewRequested(): Boolean
+    fun setReviewRequested()
 }
 
 enum class PaydayAdjustment {

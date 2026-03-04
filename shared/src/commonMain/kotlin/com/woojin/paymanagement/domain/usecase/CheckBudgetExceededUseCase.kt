@@ -64,10 +64,20 @@ class CheckBudgetExceededUseCase(
         // 전체 거래 목록 가져오기
         val allTransactions = databaseHelper.getAllTransactions().first()
 
+        // 이미 표시된 알림 키 목록 로드
+        val shownKeys = preferencesManager.getBudgetNotificationShownKeys()
+            .split(",").filter { it.isNotBlank() }.toMutableSet()
+
         // 각 관련 예산에 대해 체크 (가장 먼저 초과한 예산 하나만 반환)
         for (budget in relevantBudgets) {
-            val result = checkSingleBudget(budget, allTransactions, payPeriod, allCategories)
-            if (result != null) return result
+            val result = checkSingleBudget(budget, allTransactions, payPeriod, allCategories, shownKeys)
+            if (result != null) {
+                // 표시한 키 저장
+                val key = "${payPeriod.startDate}_${budget.id}_${result.threshold}"
+                shownKeys.add(key)
+                preferencesManager.setBudgetNotificationShownKeys(shownKeys.joinToString(","))
+                return result
+            }
         }
 
         return null
@@ -80,17 +90,19 @@ class CheckBudgetExceededUseCase(
         budget: CategoryBudget,
         allTransactions: List<Transaction>,
         payPeriod: PayPeriod,
-        allCategories: List<com.woojin.paymanagement.data.Category>
+        allCategories: List<com.woojin.paymanagement.data.Category>,
+        shownKeys: Set<String>
     ): BudgetExceededResult? {
         // 현재 사용량 계산
         val (usedAmount, usageRate) = calculateUsage(budget, allTransactions, payPeriod, allCategories)
 
-        // 임계값 체크 (70%, 100%)
-        val thresholds = listOf(100, 70)  // 높은 순서로 체크
+        // 임계값 체크 (100% → 70% 순서로, 높은 쪽 우선)
+        val thresholds = listOf(100, 70)
         for (threshold in thresholds) {
             val thresholdRate = threshold / 100.0
-            // "초과" 체크: > (이상이 아님!)
-            if (usageRate > thresholdRate) {
+            val key = "${payPeriod.startDate}_${budget.id}_${threshold}"
+            // 초과했고 && 이번 급여기간에 아직 표시 안 했으면
+            if (usageRate > thresholdRate && !shownKeys.contains(key)) {
                 return BudgetExceededResult(
                     categoryBudget = budget,
                     usedAmount = usedAmount,
