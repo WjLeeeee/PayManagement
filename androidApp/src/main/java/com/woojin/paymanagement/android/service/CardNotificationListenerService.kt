@@ -15,6 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.koin.android.ext.android.inject
 import java.security.MessageDigest
 import java.util.Calendar
@@ -44,6 +46,7 @@ class CardNotificationListenerService : NotificationListenerService() {
     private val parsedTransactionRepository: ParsedTransactionRepository by inject()
     private val databaseHelper: DatabaseHelper by inject()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val saveMutex = Mutex()
 
     override fun onCreate() {
         super.onCreate()
@@ -302,36 +305,38 @@ class CardNotificationListenerService : NotificationListenerService() {
      */
     private fun saveParsedTransaction(transaction: ParsedTransaction) {
         serviceScope.launch {
-            try {
-                // 중복 체크: 최근 5초 이내 같은 금액의 거래가 있는지 확인
-                val currentTime = System.currentTimeMillis()
-                val startTime = currentTime - DUPLICATE_CHECK_WINDOW_MS
-                val isDuplicate = parsedTransactionRepository.hasRecentTransactionWithAmount(
-                    amount = transaction.amount,
-                    startTime = startTime,
-                    endTime = currentTime
-                )
+            saveMutex.withLock {
+                try {
+                    // 중복 체크: 최근 5초 이내 같은 금액의 거래가 있는지 확인
+                    val currentTime = System.currentTimeMillis()
+                    val startTime = currentTime - DUPLICATE_CHECK_WINDOW_MS
+                    val isDuplicate = parsedTransactionRepository.hasRecentTransactionWithAmount(
+                        amount = transaction.amount,
+                        startTime = startTime,
+                        endTime = currentTime
+                    )
 
-                if (isDuplicate) {
-                    Log.d(TAG, "Duplicate transaction detected (same amount within 5 seconds): ${transaction.merchantName} - ${transaction.amount}원")
-                    Log.d(TAG, "Skipping save to prevent duplicate entries")
-                    return@launch
+                    if (isDuplicate) {
+                        Log.d(TAG, "Duplicate transaction detected (same amount within 5 seconds): ${transaction.merchantName} - ${transaction.amount}원")
+                        Log.d(TAG, "Skipping save to prevent duplicate entries")
+                        return@withLock
+                    }
+
+                    // 저장 시도 및 결과 확인
+                    val wasInserted = insertParsedTransactionUseCase(transaction)
+
+                    if (wasInserted) {
+                        // 실제로 DB에 저장되었을 때만 로그 및 알림 전송
+                        Log.d(TAG, "Parsed transaction saved: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
+                        TransactionNotificationHelper.sendTransactionNotification(this@CardNotificationListenerService, transaction)
+                    } else {
+                        // 이미 존재하는 거래 (중복 ID)
+                        Log.d(TAG, "Duplicate transaction ID detected: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
+                        Log.d(TAG, "Skipping notification to prevent duplicate push")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to save parsed transaction", e)
                 }
-
-                // 저장 시도 및 결과 확인
-                val wasInserted = insertParsedTransactionUseCase(transaction)
-
-                if (wasInserted) {
-                    // 실제로 DB에 저장되었을 때만 로그 및 알림 전송
-                    Log.d(TAG, "Parsed transaction saved: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
-                    TransactionNotificationHelper.sendTransactionNotification(this@CardNotificationListenerService, transaction)
-                } else {
-                    // 이미 존재하는 거래 (중복 ID)
-                    Log.d(TAG, "Duplicate transaction ID detected: ${transaction.merchantName} - ${transaction.amount}원 (ID: ${transaction.id.take(8)}...)")
-                    Log.d(TAG, "Skipping notification to prevent duplicate push")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to save parsed transaction", e)
             }
         }
     }
