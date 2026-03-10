@@ -519,7 +519,7 @@ fun StatusBarOverlayScreen(
                         loadFileLauncher.launch(intent)
                     },
                     onAppExit = {
-                        this@MainActivity.finish()
+                        (context as ComponentActivity).finish()
                     },
                     onContactSupport = {
                         val emailHelper = com.woojin.paymanagement.utils.EmailHelper(context)
