@@ -94,7 +94,7 @@ class UpdateTransactionUseCase(
                     databaseHelper.updateGiftCardUsage(
                         id = giftCard.id,
                         usedAmount = newUsedAmount,
-                        isActive = false // 상품권은 한 번 사용되면 비활성화
+                        isActive = newUsedAmount < giftCard.totalAmount
                     )
                 }
             }

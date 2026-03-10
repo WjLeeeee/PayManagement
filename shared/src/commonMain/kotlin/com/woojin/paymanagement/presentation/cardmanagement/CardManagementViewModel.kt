@@ -16,6 +16,9 @@ import com.woojin.paymanagement.domain.usecase.DeleteCustomPaymentMethodUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.benasher44.uuid.uuid4
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class CardManagementViewModel(
     private val databaseHelper: DatabaseHelper,
@@ -290,13 +293,57 @@ class CardManagementViewModel(
         uiState = uiState.copy(error = null)
     }
 
+    // 잔액권 추가
+
+    fun showAddBalanceCardDialog() {
+        uiState = uiState.copy(
+            isAddBalanceCardDialogVisible = true,
+            newBalanceCardName = "",
+            newBalanceCardAmount = ""
+        )
+    }
+
+    fun hideAddBalanceCardDialog() {
+        uiState = uiState.copy(isAddBalanceCardDialogVisible = false)
+    }
+
+    fun updateNewBalanceCardName(name: String) {
+        uiState = uiState.copy(newBalanceCardName = name)
+    }
+
+    fun updateNewBalanceCardAmount(amount: String) {
+        uiState = uiState.copy(newBalanceCardAmount = amount)
+    }
+
+    fun addBalanceCard() {
+        if (uiState.newBalanceCardName.isBlank()) return
+        val amount = uiState.newBalanceCardAmount.toLongOrNull() ?: return
+        viewModelScope.launch {
+            try {
+                val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                val newCard = BalanceCard(
+                    id = uuid4().toString(),
+                    name = uiState.newBalanceCardName.trim(),
+                    initialAmount = amount.toDouble(),
+                    currentBalance = amount.toDouble(),
+                    createdDate = today
+                )
+                databaseHelper.insertBalanceCard(newCard)
+                hideAddBalanceCardDialog()
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+            }
+        }
+    }
+
     // 잔액권 수정/삭제
 
     fun showEditBalanceCardDialog(card: BalanceCard) {
         uiState = uiState.copy(
             isEditBalanceCardDialogVisible = true,
             editingBalanceCard = card,
-            editBalanceCardName = card.name
+            editBalanceCardName = card.name,
+            editBalanceCardCurrentBalance = card.currentBalance.toLong().toString()
         )
     }
 
@@ -304,7 +351,8 @@ class CardManagementViewModel(
         uiState = uiState.copy(
             isEditBalanceCardDialogVisible = false,
             editingBalanceCard = null,
-            editBalanceCardName = ""
+            editBalanceCardName = "",
+            editBalanceCardCurrentBalance = ""
         )
     }
 
@@ -312,13 +360,21 @@ class CardManagementViewModel(
         uiState = uiState.copy(editBalanceCardName = name)
     }
 
+    fun updateEditBalanceCardCurrentBalance(amount: String) {
+        uiState = uiState.copy(editBalanceCardCurrentBalance = amount)
+    }
+
     fun updateBalanceCard() {
         val card = uiState.editingBalanceCard ?: return
         if (uiState.editBalanceCardName.isBlank()) return
+        val newBalance = uiState.editBalanceCardCurrentBalance.toLongOrNull()?.toDouble()
+            ?: card.currentBalance
         viewModelScope.launch {
             try {
                 val newName = uiState.editBalanceCardName.trim()
-                databaseHelper.updateBalanceCard(card.copy(name = newName))
+                databaseHelper.updateBalanceCard(
+                    card.copy(name = newName, currentBalance = newBalance)
+                )
                 // 해당 잔액권의 모든 거래내역 cardName도 업데이트
                 databaseHelper.updateTransactionCardNameByBalanceCardId(card.id, newName)
                 hideEditBalanceCardDialog()
@@ -355,13 +411,57 @@ class CardManagementViewModel(
         }
     }
 
+    // 상품권 추가
+
+    fun showAddGiftCardDialog() {
+        uiState = uiState.copy(
+            isAddGiftCardDialogVisible = true,
+            newGiftCardName = "",
+            newGiftCardAmount = ""
+        )
+    }
+
+    fun hideAddGiftCardDialog() {
+        uiState = uiState.copy(isAddGiftCardDialogVisible = false)
+    }
+
+    fun updateNewGiftCardName(name: String) {
+        uiState = uiState.copy(newGiftCardName = name)
+    }
+
+    fun updateNewGiftCardAmount(amount: String) {
+        uiState = uiState.copy(newGiftCardAmount = amount)
+    }
+
+    fun addGiftCard() {
+        if (uiState.newGiftCardName.isBlank()) return
+        val amount = uiState.newGiftCardAmount.toLongOrNull() ?: return
+        viewModelScope.launch {
+            try {
+                val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                val newCard = GiftCard(
+                    id = uuid4().toString(),
+                    name = uiState.newGiftCardName.trim(),
+                    totalAmount = amount.toDouble(),
+                    usedAmount = 0.0,
+                    createdDate = today
+                )
+                databaseHelper.insertGiftCard(newCard)
+                hideAddGiftCardDialog()
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+            }
+        }
+    }
+
     // 상품권 수정/삭제
 
     fun showEditGiftCardDialog(card: GiftCard) {
         uiState = uiState.copy(
             isEditGiftCardDialogVisible = true,
             editingGiftCard = card,
-            editGiftCardName = card.name
+            editGiftCardName = card.name,
+            editGiftCardRemainingAmount = card.remainingAmount.toLong().toString()
         )
     }
 
@@ -369,7 +469,8 @@ class CardManagementViewModel(
         uiState = uiState.copy(
             isEditGiftCardDialogVisible = false,
             editingGiftCard = null,
-            editGiftCardName = ""
+            editGiftCardName = "",
+            editGiftCardRemainingAmount = ""
         )
     }
 
@@ -377,13 +478,24 @@ class CardManagementViewModel(
         uiState = uiState.copy(editGiftCardName = name)
     }
 
+    fun updateEditGiftCardRemainingAmount(amount: String) {
+        uiState = uiState.copy(editGiftCardRemainingAmount = amount)
+    }
+
     fun updateGiftCard() {
         val card = uiState.editingGiftCard ?: return
         if (uiState.editGiftCardName.isBlank()) return
+        val newRemaining = uiState.editGiftCardRemainingAmount.toLongOrNull()?.toDouble()
+            ?: card.remainingAmount
         viewModelScope.launch {
             try {
                 val newName = uiState.editGiftCardName.trim()
-                databaseHelper.updateGiftCard(card.copy(name = newName))
+                // totalAmount를 usedAmount + newRemaining으로 조정
+                val updatedCard = card.copy(
+                    name = newName,
+                    totalAmount = card.usedAmount + newRemaining
+                )
+                databaseHelper.updateGiftCard(updatedCard)
                 // 해당 상품권의 모든 거래내역 cardName도 업데이트
                 databaseHelper.updateTransactionCardNameByGiftCardId(card.id, newName)
                 hideEditGiftCardDialog()

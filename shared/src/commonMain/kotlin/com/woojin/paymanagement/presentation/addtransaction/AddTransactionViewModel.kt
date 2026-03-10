@@ -114,12 +114,14 @@ class AddTransactionViewModel(
         }
 
         viewModelScope.launch {
-            // DB에서 현재 활성 카드 ID를 직접 조회 (항상 최신 상태 반영)
-            val activeBalanceCardIds = databaseHelper.getActiveBalanceCards().first().map { it.id }.toSet()
-            val activeGiftCardIds = databaseHelper.getActiveGiftCards().first().map { it.id }.toSet()
+            // DB에서 현재 활성 카드를 직접 조회 (항상 최신 상태 반영)
+            val activeBalanceCards = databaseHelper.getActiveBalanceCards().first()
+            val activeGiftCards = databaseHelper.getActiveGiftCards().first()
+            val activeBalanceCardIds = activeBalanceCards.map { it.id }.toSet()
+            val activeGiftCardIds = activeGiftCards.map { it.id }.toSet()
 
-            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds)
-            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds)
+            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds, activeBalanceCards)
+            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds, activeGiftCards)
 
             val initialDate = editTransaction?.date
                 ?: selectedDate
@@ -128,6 +130,18 @@ class AddTransactionViewModel(
             if (editTransaction != null) {
                 // 편집 모드 초기화
                 val initialAmount = editTransaction.amount.toLong().toString()
+
+                // 이전에 선택된 잔액권/상품권 복원
+                val preselectedBalanceCard = if (editTransaction.paymentMethod == PaymentMethod.BALANCE_CARD &&
+                    editTransaction.balanceCardId != null) {
+                    availableBalanceCards.find { it.id == editTransaction.balanceCardId }
+                } else null
+
+                val preselectedGiftCard = if (editTransaction.paymentMethod == PaymentMethod.GIFT_CARD &&
+                    editTransaction.giftCardId != null) {
+                    availableGiftCards.find { it.id == editTransaction.giftCardId }
+                } else null
+
                 uiState = uiState.copy(
                     amount = TextFieldValue(
                         text = if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()) else "",
@@ -147,7 +161,9 @@ class AddTransactionViewModel(
                     availableGiftCards = availableGiftCards,
                     isEditMode = true,
                     editTransaction = editTransaction,
-                    selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null
+                    selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null,
+                    selectedBalanceCard = preselectedBalanceCard,
+                    selectedGiftCard = preselectedGiftCard
                 )
             } else {
                 // 새 거래 추가 모드
@@ -174,12 +190,14 @@ class AddTransactionViewModel(
         reset()
 
         viewModelScope.launch {
-            // DB에서 현재 활성 카드 ID를 직접 조회 (항상 최신 상태 반영)
-            val activeBalanceCardIds = databaseHelper.getActiveBalanceCards().first().map { it.id }.toSet()
-            val activeGiftCardIds = databaseHelper.getActiveGiftCards().first().map { it.id }.toSet()
+            // DB에서 현재 활성 카드를 직접 조회 (항상 최신 상태 반영)
+            val activeBalanceCards = databaseHelper.getActiveBalanceCards().first()
+            val activeGiftCards = databaseHelper.getActiveGiftCards().first()
+            val activeBalanceCardIds = activeBalanceCards.map { it.id }.toSet()
+            val activeGiftCardIds = activeGiftCards.map { it.id }.toSet()
 
-            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds)
-            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds)
+            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds, activeBalanceCards)
+            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds, activeGiftCards)
 
             val amountText = formatWithCommas(parsedTransaction.amount.toLong())
 
@@ -218,12 +236,14 @@ class AddTransactionViewModel(
         reset()
 
         viewModelScope.launch {
-            // DB에서 현재 활성 카드 ID를 직접 조회 (항상 최신 상태 반영)
-            val activeBalanceCardIds = databaseHelper.getActiveBalanceCards().first().map { it.id }.toSet()
-            val activeGiftCardIds = databaseHelper.getActiveGiftCards().first().map { it.id }.toSet()
+            // DB에서 현재 활성 카드를 직접 조회 (항상 최신 상태 반영)
+            val activeBalanceCards = databaseHelper.getActiveBalanceCards().first()
+            val activeGiftCards = databaseHelper.getActiveGiftCards().first()
+            val activeBalanceCardIds = activeBalanceCards.map { it.id }.toSet()
+            val activeGiftCardIds = activeGiftCards.map { it.id }.toSet()
 
-            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds)
-            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds)
+            val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds, activeBalanceCards)
+            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds, activeGiftCards)
 
             val amountText = formatWithCommas(recurringTransaction.amount.toLong())
             val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date

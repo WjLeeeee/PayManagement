@@ -706,6 +706,7 @@ interface AppStrings {
     val emojiLabel: String
     val continueAction: String
     fun deleteCategoryConfirmMessage(emoji: String, name: String): String
+    val deleteCategoryTransactionWarning: String
 
     // ===== Card Management (additional) =====
     val balanceGiftCardManagement: String

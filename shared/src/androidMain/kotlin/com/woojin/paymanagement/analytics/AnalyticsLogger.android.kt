@@ -3,6 +3,7 @@ package com.woojin.paymanagement.analytics
 import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.logEvent
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 /**
  * Android용 AnalyticsLogger 구현
@@ -31,6 +32,7 @@ actual class AnalyticsLogger {
                 param(FirebaseAnalytics.Param.SCREEN_CLASS, it)
             }
         }
+        FirebaseCrashlytics.getInstance().setCustomKey("current_screen", screenName)
     }
 
     actual fun logEvent(eventName: String, params: Map<String, Any>?) {

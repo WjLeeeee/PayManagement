@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -121,19 +123,66 @@ fun CardManagementScreen(
             }
         }
 
+        // 잔액권 추가 다이얼로그
+        if (uiState.isAddBalanceCardDialogVisible) {
+            AlertDialog(
+                onDismissRequest = { viewModel.hideAddBalanceCardDialog() },
+                title = { Text(strings.addBalanceCard) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = uiState.newBalanceCardName,
+                            onValueChange = { viewModel.updateNewBalanceCardName(it) },
+                            label = { Text(strings.balanceCard) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = uiState.newBalanceCardAmount,
+                            onValueChange = { viewModel.updateNewBalanceCardAmount(it) },
+                            label = { Text(strings.currentBalance) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.addBalanceCard() }) {
+                        Text(strings.add)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.hideAddBalanceCardDialog() }) {
+                        Text(strings.cancel)
+                    }
+                }
+            )
+        }
+
         // 잔액권 수정 다이얼로그
         if (uiState.isEditBalanceCardDialogVisible) {
             AlertDialog(
                 onDismissRequest = { viewModel.hideEditBalanceCardDialog() },
                 title = { Text(strings.editBalanceCard) },
                 text = {
-                    OutlinedTextField(
-                        value = uiState.editBalanceCardName,
-                        onValueChange = { viewModel.updateEditBalanceCardName(it) },
-                        label = { Text(strings.balanceCard) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = uiState.editBalanceCardName,
+                            onValueChange = { viewModel.updateEditBalanceCardName(it) },
+                            label = { Text(strings.balanceCard) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = uiState.editBalanceCardCurrentBalance,
+                            onValueChange = { viewModel.updateEditBalanceCardCurrentBalance(it) },
+                            label = { Text(strings.currentBalance) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 },
                 confirmButton = {
                     TextButton(onClick = { viewModel.updateBalanceCard() }) {
@@ -172,19 +221,66 @@ fun CardManagementScreen(
             }
         }
 
+        // 상품권 추가 다이얼로그
+        if (uiState.isAddGiftCardDialogVisible) {
+            AlertDialog(
+                onDismissRequest = { viewModel.hideAddGiftCardDialog() },
+                title = { Text(strings.addGiftCard) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = uiState.newGiftCardName,
+                            onValueChange = { viewModel.updateNewGiftCardName(it) },
+                            label = { Text(strings.giftCard) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = uiState.newGiftCardAmount,
+                            onValueChange = { viewModel.updateNewGiftCardAmount(it) },
+                            label = { Text(strings.remainingAmount) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.addGiftCard() }) {
+                        Text(strings.add)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.hideAddGiftCardDialog() }) {
+                        Text(strings.cancel)
+                    }
+                }
+            )
+        }
+
         // 상품권 수정 다이얼로그
         if (uiState.isEditGiftCardDialogVisible) {
             AlertDialog(
                 onDismissRequest = { viewModel.hideEditGiftCardDialog() },
                 title = { Text(strings.editGiftCard) },
                 text = {
-                    OutlinedTextField(
-                        value = uiState.editGiftCardName,
-                        onValueChange = { viewModel.updateEditGiftCardName(it) },
-                        label = { Text(strings.giftCard) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = uiState.editGiftCardName,
+                            onValueChange = { viewModel.updateEditGiftCardName(it) },
+                            label = { Text(strings.giftCard) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = uiState.editGiftCardRemainingAmount,
+                            onValueChange = { viewModel.updateEditGiftCardRemainingAmount(it) },
+                            label = { Text(strings.remainingAmount) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 },
                 confirmButton = {
                     TextButton(onClick = { viewModel.updateGiftCard() }) {
@@ -245,46 +341,75 @@ private fun BalanceGiftTabContent(
 ) {
     val strings = LocalStrings.current
 
-    if (uiState.balanceCards.isEmpty() && uiState.giftCards.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = strings.noActiveCards,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 추가 버튼 행
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { viewModel.showAddBalanceCardDialog() },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(strings.addBalanceCard)
+                }
+                OutlinedButton(
+                    onClick = { viewModel.showAddGiftCardDialog() },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(strings.addGiftCard)
+                }
+            }
+        }
+
+        if (uiState.balanceCards.isEmpty() && uiState.giftCards.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = strings.noActiveCards,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        items(uiState.balanceCards) { balanceCard ->
+            val cardItem = CardItem.Balance(balanceCard)
+            BalanceCardItem(
+                balanceCard = balanceCard,
+                isExpanded = uiState.expandedCardId == balanceCard.id,
+                transactions = uiState.cardTransactions[balanceCard.id] ?: emptyList(),
+                onClick = { viewModel.toggleCardExpansion(cardItem) },
+                onEdit = { viewModel.showEditBalanceCardDialog(balanceCard) },
+                onDelete = { viewModel.showDeleteBalanceCardDialog(balanceCard) }
             )
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(uiState.balanceCards) { balanceCard ->
-                val cardItem = CardItem.Balance(balanceCard)
-                BalanceCardItem(
-                    balanceCard = balanceCard,
-                    isExpanded = uiState.expandedCardId == balanceCard.id,
-                    transactions = uiState.cardTransactions[balanceCard.id] ?: emptyList(),
-                    onClick = { viewModel.toggleCardExpansion(cardItem) },
-                    onEdit = { viewModel.showEditBalanceCardDialog(balanceCard) },
-                    onDelete = { viewModel.showDeleteBalanceCardDialog(balanceCard) }
-                )
-            }
 
-            items(uiState.giftCards) { giftCard ->
-                val cardItem = CardItem.Gift(giftCard)
-                GiftCardItem(
-                    giftCard = giftCard,
-                    isExpanded = uiState.expandedCardId == giftCard.id,
-                    transactions = uiState.cardTransactions[giftCard.id] ?: emptyList(),
-                    onClick = { viewModel.toggleCardExpansion(cardItem) },
-                    onEdit = { viewModel.showEditGiftCardDialog(giftCard) },
-                    onDelete = { viewModel.showDeleteGiftCardDialog(giftCard) }
-                )
-            }
+        items(uiState.giftCards) { giftCard ->
+            val cardItem = CardItem.Gift(giftCard)
+            GiftCardItem(
+                giftCard = giftCard,
+                isExpanded = uiState.expandedCardId == giftCard.id,
+                transactions = uiState.cardTransactions[giftCard.id] ?: emptyList(),
+                onClick = { viewModel.toggleCardExpansion(cardItem) },
+                onEdit = { viewModel.showEditGiftCardDialog(giftCard) },
+                onDelete = { viewModel.showDeleteGiftCardDialog(giftCard) }
+            )
         }
     }
 }

@@ -410,7 +410,14 @@ private fun DeleteConfirmDialog(
         onDismissRequest = onDismiss,
         title = { Text(strings.deleteCategory) },
         text = {
-            Text(strings.deleteCategoryConfirmMessage(categoryEmoji, categoryName))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(strings.deleteCategoryConfirmMessage(categoryEmoji, categoryName))
+                Text(
+                    text = strings.deleteCategoryTransactionWarning,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         },
         confirmButton = {
             TextButton(

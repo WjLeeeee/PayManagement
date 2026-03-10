@@ -1914,11 +1914,10 @@ fun PayManagementApp(
                                     val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId)
                                     if (currentCard != null) {
                                         val newUsedAmount = currentCard.usedAmount + transaction.amount
-                                        // 상품권이 한 번 사용되면 완전히 비활성화 (환급 발생)
                                         databaseHelper.updateGiftCardUsage(
                                             id = currentCard.id,
                                             usedAmount = newUsedAmount,
-                                            isActive = false // 한 번 사용되면 완전히 비활성화
+                                            isActive = newUsedAmount < currentCard.totalAmount
                                         )
                                     }
                                 }
@@ -2066,11 +2065,10 @@ fun PayManagementApp(
                                     val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId)
                                     if (currentCard != null) {
                                         val newUsedAmount = currentCard.usedAmount + transaction.amount
-                                        // 상품권이 한 번 사용되면 완전히 비활성화 (환급 발생)
                                         databaseHelper.updateGiftCardUsage(
                                             id = currentCard.id,
                                             usedAmount = newUsedAmount,
-                                            isActive = false // 한 번 사용되면 완전히 비활성화
+                                            isActive = newUsedAmount < currentCard.totalAmount
                                         )
                                     }
                                 }

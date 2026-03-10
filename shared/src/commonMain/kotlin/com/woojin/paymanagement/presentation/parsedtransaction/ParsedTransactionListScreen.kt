@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -57,10 +58,36 @@ fun ParsedTransactionListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
     var hasPermission by remember { mutableStateOf(hasNotificationPermission) }
+    var transactionToDelete by remember { mutableStateOf<ParsedTransaction?>(null) }
     val strings = LocalStrings.current
 
     // 시스템 뒤로가기 버튼 처리 (Android에서만 동작, iOS에서는 자동으로 무시됨)
     BackHandler(onBack = onBack)
+
+    // 삭제 확인 다이얼로그
+    transactionToDelete?.let { transaction ->
+        AlertDialog(
+            onDismissRequest = { transactionToDelete = null },
+            title = { Text(strings.delete) },
+            text = { Text("${transaction.merchantName} (${strings.amountWithUnit(transaction.amount.toInt().toString())})\n${strings.deleteTransactionConfirm}") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch { viewModel.deleteParsedTransaction(transaction.id) }
+                        transactionToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.delete)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { transactionToDelete = null }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
+    }
 
     // 앱이 다시 포커스를 받았을 때 권한 상태 갱신 (설정에서 돌아올 때)
     val lifecycleObserver = remember { LifecycleObserverHelper() }
@@ -187,11 +214,7 @@ fun ParsedTransactionListScreen(
                         ParsedTransactionItem(
                             transaction = transaction,
                             onClick = { onTransactionClick(transaction) },
-                            onDelete = {
-                                scope.launch {
-                                    viewModel.deleteParsedTransaction(transaction.id)
-                                }
-                            }
+                            onDelete = { transactionToDelete = transaction }
                         )
                     }
                 }

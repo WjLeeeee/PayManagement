@@ -66,6 +66,7 @@ kotlin {
             implementation(libs.ktor.client.android)
 
             implementation("com.google.firebase:firebase-analytics-ktx:22.1.2")
+            implementation("com.google.firebase:firebase-crashlytics-ktx:19.2.1")
             implementation("com.google.android.gms:play-services-ads:23.5.0")
         }
 

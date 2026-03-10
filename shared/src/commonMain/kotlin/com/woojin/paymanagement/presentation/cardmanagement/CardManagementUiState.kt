@@ -31,16 +31,26 @@ data class CardManagementUiState(
     val pendingUpdate: (() -> Unit)? = null,
     val isDeleteDialogVisible: Boolean = false,
     val deletingMethod: CustomPaymentMethod? = null,
+    // 잔액권 추가
+    val isAddBalanceCardDialogVisible: Boolean = false,
+    val newBalanceCardName: String = "",
+    val newBalanceCardAmount: String = "",
     // 잔액권 수정/삭제
     val isEditBalanceCardDialogVisible: Boolean = false,
     val editingBalanceCard: BalanceCard? = null,
     val editBalanceCardName: String = "",
+    val editBalanceCardCurrentBalance: String = "",
     val isDeleteBalanceCardDialogVisible: Boolean = false,
     val deletingBalanceCard: BalanceCard? = null,
+    // 상품권 추가
+    val isAddGiftCardDialogVisible: Boolean = false,
+    val newGiftCardName: String = "",
+    val newGiftCardAmount: String = "",
     // 상품권 수정/삭제
     val isEditGiftCardDialogVisible: Boolean = false,
     val editingGiftCard: GiftCard? = null,
     val editGiftCardName: String = "",
+    val editGiftCardRemainingAmount: String = "",
     val isDeleteGiftCardDialogVisible: Boolean = false,
     val deletingGiftCard: GiftCard? = null
 )
