@@ -6,7 +6,11 @@ import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.data.IncomeType
 
 class GetAvailableGiftCardsUseCase {
-    operator fun invoke(transactions: List<Transaction>, activeCardIds: Set<String>? = null): List<GiftCard> {
+    operator fun invoke(
+        transactions: List<Transaction>,
+        activeCardIds: Set<String>? = null,
+        dbCards: List<GiftCard> = emptyList()
+    ): List<GiftCard> {
         // 카드 이름으로 그룹화 (같은 이름의 카드는 하나로 통합)
         val giftCardMap = mutableMapOf<String, GiftCard>()
 
@@ -50,6 +54,15 @@ class GetAvailableGiftCardsUseCase {
                 )
             }
         }
+
+        // DB에 직접 추가된 카드 중 거래 내역이 없는 카드 병합
+        val existingIds = giftCardMap.values.map { it.id }.toSet()
+        dbCards.filter { it.isActive && it.remainingAmount > 0 && !existingIds.contains(it.id) }
+            .forEach { dbCard ->
+                if (!giftCardMap.containsKey(dbCard.name)) {
+                    giftCardMap[dbCard.name] = dbCard
+                }
+            }
 
         // 잔액이 있는 카드 반환 (activeCardIds가 null이면 필터 없음, 빈 Set이면 전부 차단)
         return giftCardMap.values.filter {
