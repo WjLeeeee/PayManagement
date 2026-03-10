@@ -130,6 +130,18 @@ class AddTransactionViewModel(
             if (editTransaction != null) {
                 // 편집 모드 초기화
                 val initialAmount = editTransaction.amount.toLong().toString()
+
+                // 이전에 선택된 잔액권/상품권 복원
+                val preselectedBalanceCard = if (editTransaction.paymentMethod == PaymentMethod.BALANCE_CARD &&
+                    editTransaction.balanceCardId != null) {
+                    availableBalanceCards.find { it.id == editTransaction.balanceCardId }
+                } else null
+
+                val preselectedGiftCard = if (editTransaction.paymentMethod == PaymentMethod.GIFT_CARD &&
+                    editTransaction.giftCardId != null) {
+                    availableGiftCards.find { it.id == editTransaction.giftCardId }
+                } else null
+
                 uiState = uiState.copy(
                     amount = TextFieldValue(
                         text = if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()) else "",
@@ -149,7 +161,9 @@ class AddTransactionViewModel(
                     availableGiftCards = availableGiftCards,
                     isEditMode = true,
                     editTransaction = editTransaction,
-                    selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null
+                    selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null,
+                    selectedBalanceCard = preselectedBalanceCard,
+                    selectedGiftCard = preselectedGiftCard
                 )
             } else {
                 // 새 거래 추가 모드
