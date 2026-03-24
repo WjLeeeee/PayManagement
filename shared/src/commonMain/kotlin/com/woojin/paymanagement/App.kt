@@ -1773,7 +1773,8 @@ fun PayManagementApp(
                 tutorialViewModel = tutorialViewModel,
                 preferencesManager = preferencesManager,
                 notificationPermissionChecker = notificationPermissionChecker,
-                interstitialAdManager = interstitialAdManager,
+                nativeAdContent = nativeAdContent,
+                hasNativeAd = hasNativeAd,
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 permissionGuideImage = permissionGuideImage,
                 onOpenDrawer = {
