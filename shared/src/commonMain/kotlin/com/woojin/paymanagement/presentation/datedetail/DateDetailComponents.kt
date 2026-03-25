@@ -58,8 +58,8 @@ private fun getPaymentMethodText(paymentMethod: PaymentMethod?, strings: AppStri
     return when (paymentMethod) {
         PaymentMethod.CASH -> strings.cash
         PaymentMethod.CARD -> cardName ?: strings.card
-        PaymentMethod.BALANCE_CARD -> strings.balanceCard
-        PaymentMethod.GIFT_CARD -> strings.giftCard
+        PaymentMethod.BALANCE_CARD -> cardName ?: strings.balanceCard
+        PaymentMethod.GIFT_CARD -> cardName ?: strings.giftCard
         null -> ""
     }
 }
@@ -67,11 +67,11 @@ private fun getPaymentMethodText(paymentMethod: PaymentMethod?, strings: AppStri
 /**
  * 수입유형을 다국어로 변환합니다.
  */
-private fun getIncomeTypeText(incomeType: IncomeType?, strings: AppStrings): String {
+private fun getIncomeTypeText(incomeType: IncomeType?, strings: AppStrings, cardName: String? = null): String {
     return when (incomeType) {
         IncomeType.CASH -> strings.cash
-        IncomeType.BALANCE_CARD -> strings.balanceCard
-        IncomeType.GIFT_CARD -> strings.giftCard
+        IncomeType.BALANCE_CARD -> cardName ?: strings.balanceCard
+        IncomeType.GIFT_CARD -> cardName ?: strings.giftCard
         null -> ""
     }
 }
@@ -367,7 +367,7 @@ fun TransactionDetailItem(
                         // 결제수단/수입유형 표시
                         val methodText = when (transaction.type) {
                             TransactionType.EXPENSE -> getPaymentMethodText(transaction.paymentMethod, strings, transaction.cardName)
-                            TransactionType.INCOME -> getIncomeTypeText(transaction.incomeType, strings)
+                            TransactionType.INCOME -> getIncomeTypeText(transaction.incomeType, strings, transaction.cardName)
                             TransactionType.SAVING -> ""
                         }
 

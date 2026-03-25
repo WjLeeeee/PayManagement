@@ -47,6 +47,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
@@ -90,7 +92,6 @@ fun CalendarScreen(
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel,
     preferencesManager: com.woojin.paymanagement.utils.PreferencesManager,
     notificationPermissionChecker: com.woojin.paymanagement.utils.NotificationPermissionChecker? = null,
-    interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     onOpenDrawer: () -> Unit = {},
     onDateDetailClick: (LocalDate) -> Unit = {},
     onStatisticsClick: (PayPeriod) -> Unit = {},
@@ -99,6 +100,8 @@ fun CalendarScreen(
     onParsedTransactionsClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onAppExit: () -> Unit = {},
+    nativeAdContent: @Composable (() -> Unit)? = null,
+    hasNativeAd: Boolean = false,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null
 ) {
@@ -139,12 +142,7 @@ fun CalendarScreen(
         }
     }
 
-    // 전면광고 미리 로드
-    LaunchedEffect(interstitialAdManager) {
-        interstitialAdManager?.loadAd()
-    }
-
-    // 뒤로가기 핸들링 - 앱 종료 시 전면광고 표시
+    // 뒤로가기 핸들링 - 앱 종료 확인
     com.woojin.paymanagement.utils.BackHandler {
         showExitDialog = true
     }
@@ -383,32 +381,46 @@ fun CalendarScreen(
 
     // 앱 종료 확인 다이얼로그
     if (showExitDialog) {
+        var showButtons by remember { mutableStateOf(false) }
+
+        LaunchedEffect(Unit) {
+            if (hasNativeAd && !preferencesManager.isAdRemovalActive()) {
+                delay(2000)
+            }
+            showButtons = true
+        }
+
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
-            title = { Text(strings.appExit) },
-            text = { Text(strings.exitConfirmMessage) },
+            title = { Text(strings.exitConfirmMessage) },
+            text = {
+                if (hasNativeAd && !preferencesManager.isAdRemovalActive()) {
+                    nativeAdContent?.invoke()
+                }
+            },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showExitDialog = false
-                        // 광고 제거가 활성화되어 있으면 광고 없이 바로 종료
-                        if (preferencesManager.isAdRemovalActive()) {
-                            onAppExit()
-                        } else {
-                            // 전면광고 표시 후 앱 종료
-                            interstitialAdManager?.showAd {
-                                // 광고 닫힌 후 앱 종료 콜백 호출
-                                onAppExit()
-                            }
-                        }
-                    }
+                AnimatedVisibility(
+                    visible = showButtons,
+                    enter = fadeIn(animationSpec = tween(300))
                 ) {
-                    Text(strings.exitConfirm)
+                    TextButton(
+                        onClick = {
+                            showExitDialog = false
+                            onAppExit()
+                        }
+                    ) {
+                        Text(strings.exitConfirm)
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showExitDialog = false }) {
-                    Text(strings.cancel)
+                AnimatedVisibility(
+                    visible = showButtons,
+                    enter = fadeIn(animationSpec = tween(300))
+                ) {
+                    TextButton(onClick = { showExitDialog = false }) {
+                        Text(strings.cancel)
+                    }
                 }
             }
         )
