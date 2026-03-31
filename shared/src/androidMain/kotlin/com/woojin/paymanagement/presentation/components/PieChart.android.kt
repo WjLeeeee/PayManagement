@@ -1,6 +1,9 @@
 package com.woojin.paymanagement.presentation.components
 
 import android.graphics.Typeface
+import android.text.SpannableString
+import android.text.style.RelativeSizeSpan
+import android.text.style.StyleSpan
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -17,19 +20,9 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
-import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.woojin.paymanagement.data.ChartItem
-
-// 커스텀 포매터: 카테고리명 + 백분율
-class PieChartValueFormatter : ValueFormatter() {
-    override fun getPieLabel(value: Float, pieEntry: PieEntry?): String {
-        val category = pieEntry?.label ?: ""
-        val percentage = value.toInt()
-        return "$category $percentage%"
-    }
-}
 
 @Composable
 actual fun PieChart(
@@ -43,9 +36,7 @@ actual fun PieChart(
     onItemSelected: (String?) -> Unit
 ) {
     val entries = remember(items) {
-        items.map { item ->
-            PieEntry(item.percentage, item.category)
-        }
+        items.map { item -> PieEntry(item.percentage, item.category) }
     }
 
     val colors = remember(items) {
@@ -55,40 +46,42 @@ actual fun PieChart(
     AndroidView(
         factory = { context ->
             MPPieChart(context).apply {
-                // 차트 기본 설정
                 description.isEnabled = false
                 setUsePercentValues(true)
-                setDrawHoleEnabled(false)
 
-                // 내부 라벨 끄기 (외부에 선으로 연결된 라벨 사용)
+                // 도넛 스타일
+                setDrawHoleEnabled(true)
+                setHoleRadius(48f)
+                setTransparentCircleRadius(51f)
+                setTransparentCircleAlpha(60)
+                setHoleColor(android.graphics.Color.TRANSPARENT)
+
+                // 중앙 텍스트
+                setDrawCenterText(true)
+
+                // 슬라이스 라벨 비활성화 (중앙에 표시)
                 setDrawEntryLabels(false)
 
-                // 최소 각도 보장 (작은 조각도 최소한 보이도록)
-                minAngleForSlices = 10f  // 최소 10도 보장
+                // 최소 각도 보장
+                minAngleForSlices = 10f
 
-                // 회전 및 하이라이트 설정
                 isRotationEnabled = false
                 isHighlightPerTapEnabled = true
 
-                // 애니메이션
-                animateY(1000, Easing.EaseInOutQuad)
+                animateY(800, Easing.EaseInOutQuad)
 
-                // 외부 공간 확보 (라벨과 선을 위한 여백 - 더 크게)
-                setExtraOffsets(20f, 10f, 20f, 10f)
+                setExtraOffsets(8f, 8f, 8f, 8f)
 
-                // 선택 이벤트 리스너
                 setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
                     override fun onValueSelected(e: Entry?, h: Highlight?) {
                         val pieEntry = e as? PieEntry
                         onItemSelected(pieEntry?.label)
                     }
-
                     override fun onNothingSelected() {
                         onItemSelected(null)
                     }
                 })
 
-                // 범례 설정
                 legend.isEnabled = showLegend
                 if (showLegend) {
                     legend.verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
@@ -103,37 +96,33 @@ actual fun PieChart(
             val dataSet = PieDataSet(entries, "").apply {
                 this.colors = colors
                 sliceSpace = 2f
-                selectionShift = 5f
-
-                // 외부 라벨 설정
-                valueTextSize = 10f
-                valueTextColor = labelTextColor.toArgb()
-                valueTypeface = Typeface.DEFAULT
-
-                // 값을 바깥쪽에 표시
-                yValuePosition = PieDataSet.ValuePosition.OUTSIDE_SLICE
-                xValuePosition = PieDataSet.ValuePosition.OUTSIDE_SLICE
-
-                // 선 설정 (조각에서 라벨로 연결되는 선 - 더 길게)
-                this.valueLineColor = valueLineColor.toArgb()
-                valueLinePart1OffsetPercentage = 80f // 조각 중심에서 시작
-                valueLinePart1Length = 0.7f // 첫 번째 선 길이 (증가)
-                valueLinePart2Length = 0.4f // 두 번째 선 길이 (수평선, 증가)
-                isValueLineVariableLength = true // 선 길이 가변
-                valueLineWidth = 1f // 선 두께
-
-                // 값 표시 설정 (카테고리명 + 백분율)
-                valueFormatter = PieChartValueFormatter()
+                selectionShift = 6f
+                setDrawValues(false)
             }
 
-            val data = PieData(dataSet).apply {
-                setValueTextSize(10f)
-                setValueTextColor(labelTextColor.toArgb())
-            }
-
+            val data = PieData(dataSet)
             chart.data = data
 
-            // 선택된 카테고리가 있으면 해당 항목을 하이라이트
+            // 중앙 텍스트 업데이트
+            if (selectedCategory != null) {
+                val selectedEntry = entries.firstOrNull { it.label == selectedCategory }
+                val pct = selectedEntry?.y?.toInt() ?: 0
+                val displayName = if (selectedCategory.length > 8) "${selectedCategory.take(7)}…" else selectedCategory
+                val spannable = SpannableString("$displayName\n$pct%").apply {
+                    // 카테고리명: 일반 크기
+                    setSpan(RelativeSizeSpan(0.85f), 0, displayName.length, 0)
+                    // %: 굵고 크게
+                    setSpan(RelativeSizeSpan(1.1f), displayName.length + 1, length, 0)
+                    setSpan(StyleSpan(Typeface.BOLD), displayName.length + 1, length, 0)
+                }
+                chart.setCenterText(spannable)
+                chart.setCenterTextColor(labelTextColor.toArgb())
+                chart.setCenterTextSize(13f)
+            } else {
+                chart.centerText = ""
+            }
+
+            // 선택 항목 하이라이트
             if (selectedCategory != null) {
                 val selectedIndex = entries.indexOfFirst { it.label == selectedCategory }
                 if (selectedIndex >= 0) {

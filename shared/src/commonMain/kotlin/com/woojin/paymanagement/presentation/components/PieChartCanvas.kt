@@ -29,6 +29,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,10 +39,6 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-// 라벨 방향 정의
-private enum class LabelDirection {
-    RIGHT, LEFT, TOP, BOTTOM
-}
 
 @Composable
 internal fun PieChartCanvas(
@@ -67,8 +64,9 @@ internal fun PieChartCanvas(
         // Pie Chart with labels
         Canvas(
             modifier = Modifier
-                .size(chartSize * 2.5f)
-                .padding(16.dp)
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .padding(8.dp)
         ) {
             drawPieChartWithLabels(items, textMeasurer, labelTextColor, valueLineColor, selectedCategory)
         }
@@ -117,305 +115,52 @@ private fun DrawScope.drawPieChartWithLabels(
     val total = items.sumOf { it.percentage.toDouble() }.toFloat()
     if (total == 0f) return
 
-    // 차트 반지름은 전체 크기의 30%로 설정
-    val chartRadius = size.minDimension * 0.3f
-    val lineLength = chartRadius * 0.5f
+    // 파이 차트 반지름: 캔버스 중앙에 크게 그림
+    val chartRadius = size.minDimension * 0.38f
     var currentAngle = -90f
 
-    // 텍스트 스타일
-    val categoryStyle = TextStyle(
-        fontSize = 12.sp,
+    // 슬라이스 내부 % 텍스트 스타일
+    val percentStyle = TextStyle(
+        fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
-        color = labelTextColor
-    )
-    val detailStyle = TextStyle(
-        fontSize = 10.sp,
-        color = valueLineColor
+        color = Color.White
     )
 
-    // 라벨 정보 저장
-    data class LabelInfo(
-        val item: ChartItem,
-        val lineStartX: Float,
-        val lineStartY: Float,
-        var lineEndX: Float,
-        var lineEndY: Float,
-        val direction: LabelDirection,
-        val categoryLayout: androidx.compose.ui.text.TextLayoutResult,
-        val amountLayout: androidx.compose.ui.text.TextLayoutResult,
-        val percentageLayout: androidx.compose.ui.text.TextLayoutResult,
-        val middleAngle: Float,
-        var currentLineLength: Float
-    )
-
-    val labels = mutableListOf<LabelInfo>()
-
-    // "기타" 카테고리가 있으면 기타를, 없으면 가장 낮은 % 항목을 오른쪽에 배치
-    val etcItem = items.find { it.category == "기타" }
-    val itemToForceRight = etcItem ?: items.minByOrNull { it.percentage }
-
-    // 파이 조각 그리기 및 라벨 정보 수집
     items.forEach { item ->
         val sweepAngle = (item.percentage / total) * 360f
-
-        // 선택된 카테고리는 약간 크게 그리기
         val isSelected = item.category == selectedCategory
-        val radius = if (isSelected) chartRadius * 1.1f else chartRadius
+        val radius = if (isSelected) chartRadius * 1.08f else chartRadius
 
+        // 파이 조각 그리기
         drawArc(
             color = item.color,
             startAngle = currentAngle,
             sweepAngle = sweepAngle,
             useCenter = true,
             size = Size(radius * 2, radius * 2),
-            topLeft = Offset(
-                x = center.x - radius,
-                y = center.y - radius
-            )
+            topLeft = Offset(center.x - radius, center.y - radius)
         )
 
-        val middleAngle = (currentAngle + sweepAngle / 2) * (PI.toFloat() / 180f)
-        val lineStartX = center.x + chartRadius * cos(middleAngle)
-        val lineStartY = center.y + chartRadius * sin(middleAngle)
-        val lineEndX = center.x + (chartRadius + lineLength) * cos(middleAngle)
-        val lineEndY = center.y + (chartRadius + lineLength) * sin(middleAngle)
+        // 5% 이상인 슬라이스에만 내부에 % 텍스트 표시
+        if (item.percentage >= 5f) {
+            val middleAngle = (currentAngle + sweepAngle / 2) * (PI.toFloat() / 180f)
+            val textRadius = radius * 0.65f
+            val textCenterX = center.x + textRadius * cos(middleAngle)
+            val textCenterY = center.y + textRadius * sin(middleAngle)
 
-        // 각도를 0~360도 범위로 정규화
-        val normalizedAngleDeg = ((currentAngle + sweepAngle / 2) % 360 + 360) % 360
+            val percentText = "${(item.percentage * 10).toInt() / 10.0}%"
+            val percentLayout = textMeasurer.measure(percentText, percentStyle)
 
-        // 4방향으로 구분 (기타 항목은 무조건 오른쪽)
-        val direction = if (item == itemToForceRight) {
-            LabelDirection.RIGHT
-        } else {
-            when {
-                normalizedAngleDeg >= 315 || normalizedAngleDeg < 45 -> LabelDirection.TOP
-                normalizedAngleDeg >= 45 && normalizedAngleDeg < 135 -> LabelDirection.RIGHT
-                normalizedAngleDeg >= 135 && normalizedAngleDeg < 225 -> LabelDirection.BOTTOM
-                else -> LabelDirection.LEFT
-            }
+            drawText(
+                textLayoutResult = percentLayout,
+                topLeft = Offset(
+                    textCenterX - percentLayout.size.width / 2f,
+                    textCenterY - percentLayout.size.height / 2f
+                )
+            )
         }
-
-        val categoryText = item.category
-        val amountText = "${Utils.formatAmount(item.amount)}원"
-        val percentageText = "${(item.percentage * 10).toInt() / 10.0}%"
-
-        val categoryLayout = textMeasurer.measure(categoryText, categoryStyle)
-        val amountLayout = textMeasurer.measure(amountText, detailStyle)
-        val percentageLayout = textMeasurer.measure(percentageText, detailStyle)
-
-        labels.add(
-            LabelInfo(
-                item = item,
-                lineStartX = lineStartX,
-                lineStartY = lineStartY,
-                lineEndX = lineEndX,
-                lineEndY = lineEndY,
-                direction = direction,
-                categoryLayout = categoryLayout,
-                amountLayout = amountLayout,
-                percentageLayout = percentageLayout,
-                middleAngle = middleAngle,
-                currentLineLength = lineLength
-            )
-        )
 
         currentAngle += sweepAngle
-    }
-
-    // 겹침 방지: 4방향 그룹별로 처리
-    val topLabels = labels.filter { it.direction == LabelDirection.TOP }.sortedBy { it.lineEndX }
-    val bottomLabels = labels.filter { it.direction == LabelDirection.BOTTOM }.sortedBy { it.lineEndX }
-    val leftLabels = labels.filter { it.direction == LabelDirection.LEFT }.sortedBy { it.lineEndY }
-    val rightLabels = labels.filter { it.direction == LabelDirection.RIGHT }.sortedBy { it.lineEndY }
-
-    fun adjustVerticalLabels(labelList: List<LabelInfo>) {
-        val minGap = 8f
-
-        for (i in 1 until labelList.size) {
-            val prev = labelList[i - 1]
-            val curr = labelList[i]
-
-            // 전체 텍스트 높이
-            val prevHeight = prev.categoryLayout.size.height + prev.amountLayout.size.height +
-                           prev.percentageLayout.size.height + 12f
-            val currHeight = curr.categoryLayout.size.height + curr.amountLayout.size.height +
-                           curr.percentageLayout.size.height + 12f
-
-            // 이전 라벨의 하단과 현재 라벨의 상단 계산
-            val prevBottom = prev.lineEndY + (prevHeight / 2)
-            val currTop = curr.lineEndY - (currHeight / 2)
-
-            // 겹침 확인
-            if (prevBottom + minGap > currTop) {
-                // 필요한 Y 이동 거리 계산
-                val neededYShift = (prevBottom + minGap + (currHeight / 2)) - curr.lineEndY
-
-                // 현재 선을 연장해서 Y 위치 조정
-                val angleFromHorizontal = curr.middleAngle
-                val sinAngle = sin(angleFromHorizontal)
-
-                if (kotlin.math.abs(sinAngle) > 0.01f) {
-                    val additionalLength = neededYShift / sinAngle
-
-                    // 선 길이 증가 제한 (최대 chartRadius만큼)
-                    if (additionalLength > 0 && additionalLength < chartRadius) {
-                        curr.currentLineLength += additionalLength
-
-                        // 새로운 선 끝점 계산
-                        curr.lineEndX = center.x + (chartRadius + curr.currentLineLength) * cos(curr.middleAngle)
-                        curr.lineEndY = center.y + (chartRadius + curr.currentLineLength) * sin(curr.middleAngle)
-                    }
-                }
-            }
-        }
-    }
-
-    fun adjustHorizontalLabels(labelList: List<LabelInfo>) {
-        val minGap = 8f
-
-        for (i in 1 until labelList.size) {
-            val prev = labelList[i - 1]
-            val curr = labelList[i]
-
-            // 전체 텍스트 너비 (가장 긴 텍스트 기준)
-            val prevWidth = maxOf(
-                prev.categoryLayout.size.width,
-                prev.amountLayout.size.width,
-                prev.percentageLayout.size.width
-            )
-            val currWidth = maxOf(
-                curr.categoryLayout.size.width,
-                curr.amountLayout.size.width,
-                curr.percentageLayout.size.width
-            )
-
-            // 이전 라벨의 오른쪽과 현재 라벨의 왼쪽 계산
-            val prevRight = prev.lineEndX + (prevWidth / 2)
-            val currLeft = curr.lineEndX - (currWidth / 2)
-
-            // 겹침 확인
-            if (prevRight + minGap > currLeft) {
-                // 필요한 X 이동 거리 계산
-                val neededXShift = (prevRight + minGap + (currWidth / 2)) - curr.lineEndX
-
-                // 현재 선을 연장해서 X 위치 조정
-                val angleFromHorizontal = curr.middleAngle
-                val cosAngle = cos(angleFromHorizontal)
-
-                if (kotlin.math.abs(cosAngle) > 0.01f) {
-                    val additionalLength = neededXShift / cosAngle
-
-                    // 선 길이 증가 제한 (최대 chartRadius만큼)
-                    if (additionalLength > 0 && additionalLength < chartRadius) {
-                        curr.currentLineLength += additionalLength
-
-                        // 새로운 선 끝점 계산
-                        curr.lineEndX = center.x + (chartRadius + curr.currentLineLength) * cos(curr.middleAngle)
-                        curr.lineEndY = center.y + (chartRadius + curr.currentLineLength) * sin(curr.middleAngle)
-                    }
-                }
-            }
-        }
-    }
-
-    adjustVerticalLabels(leftLabels)
-    adjustVerticalLabels(rightLabels)
-    adjustHorizontalLabels(topLabels)
-    adjustHorizontalLabels(bottomLabels)
-
-    // 1단계: 모든 선 먼저 그리기
-    labels.forEach { label ->
-        drawLine(
-            color = label.item.color,
-            start = Offset(label.lineStartX, label.lineStartY),
-            end = Offset(label.lineEndX, label.lineEndY),
-            strokeWidth = 2f
-        )
-    }
-
-    // 2단계: 모든 텍스트 그리기 (선 위에 표시됨)
-    labels.forEach { label ->
-        val gap = 8f
-
-        // 3개 텍스트의 총 높이 계산
-        val totalTextHeight = label.categoryLayout.size.height +
-                            label.amountLayout.size.height +
-                            label.percentageLayout.size.height + 12f // 간격 포함 (4f + 8f)
-
-        when (label.direction) {
-            LabelDirection.RIGHT -> {
-                // 오른쪽: 수직선(lineEndX) 오른쪽에 배치, Y는 선 끝점 기준 중앙
-                val textStartX = label.lineEndX + gap
-                val textStartY = label.lineEndY - (totalTextHeight / 2)
-
-                drawText(
-                    textLayoutResult = label.categoryLayout,
-                    topLeft = Offset(textStartX, textStartY)
-                )
-                drawText(
-                    textLayoutResult = label.amountLayout,
-                    topLeft = Offset(textStartX, textStartY + label.categoryLayout.size.height + 4f)
-                )
-                drawText(
-                    textLayoutResult = label.percentageLayout,
-                    topLeft = Offset(textStartX, textStartY + label.categoryLayout.size.height + label.amountLayout.size.height + 8f)
-                )
-            }
-            LabelDirection.LEFT -> {
-                // 왼쪽: 수직선(lineEndX) 왼쪽에 배치, Y는 선 끝점 기준 중앙
-                // 각 텍스트를 오른쪽 정렬 (수직선에서 gap만큼 떨어진 곳이 텍스트의 오른쪽 끝)
-                val textRightX = label.lineEndX - gap
-                val textStartY = label.lineEndY - (totalTextHeight / 2)
-
-                drawText(
-                    textLayoutResult = label.categoryLayout,
-                    topLeft = Offset(textRightX - label.categoryLayout.size.width, textStartY)
-                )
-                drawText(
-                    textLayoutResult = label.amountLayout,
-                    topLeft = Offset(textRightX - label.amountLayout.size.width, textStartY + label.categoryLayout.size.height + 4f)
-                )
-                drawText(
-                    textLayoutResult = label.percentageLayout,
-                    topLeft = Offset(textRightX - label.percentageLayout.size.width, textStartY + label.categoryLayout.size.height + label.amountLayout.size.height + 8f)
-                )
-            }
-            LabelDirection.TOP -> {
-                // 위쪽: 수직선(lineEndY) 위쪽에 배치, X는 중앙 정렬
-                val textBottomY = label.lineEndY - gap
-                val textStartY = textBottomY - totalTextHeight
-
-                drawText(
-                    textLayoutResult = label.categoryLayout,
-                    topLeft = Offset(label.lineEndX - label.categoryLayout.size.width / 2, textStartY)
-                )
-                drawText(
-                    textLayoutResult = label.amountLayout,
-                    topLeft = Offset(label.lineEndX - label.amountLayout.size.width / 2, textStartY + label.categoryLayout.size.height + 4f)
-                )
-                drawText(
-                    textLayoutResult = label.percentageLayout,
-                    topLeft = Offset(label.lineEndX - label.percentageLayout.size.width / 2, textStartY + label.categoryLayout.size.height + label.amountLayout.size.height + 8f)
-                )
-            }
-            LabelDirection.BOTTOM -> {
-                // 아래쪽: 수직선(lineEndY) 아래쪽에 배치, X는 중앙 정렬
-                val textStartY = label.lineEndY + gap
-
-                drawText(
-                    textLayoutResult = label.categoryLayout,
-                    topLeft = Offset(label.lineEndX - label.categoryLayout.size.width / 2, textStartY)
-                )
-                drawText(
-                    textLayoutResult = label.amountLayout,
-                    topLeft = Offset(label.lineEndX - label.amountLayout.size.width / 2, textStartY + label.categoryLayout.size.height + 4f)
-                )
-                drawText(
-                    textLayoutResult = label.percentageLayout,
-                    topLeft = Offset(label.lineEndX - label.percentageLayout.size.width / 2, textStartY + label.categoryLayout.size.height + label.amountLayout.size.height + 8f)
-                )
-            }
-        }
     }
 }
 
