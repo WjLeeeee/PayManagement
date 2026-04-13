@@ -48,7 +48,7 @@ object TransactionNotificationHelper {
         try {
             // 알림 클릭 시 카드 결제 내역 화면으로 이동하는 Intent
             val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 putExtra(MainActivity.EXTRA_NAVIGATE_TO_PARSED_TRANSACTIONS, true)
             }
 

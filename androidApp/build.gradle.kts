@@ -27,8 +27,8 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 61
-        versionName = "3.0"
+        versionCode = 62
+        versionName = "3.1"
     }
 
     // 서명 설정
