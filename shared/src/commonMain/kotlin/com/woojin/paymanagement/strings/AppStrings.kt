@@ -689,6 +689,8 @@ interface AppStrings {
     val categoryComparison: String
     val noComparisonData: String
     val totalExpenseComparison: String
+    val totalSavingComparison: String
+    val totalInvestmentComparison: String
     val previous: String
     val current: String
     val increasedArrow: String

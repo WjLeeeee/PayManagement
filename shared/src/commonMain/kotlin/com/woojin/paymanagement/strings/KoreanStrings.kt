@@ -698,6 +698,8 @@ object KoreanStrings : AppStrings {
     override val categoryComparison = "카테고리별 비교"
     override val noComparisonData = "비교할 데이터가 없습니다"
     override val totalExpenseComparison = "📊 총 지출 비교"
+    override val totalSavingComparison = "🐷 총 저축 비교"
+    override val totalInvestmentComparison = "💹 총 투자 비교"
     override val previous = "이전"
     override val current = "현재"
     override val increasedArrow = "증가 ↑"

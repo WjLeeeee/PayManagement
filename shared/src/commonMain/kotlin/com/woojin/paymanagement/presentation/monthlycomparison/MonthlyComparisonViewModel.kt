@@ -96,7 +96,7 @@ class MonthlyComparisonViewModel(
                 transaction.date >= previousPayPeriod.startDate && transaction.date <= previousPayPeriod.endDate
             }
 
-            // 카테고리별 집계
+            // 카테고리별 집계 (지출)
             val categoryComparisons = calculateCategoryComparisons(
                 currentPeriodTransactions = currentPeriodTransactions.filter { it.type == TransactionType.EXPENSE },
                 previousPeriodTransactions = previousPeriodTransactions.filter { it.type == TransactionType.EXPENSE }
@@ -118,6 +118,46 @@ class MonthlyComparisonViewModel(
                 0f
             }
 
+            // 저축 비교 계산
+            val savingComparisons = calculateCategoryComparisons(
+                currentPeriodTransactions = currentPeriodTransactions.filter { it.type == TransactionType.SAVING },
+                previousPeriodTransactions = previousPeriodTransactions.filter { it.type == TransactionType.SAVING }
+            )
+            val totalCurrentSaving = currentPeriodTransactions
+                .filter { it.type == TransactionType.SAVING }
+                .sumOf { it.displayAmount }
+            val totalPreviousSaving = previousPeriodTransactions
+                .filter { it.type == TransactionType.SAVING }
+                .sumOf { it.displayAmount }
+            val totalSavingDiff = totalCurrentSaving - totalPreviousSaving
+            val totalSavingDiffPercentage = if (totalPreviousSaving > 0) {
+                ((totalSavingDiff / totalPreviousSaving) * 100).toFloat()
+            } else if (totalCurrentSaving > 0) {
+                100f
+            } else {
+                0f
+            }
+
+            // 투자 비교 계산
+            val investmentComparisons = calculateCategoryComparisons(
+                currentPeriodTransactions = currentPeriodTransactions.filter { it.type == TransactionType.INVESTMENT },
+                previousPeriodTransactions = previousPeriodTransactions.filter { it.type == TransactionType.INVESTMENT }
+            )
+            val totalCurrentInvestment = currentPeriodTransactions
+                .filter { it.type == TransactionType.INVESTMENT }
+                .sumOf { it.displayAmount }
+            val totalPreviousInvestment = previousPeriodTransactions
+                .filter { it.type == TransactionType.INVESTMENT }
+                .sumOf { it.displayAmount }
+            val totalInvestmentDiff = totalCurrentInvestment - totalPreviousInvestment
+            val totalInvestmentDiffPercentage = if (totalPreviousInvestment > 0) {
+                ((totalInvestmentDiff / totalPreviousInvestment) * 100).toFloat()
+            } else if (totalCurrentInvestment > 0) {
+                100f
+            } else {
+                0f
+            }
+
             // 다음 기간으로 이동 가능한지 체크
             val nextPeriod = payPeriodCalculator.getNextPayPeriod(
                 currentPeriod = currentPayPeriod,
@@ -134,6 +174,16 @@ class MonthlyComparisonViewModel(
                 totalPreviousMonth = totalPrevious,
                 totalDifference = totalDiff,
                 totalDifferencePercentage = totalDiffPercentage,
+                savingCategoryComparisons = savingComparisons,
+                totalCurrentSaving = totalCurrentSaving,
+                totalPreviousSaving = totalPreviousSaving,
+                totalSavingDifference = totalSavingDiff,
+                totalSavingDifferencePercentage = totalSavingDiffPercentage,
+                investmentCategoryComparisons = investmentComparisons,
+                totalCurrentInvestment = totalCurrentInvestment,
+                totalPreviousInvestment = totalPreviousInvestment,
+                totalInvestmentDifference = totalInvestmentDiff,
+                totalInvestmentDifferencePercentage = totalInvestmentDiffPercentage,
                 isLoading = false,
                 availableCategories = categories,
                 canNavigateNext = canNavigateNext
