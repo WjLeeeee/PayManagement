@@ -517,15 +517,11 @@ private fun PayPeriodSummaryCard(
         transaction.date >= payPeriod.startDate && transaction.date <= payPeriod.endDate
     }
 
-    // 투자 관련 카테고리 목록
-    val investmentCategories = setOf("투자", "손절", "익절", "배당금")
-
-    // 투자 관련 항목 제외하고 계산
     val income = periodTransactions
-        .filter { it.type == TransactionType.INCOME && it.category !in investmentCategories }
+        .filter { it.type == TransactionType.INCOME }
         .sumOf { it.displayAmount }
     val expense = periodTransactions
-        .filter { it.type == TransactionType.EXPENSE && it.category !in investmentCategories }
+        .filter { it.type == TransactionType.EXPENSE }
         .sumOf { it.displayAmount }
     val saving = periodTransactions
         .filter { it.type == TransactionType.SAVING }
@@ -795,6 +791,7 @@ private fun CalendarGrid(
                 val hasIncome = dayTransactions.any { it.type == TransactionType.INCOME }
                 val hasExpense = dayTransactions.any { it.type == TransactionType.EXPENSE }
                 val hasSaving = dayTransactions.any { it.type == TransactionType.SAVING }
+                val hasInvestment = dayTransactions.any { it.type == TransactionType.INVESTMENT }
                 val isInCurrentPeriod = date >= payPeriod.startDate && date <= payPeriod.endDate
                 val dayOfWeek = date.dayOfWeek.ordinal // 0=Monday, 6=Sunday
                 val isHoliday = holidays.contains(date)
@@ -811,6 +808,7 @@ private fun CalendarGrid(
                     hasIncome = hasIncome,
                     hasExpense = hasExpense,
                     hasSaving = hasSaving,
+                    hasInvestment = hasInvestment,
                     isSelected = selectedDate == date,
                     isInCurrentPeriod = isInCurrentPeriod,
                     isToday = date == today,
@@ -840,6 +838,7 @@ private fun CalendarDay(
     hasIncome: Boolean,
     hasExpense: Boolean,
     hasSaving: Boolean = false,
+    hasInvestment: Boolean = false,
     isSelected: Boolean,
     isInCurrentPeriod: Boolean = true,
     isToday: Boolean = false,
@@ -888,12 +887,12 @@ private fun CalendarDay(
             Text(
                 text = displayText,
                 fontSize = if (isMonthLabel) 11.sp else 14.sp,
-                fontWeight = if (hasIncome || hasExpense || hasSaving) FontWeight.Bold else FontWeight.Normal,
+                fontWeight = if (hasIncome || hasExpense || hasSaving || hasInvestment) FontWeight.Bold else FontWeight.Normal,
                 color = if (isInCurrentPeriod) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // 인디케이터 점
-            if (hasIncome || hasExpense || hasSaving) {
+            if (hasIncome || hasExpense || hasSaving || hasInvestment) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -920,6 +919,14 @@ private fun CalendarDay(
                                 .size(4.dp)
                                 .clip(CircleShape)
                                 .background(com.woojin.paymanagement.theme.SavingColor.color)
+                        )
+                    }
+                    if (hasInvestment) {
+                        Box(
+                            modifier = Modifier
+                                .size(4.dp)
+                                .clip(CircleShape)
+                                .background(com.woojin.paymanagement.theme.InvestmentColor.color)
                         )
                     }
                 }
@@ -1101,6 +1108,7 @@ private fun TransactionItem(
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                         TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                     }
                 )
                 .align(Alignment.Top)
@@ -1150,6 +1158,7 @@ private fun TransactionItem(
                             }
                         }
                         TransactionType.SAVING -> ""
+                        TransactionType.INVESTMENT -> ""
                     }
                     if (paymentMethodText.isNotBlank()) {
                         Text(
@@ -1165,6 +1174,7 @@ private fun TransactionItem(
                         TransactionType.INCOME -> "+"
                         TransactionType.EXPENSE -> "-"
                         TransactionType.SAVING -> "-"
+                        TransactionType.INVESTMENT -> "±"
                     }}${
                         strings.amountWithUnit(Utils.formatAmount(
                             transaction.displayAmount
@@ -1175,6 +1185,7 @@ private fun TransactionItem(
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                         TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                     },
                     fontWeight = FontWeight.Bold
                 )

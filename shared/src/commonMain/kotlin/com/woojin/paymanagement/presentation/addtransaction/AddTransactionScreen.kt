@@ -157,11 +157,13 @@ fun AddTransactionScreen(
                     TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                     TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                     TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                    TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                 },
                 focusedLabelColor = when (uiState.selectedType) {
                     TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                     TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                     TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                    TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                 }
             )
         )
@@ -175,6 +177,7 @@ fun AddTransactionScreen(
                 TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                 TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                 TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
             }
             listOf(1_000L, 5_000L, 10_000L, 50_000L).forEach { quickAmount ->
                 OutlinedButton(
@@ -292,6 +295,7 @@ fun AddTransactionScreen(
                         TransactionType.INCOME -> Color(0xFF4CAF50)
                         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                         TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                     },
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 )

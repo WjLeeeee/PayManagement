@@ -408,6 +408,7 @@ private fun RecurringTransactionItem(
                             TransactionType.INCOME -> "+${strings.amountWithUnit(Utils.formatAmount(transaction.amount))}"
                             TransactionType.EXPENSE -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
                             TransactionType.SAVING -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
+                            TransactionType.INVESTMENT -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
                         },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
@@ -415,6 +416,7 @@ private fun RecurringTransactionItem(
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                             TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                            TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                         }
                     )
 

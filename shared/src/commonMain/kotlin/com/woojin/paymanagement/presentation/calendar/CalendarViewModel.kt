@@ -50,9 +50,10 @@ class CalendarViewModel(
         coroutineScope.launch {
             combine(
                 getCategoriesUseCase(TransactionType.INCOME),
-                getCategoriesUseCase(TransactionType.EXPENSE)
-            ) { income, expense ->
-                income + expense
+                getCategoriesUseCase(TransactionType.EXPENSE),
+                getCategoriesUseCase(TransactionType.INVESTMENT)
+            ) { income, expense, investment ->
+                income + expense + investment
             }.collect { categories ->
                 uiState = uiState.copy(availableCategories = categories)
             }

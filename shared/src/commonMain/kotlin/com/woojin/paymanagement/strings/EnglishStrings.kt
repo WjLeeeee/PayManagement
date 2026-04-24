@@ -739,6 +739,8 @@ object EnglishStrings : AppStrings {
     override val categoryComparison = "Category Comparison"
     override val noComparisonData = "No data to compare"
     override val totalExpenseComparison = "📊 Total Expense Comparison"
+    override val totalSavingComparison = "🐷 Total Saving Comparison"
+    override val totalInvestmentComparison = "💹 Total Investment Comparison"
     override val previous = "Previous"
     override val current = "Current"
     override val increasedArrow = "Increased ↑"

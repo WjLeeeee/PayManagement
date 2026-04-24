@@ -36,9 +36,10 @@ class StatisticsViewModel(
             combine(
                 getCategoriesUseCase(TransactionType.INCOME),
                 getCategoriesUseCase(TransactionType.EXPENSE),
-                getCategoriesUseCase(TransactionType.SAVING)
-            ) { income, expense, saving ->
-                income + expense + saving
+                getCategoriesUseCase(TransactionType.SAVING),
+                getCategoriesUseCase(TransactionType.INVESTMENT)
+            ) { income, expense, saving, investment ->
+                income + expense + saving + investment
             }.collect { categories ->
                 uiState = uiState.copy(availableCategories = categories)
             }

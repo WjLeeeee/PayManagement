@@ -36,7 +36,8 @@ data class Transaction(
 enum class TransactionType {
     INCOME,
     EXPENSE,
-    SAVING
+    SAVING,
+    INVESTMENT
 }
 
 @Serializable
@@ -493,7 +494,7 @@ data class MonthlySummary(
                 .filter { it.type == TransactionType.EXPENSE }
                 .sumOf { it.displayAmount }
 
-            // SAVING 타입은 수입/지출 합계에서 제외
+            // SAVING, INVESTMENT 타입은 수입/지출 합계에서 제외
             
             return MonthlySummary(
                 year = year,

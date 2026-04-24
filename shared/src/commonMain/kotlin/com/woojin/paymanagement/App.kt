@@ -2148,7 +2148,9 @@ fun PayManagementApp(
                     shouldShowPreviousPeriodComparison = false
                     navigateBack()
                 },
-                showPreviousPeriodComparison = shouldShowPreviousPeriodComparison
+                showPreviousPeriodComparison = shouldShowPreviousPeriodComparison,
+                nativeAdContent = nativeAdContent,
+                hasNativeAd = hasNativeAd
             )
         }
 

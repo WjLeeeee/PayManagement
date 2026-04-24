@@ -51,7 +51,7 @@ object RecurringTransactionNotificationHelper {
             if (transactions.isEmpty()) return
 
             val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 putExtra(MainActivity.EXTRA_NAVIGATE_TO_RECURRING_TRANSACTIONS, true)
             }
 
@@ -107,7 +107,7 @@ object RecurringTransactionNotificationHelper {
 
             // 알림 클릭 시 반복 거래 관리 화면으로 이동하는 Intent
             val intent = Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 putExtra(MainActivity.EXTRA_NAVIGATE_TO_RECURRING_TRANSACTIONS, true)
             }
 

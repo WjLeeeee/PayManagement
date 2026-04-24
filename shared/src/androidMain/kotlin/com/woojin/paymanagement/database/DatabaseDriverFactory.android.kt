@@ -567,6 +567,37 @@ actual class DatabaseDriverFactory(private val context: Context) {
             // 무시
         }
 
+        // 기존 투자/손절/익절/배당금 거래 및 카테고리를 INVESTMENT 타입으로 마이그레이션 (Schema v19)
+        val investmentCategories = listOf("투자", "손절", "익절", "배당금")
+        val placeholders = investmentCategories.joinToString(",") { "'$it'" }
+        try {
+            driver.execute(
+                null,
+                "UPDATE TransactionEntity SET type = 'INVESTMENT' WHERE category IN ($placeholders)",
+                0
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "UPDATE CategoryEntity SET type = 'INVESTMENT' WHERE name IN ($placeholders)",
+                0
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "UPDATE RecurringTransactionEntity SET type = 'INVESTMENT' WHERE category IN ($placeholders)",
+                0
+            )
+        } catch (e: Exception) {
+            // 무시
+        }
+
         return driver
     }
 }

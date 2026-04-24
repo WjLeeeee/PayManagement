@@ -10,6 +10,11 @@ object SavingColor {
     val lightBackground = Color(0xFFE8F5E9) // 연한 초록 배경
 }
 
+object InvestmentColor {
+    val color = Color(0xFF7B1FA2) // 보라색 (투자/장기)
+    val lightBackground = Color(0xFFF3E5F5) // 연한 보라 배경
+}
+
 object CategoryColors {
 
     // 카테고리별 색상 정의

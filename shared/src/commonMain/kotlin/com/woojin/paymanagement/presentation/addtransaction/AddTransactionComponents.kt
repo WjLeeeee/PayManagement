@@ -103,12 +103,14 @@ fun TransactionTypeSelector(
                             TransactionType.INCOME -> strings.income
                             TransactionType.EXPENSE -> strings.expense
                             TransactionType.SAVING -> strings.saving
+                            TransactionType.INVESTMENT -> strings.investment
                         },
                         modifier = Modifier.padding(start = 8.dp),
                         color = when (type) {
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                             TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                            TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                         },
                         fontWeight = FontWeight.Medium
                     )
@@ -760,12 +762,14 @@ fun CategoryChipGrid(
                     isSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                     isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
                     isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.lightBackground
+                    isSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.lightBackground
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
                 val borderColor = when {
                     isSelected && transactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary // 파랑
                     isSelected && transactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error // 빨강
                     isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                    isSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                     else -> Color.Transparent
                 }
                 val textColor = when {
