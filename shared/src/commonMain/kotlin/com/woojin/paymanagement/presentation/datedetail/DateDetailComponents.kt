@@ -341,6 +341,7 @@ fun TransactionDetailItem(
                                 TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                                 TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                                 TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                                TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                             }
                         )
                 )
@@ -369,6 +370,7 @@ fun TransactionDetailItem(
                             TransactionType.EXPENSE -> getPaymentMethodText(transaction.paymentMethod, strings, transaction.cardName)
                             TransactionType.INCOME -> getIncomeTypeText(transaction.incomeType, strings, transaction.cardName)
                             TransactionType.SAVING -> ""
+                            TransactionType.INVESTMENT -> ""
                         }
 
                         if (methodText.isNotBlank()) {
@@ -388,6 +390,7 @@ fun TransactionDetailItem(
                             TransactionType.INCOME -> "+"
                             TransactionType.EXPENSE -> "-"
                             TransactionType.SAVING -> "-"
+                            TransactionType.INVESTMENT -> "±"
                         }}${
                             strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))
                         }",
@@ -396,6 +399,7 @@ fun TransactionDetailItem(
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                             TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                            TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                         },
                         fontWeight = FontWeight.Bold
                     )

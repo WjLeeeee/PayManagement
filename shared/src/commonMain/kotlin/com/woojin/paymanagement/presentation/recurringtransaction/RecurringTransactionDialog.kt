@@ -23,6 +23,7 @@ import androidx.compose.ui.window.Dialog
 import com.woojin.paymanagement.data.*
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.SavingColor
+import com.woojin.paymanagement.theme.InvestmentColor
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
@@ -175,6 +176,21 @@ fun RecurringTransactionDialog(
                             selectedLabelColor = Color.White
                         )
                     )
+
+                    FilterChip(
+                        onClick = { selectedType = TransactionType.INVESTMENT },
+                        label = {
+                            Text(
+                                strings.investment,
+                                color = if (selectedType == TransactionType.INVESTMENT) Color.White else MaterialTheme.colorScheme.onSurface
+                            )
+                        },
+                        selected = selectedType == TransactionType.INVESTMENT,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = InvestmentColor.color,
+                            selectedLabelColor = Color.White
+                        )
+                    )
                 }
 
                 HorizontalDivider()
@@ -200,12 +216,14 @@ fun RecurringTransactionDialog(
                                 isSelected && selectedType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                                 isSelected && selectedType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
                                 isSelected && selectedType == TransactionType.SAVING -> SavingColor.lightBackground
+                                isSelected && selectedType == TransactionType.INVESTMENT -> InvestmentColor.lightBackground
                                 else -> MaterialTheme.colorScheme.surfaceVariant
                             }
                             val borderColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                                 isSelected && selectedType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                                 isSelected && selectedType == TransactionType.SAVING -> SavingColor.color
+                                isSelected && selectedType == TransactionType.INVESTMENT -> InvestmentColor.color
                                 else -> Color.Transparent
                             }
                             val textColor = when {
@@ -280,11 +298,13 @@ fun RecurringTransactionDialog(
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                             TransactionType.SAVING -> SavingColor.color
+                            TransactionType.INVESTMENT -> InvestmentColor.color
                         },
                         focusedLabelColor = when (selectedType) {
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                             TransactionType.SAVING -> SavingColor.color
+                            TransactionType.INVESTMENT -> InvestmentColor.color
                         }
                     )
                 )
@@ -316,11 +336,13 @@ fun RecurringTransactionDialog(
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                             TransactionType.SAVING -> SavingColor.color
+                            TransactionType.INVESTMENT -> InvestmentColor.color
                         },
                         focusedLabelColor = when (selectedType) {
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                             TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                             TransactionType.SAVING -> SavingColor.color
+                            TransactionType.INVESTMENT -> InvestmentColor.color
                         }
                     )
                 )
@@ -577,12 +599,14 @@ fun RecurringTransactionDialog(
                                 isSelected && selectedType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
                                 isSelected && selectedType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
                                 isSelected && selectedType == TransactionType.SAVING -> SavingColor.lightBackground
+                                isSelected && selectedType == TransactionType.INVESTMENT -> InvestmentColor.lightBackground
                                 else -> MaterialTheme.colorScheme.surfaceVariant
                             }
                             val borderColor = when {
                                 isSelected && selectedType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                                 isSelected && selectedType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                                 isSelected && selectedType == TransactionType.SAVING -> SavingColor.color
+                                isSelected && selectedType == TransactionType.INVESTMENT -> InvestmentColor.color
                                 else -> Color.Transparent
                             }
                             val textColor = when {
@@ -642,12 +666,12 @@ fun RecurringTransactionDialog(
                                     type = selectedType,
                                     category = selectedCategory,
                                     amount = amountValue,
-                                    merchant = if (selectedType == TransactionType.SAVING) "" else merchant,
+                                    merchant = if (selectedType == TransactionType.SAVING || selectedType == TransactionType.INVESTMENT) "" else merchant,
                                     memo = memo,
-                                    paymentMethod = if (selectedType == TransactionType.SAVING) PaymentMethod.CASH else selectedPaymentMethod,
+                                    paymentMethod = if (selectedType == TransactionType.SAVING || selectedType == TransactionType.INVESTMENT) PaymentMethod.CASH else selectedPaymentMethod,
                                     balanceCardId = transaction?.balanceCardId,
                                     giftCardId = transaction?.giftCardId,
-                                    cardName = if (selectedType != TransactionType.SAVING && selectedPaymentMethod == PaymentMethod.CARD) selectedCardName else null,
+                                    cardName = if (selectedType != TransactionType.SAVING && selectedType != TransactionType.INVESTMENT && selectedPaymentMethod == PaymentMethod.CARD) selectedCardName else null,
                                     pattern = selectedPattern,
                                     dayOfMonth = if (selectedPattern == RecurringPattern.MONTHLY) dayOfMonth else null,
                                     dayOfWeek = if (selectedPattern == RecurringPattern.WEEKLY) dayOfWeek else null,

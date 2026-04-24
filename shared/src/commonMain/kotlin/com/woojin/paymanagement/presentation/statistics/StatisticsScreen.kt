@@ -954,6 +954,19 @@ private fun ChartLegendItem(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        TransactionType.INVESTMENT -> {
+                            // 투자: 날짜 + 메모 (있으면) + 금액
+                            val displayText = if (transaction.memo.isNotBlank()) {
+                                "• $dateText - ${transaction.memo} (${strings.amountWithUnit(amountText)})"
+                            } else {
+                                "• $dateText (${strings.amountWithUnit(amountText)})"
+                            }
+                            Text(
+                                text = displayText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     if (transaction != transactions.last()) {

@@ -517,15 +517,11 @@ private fun PayPeriodSummaryCard(
         transaction.date >= payPeriod.startDate && transaction.date <= payPeriod.endDate
     }
 
-    // 투자 관련 카테고리 목록
-    val investmentCategories = setOf("투자", "손절", "익절", "배당금")
-
-    // 투자 관련 항목 제외하고 계산
     val income = periodTransactions
-        .filter { it.type == TransactionType.INCOME && it.category !in investmentCategories }
+        .filter { it.type == TransactionType.INCOME }
         .sumOf { it.displayAmount }
     val expense = periodTransactions
-        .filter { it.type == TransactionType.EXPENSE && it.category !in investmentCategories }
+        .filter { it.type == TransactionType.EXPENSE }
         .sumOf { it.displayAmount }
     val saving = periodTransactions
         .filter { it.type == TransactionType.SAVING }
@@ -1101,6 +1097,7 @@ private fun TransactionItem(
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                         TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                     }
                 )
                 .align(Alignment.Top)
@@ -1150,6 +1147,7 @@ private fun TransactionItem(
                             }
                         }
                         TransactionType.SAVING -> ""
+                        TransactionType.INVESTMENT -> ""
                     }
                     if (paymentMethodText.isNotBlank()) {
                         Text(
@@ -1165,6 +1163,7 @@ private fun TransactionItem(
                         TransactionType.INCOME -> "+"
                         TransactionType.EXPENSE -> "-"
                         TransactionType.SAVING -> "-"
+                        TransactionType.INVESTMENT -> "±"
                     }}${
                         strings.amountWithUnit(Utils.formatAmount(
                             transaction.displayAmount
@@ -1175,6 +1174,7 @@ private fun TransactionItem(
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                         TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                     },
                     fontWeight = FontWeight.Bold
                 )

@@ -35,6 +35,7 @@ import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.strings.AppStrings
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.SavingColor
+import com.woojin.paymanagement.theme.InvestmentColor
 import com.woojin.paymanagement.utils.PlatformBackHandler
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.Clock
@@ -138,6 +139,7 @@ fun SearchScreen(
                             TransactionType.INCOME -> strings.income
                             TransactionType.EXPENSE -> strings.expense
                             TransactionType.SAVING -> strings.saving
+                            TransactionType.INVESTMENT -> strings.investment
                         }
                         FilterChip(
                             selected = true,
@@ -260,7 +262,8 @@ private fun SearchFilterSheet(
                 listOf(
                     TransactionType.INCOME to strings.income,
                     TransactionType.EXPENSE to strings.expense,
-                    TransactionType.SAVING to strings.saving
+                    TransactionType.SAVING to strings.saving,
+                    TransactionType.INVESTMENT to strings.investment
                 ).forEach { (type, label) ->
                     val isSelected = type in uiState.selectedTypes
                     val chipColor = when {
@@ -582,6 +585,7 @@ private fun SearchResultItem(
                                 TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                                 TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                                 TransactionType.SAVING -> SavingColor.color
+                                TransactionType.INVESTMENT -> InvestmentColor.color
                             }
                         )
                 )
@@ -616,6 +620,7 @@ private fun SearchResultItem(
                     TransactionType.INCOME -> "+"
                     TransactionType.EXPENSE -> "-"
                     TransactionType.SAVING -> "-"
+                    TransactionType.INVESTMENT -> "±"
                 }}${strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
@@ -623,6 +628,7 @@ private fun SearchResultItem(
                     TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                     TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                     TransactionType.SAVING -> SavingColor.color
+                    TransactionType.INVESTMENT -> InvestmentColor.color
                 }
             )
         }
@@ -645,5 +651,6 @@ private fun getPaymentMethodText(transaction: Transaction, strings: AppStrings):
             null -> ""
         }
         TransactionType.SAVING -> ""
+        TransactionType.INVESTMENT -> ""
     }
 }

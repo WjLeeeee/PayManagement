@@ -192,11 +192,22 @@ class ImportDataUseCase(
         }
     }
 
+    private fun resolveTransactionType(type: String, category: String?): TransactionType {
+        val parsed = TransactionType.valueOf(type)
+        val investmentCategories = setOf("투자", "손절", "익절", "배당금")
+        return if (category in investmentCategories &&
+            (parsed == TransactionType.EXPENSE || parsed == TransactionType.INCOME)) {
+            TransactionType.INVESTMENT
+        } else {
+            parsed
+        }
+    }
+
     private fun TransactionBackup.toTransaction() = Transaction(
         id = id,
         date = LocalDate.parse(date),
         amount = amount,
-        type = TransactionType.valueOf(type),
+        type = resolveTransactionType(type, category),
         category = category ?: "",
         memo = memo ?: "",
         paymentMethod = paymentMethod?.let { PaymentMethod.valueOf(it) },
@@ -232,7 +243,7 @@ class ImportDataUseCase(
         id = id,
         name = name,
         emoji = emoji,
-        type = TransactionType.valueOf(type),
+        type = resolveTransactionType(type, name),
         isActive = isActive,
         sortOrder = sortOrder
     )
@@ -275,7 +286,7 @@ class ImportDataUseCase(
 
     private fun RecurringTransactionBackup.toRecurringTransaction() = RecurringTransaction(
         id = id,
-        type = TransactionType.valueOf(type),
+        type = resolveTransactionType(type, category),
         category = category,
         amount = amount,
         merchant = merchant,

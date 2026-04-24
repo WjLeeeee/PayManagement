@@ -862,6 +862,7 @@ private fun TransactionItem(
                         TransactionType.INCOME -> strings.incomeAmountDisplay(Utils.formatAmount(transaction.displayAmount))
                         TransactionType.EXPENSE -> strings.expenseAmountDisplay(Utils.formatAmount(transaction.displayAmount))
                         TransactionType.SAVING -> strings.expenseAmountDisplay(Utils.formatAmount(transaction.displayAmount))
+                        TransactionType.INVESTMENT -> strings.expenseAmountDisplay(Utils.formatAmount(transaction.displayAmount))
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
@@ -869,6 +870,7 @@ private fun TransactionItem(
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
                         TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                         TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                     }
                 )
             }

@@ -23,27 +23,11 @@ data class ChartData(
 
 object ChartDataCalculator {
 
-    // 투자 관련 카테고리 목록
-    private val INVESTMENT_CATEGORIES = setOf("투자", "손절", "익절", "배당금")
-
     fun calculateChartData(transactions: List<Transaction>): ChartData {
-        // 투자 관련 카테고리 제외
-        val incomeTransactions = transactions.filter {
-            it.type == TransactionType.INCOME && it.category !in INVESTMENT_CATEGORIES
-        }
-        val expenseTransactions = transactions.filter {
-            it.type == TransactionType.EXPENSE && it.category !in INVESTMENT_CATEGORIES
-        }
-
-        // 투자 관련 거래만 추출
-        val investmentTransactions = transactions.filter {
-            it.category in INVESTMENT_CATEGORIES
-        }
-
-        // 저축 거래 추출
-        val savingTransactions = transactions.filter {
-            it.type == TransactionType.SAVING
-        }
+        val incomeTransactions = transactions.filter { it.type == TransactionType.INCOME }
+        val expenseTransactions = transactions.filter { it.type == TransactionType.EXPENSE }
+        val investmentTransactions = transactions.filter { it.type == TransactionType.INVESTMENT }
+        val savingTransactions = transactions.filter { it.type == TransactionType.SAVING }
 
         val totalIncome = incomeTransactions.sumOf { it.displayAmount }
         val totalExpense = expenseTransactions.sumOf { it.displayAmount }
