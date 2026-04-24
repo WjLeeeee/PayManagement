@@ -22,6 +22,7 @@ import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import androidx.compose.runtime.rememberUpdatedState
 import com.woojin.paymanagement.data.ChartItem
 
 @Composable
@@ -43,44 +44,44 @@ actual fun PieChart(
         items.map { it.color.toArgb() }
     }
 
+    // 항상 최신 콜백을 참조하도록 유지
+    val currentOnItemSelected = rememberUpdatedState(onItemSelected)
+
+    // 리스너를 stable하게 유지 (factory/update 양쪽에서 동일 인스턴스 사용)
+    val chartListener = remember {
+        object : OnChartValueSelectedListener {
+            override fun onValueSelected(e: Entry?, h: Highlight?) {
+                currentOnItemSelected.value((e as? PieEntry)?.label)
+            }
+            override fun onNothingSelected() {
+                currentOnItemSelected.value(null)
+            }
+        }
+    }
+
     AndroidView(
         factory = { context ->
             MPPieChart(context).apply {
                 description.isEnabled = false
                 setUsePercentValues(true)
 
-                // 도넛 스타일
                 setDrawHoleEnabled(true)
                 setHoleRadius(48f)
                 setTransparentCircleRadius(51f)
                 setTransparentCircleAlpha(60)
                 setHoleColor(android.graphics.Color.TRANSPARENT)
 
-                // 중앙 텍스트
                 setDrawCenterText(true)
-
-                // 슬라이스 라벨 비활성화 (중앙에 표시)
                 setDrawEntryLabels(false)
 
-                // 최소 각도 보장
                 minAngleForSlices = 10f
-
                 isRotationEnabled = false
                 isHighlightPerTapEnabled = true
 
                 animateY(800, Easing.EaseInOutQuad)
-
                 setExtraOffsets(8f, 8f, 8f, 8f)
 
-                setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
-                    override fun onValueSelected(e: Entry?, h: Highlight?) {
-                        val pieEntry = e as? PieEntry
-                        onItemSelected(pieEntry?.label)
-                    }
-                    override fun onNothingSelected() {
-                        onItemSelected(null)
-                    }
-                })
+                setOnChartValueSelectedListener(chartListener)
 
                 legend.isEnabled = showLegend
                 if (showLegend) {
@@ -100,8 +101,11 @@ actual fun PieChart(
                 setDrawValues(false)
             }
 
-            val data = PieData(dataSet)
-            chart.data = data
+            // data 업데이트 중 onNothingSelected가 selectedCategory를 초기화하지 않도록
+            // 리스너를 잠시 해제했다가 복구
+            chart.setOnChartValueSelectedListener(null)
+            chart.data = PieData(dataSet)
+            chart.setOnChartValueSelectedListener(chartListener)
 
             // 중앙 텍스트 업데이트
             if (selectedCategory != null) {
@@ -109,9 +113,7 @@ actual fun PieChart(
                 val pct = selectedEntry?.y?.toInt() ?: 0
                 val displayName = if (selectedCategory.length > 8) "${selectedCategory.take(7)}…" else selectedCategory
                 val spannable = SpannableString("$displayName\n$pct%").apply {
-                    // 카테고리명: 일반 크기
                     setSpan(RelativeSizeSpan(0.85f), 0, displayName.length, 0)
-                    // %: 굵고 크게
                     setSpan(RelativeSizeSpan(1.1f), displayName.length + 1, length, 0)
                     setSpan(StyleSpan(Typeface.BOLD), displayName.length + 1, length, 0)
                 }
