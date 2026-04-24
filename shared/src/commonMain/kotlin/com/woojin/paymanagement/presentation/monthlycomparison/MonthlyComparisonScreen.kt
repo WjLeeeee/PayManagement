@@ -55,7 +55,9 @@ private enum class ComparisonTab { EXPENSE, SAVING, INVESTMENT }
 fun MonthlyComparisonScreen(
     viewModel: MonthlyComparisonViewModel,
     onBack: () -> Unit,
-    showPreviousPeriodComparison: Boolean = false
+    showPreviousPeriodComparison: Boolean = false,
+    nativeAdContent: @Composable (() -> Unit)? = null,
+    hasNativeAd: Boolean = false
 ) {
     val strings = LocalStrings.current
     BackHandler(onBack = onBack)
@@ -190,12 +192,26 @@ fun MonthlyComparisonScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    currentComparisons.forEach { comparison ->
+                    val midAdIndex = if (hasNativeAd && currentComparisons.size >= 6) currentComparisons.size / 2 else -1
+
+                    currentComparisons.forEachIndexed { index, comparison ->
+                        // 중간 광고 삽입 (5개 이상일 때 중간에 1번)
+                        if (index == midAdIndex && nativeAdContent != null) {
+                            nativeAdContent()
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+
                         CategoryComparisonCard(
                             comparison = comparison,
                             availableCategories = uiState.availableCategories,
                             increaseIsBad = increaseIsBad
                         )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    // 마지막 아이템 뒤 광고
+                    if (hasNativeAd && nativeAdContent != null) {
+                        nativeAdContent()
                         Spacer(modifier = Modifier.height(12.dp))
                     }
                 } else {
