@@ -295,6 +295,16 @@ class CalendarViewModel(
                 } catch (e: Exception) {
                     null
                 }
+            }.toMutableList()
+
+            // 근로자의 날(5월 1일)은 별도 법률에 근거하여 공휴일 API에 포함되지 않으므로 직접 추가
+            years.forEach { year ->
+                val laborDay = LocalDate(year, 5, 1)
+                if (laborDay >= payPeriod.startDate && laborDay <= payPeriod.endDate) {
+                    if (holidayMap.none { it.first == laborDay }) {
+                        holidayMap.add(laborDay to "근로자의 날")
+                    }
+                }
             }
 
             HolidayInfo(
