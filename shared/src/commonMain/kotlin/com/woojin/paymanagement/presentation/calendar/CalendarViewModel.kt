@@ -51,9 +51,10 @@ class CalendarViewModel(
             combine(
                 getCategoriesUseCase(TransactionType.INCOME),
                 getCategoriesUseCase(TransactionType.EXPENSE),
+                getCategoriesUseCase(TransactionType.SAVING),
                 getCategoriesUseCase(TransactionType.INVESTMENT)
-            ) { income, expense, investment ->
-                income + expense + investment
+            ) { income, expense, saving, investment ->
+                income + expense + saving + investment
             }.collect { categories ->
                 uiState = uiState.copy(availableCategories = categories)
             }
