@@ -526,6 +526,9 @@ private fun PayPeriodSummaryCard(
     val saving = periodTransactions
         .filter { it.type == TransactionType.SAVING }
         .sumOf { it.displayAmount }
+    val investment = periodTransactions
+        .filter { it.type == TransactionType.INVESTMENT }
+        .sumOf { it.displayAmount }
     val balance = income - expense
 
     val strings = LocalStrings.current
@@ -716,6 +719,43 @@ private fun PayPeriodSummaryCard(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = com.woojin.paymanagement.theme.SavingColor.color,
+                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                        )
+                    }
+                }
+
+                // 투자 합계 (투자 거래가 있을 때만 표시)
+                if (investment > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        thickness = 0.5.dp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "💹",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = strings.investment,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = com.woojin.paymanagement.theme.InvestmentColor.color
+                            )
+                        }
+                        Text(
+                            text = "-${strings.amountWithUnit(Utils.formatAmount(investment))}",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = com.woojin.paymanagement.theme.InvestmentColor.color,
                             modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
                         )
                     }

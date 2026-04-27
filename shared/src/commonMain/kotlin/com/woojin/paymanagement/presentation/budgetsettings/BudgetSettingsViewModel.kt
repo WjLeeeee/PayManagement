@@ -203,9 +203,10 @@ class BudgetSettingsViewModel(
     // 예산 설정 탭용: 템플릿만 로드 (지출 계산 안 함)
     private suspend fun loadCategoryBudgetsForTemplate(budgetPlanId: String) {
         getCategoryBudgetsUseCase(budgetPlanId).collect { categoryBudgets ->
-            // 모든 지출/저축 카테고리 정보 가져오기
+            // 모든 지출/저축/투자 카테고리 정보 가져오기
             val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first() +
-                getCategoriesUseCase(TransactionType.SAVING).first()
+                getCategoriesUseCase(TransactionType.SAVING).first() +
+                getCategoriesUseCase(TransactionType.INVESTMENT).first()
 
             // 카테고리 정보만 포함 (지출 계산 안 함)
             val budgetsWithProgress = categoryBudgets.map { budget ->
@@ -246,9 +247,10 @@ class BudgetSettingsViewModel(
         payPeriod: com.woojin.paymanagement.utils.PayPeriod
     ) {
         getCategoryBudgetsUseCase(budgetPlan.id).collect { categoryBudgets ->
-            // 모든 지출/저축 카테고리 정보 가져오기
+            // 모든 지출/저축/투자 카테고리 정보 가져오기
             val allCategories = getCategoriesUseCase(TransactionType.EXPENSE).first() +
-                getCategoriesUseCase(TransactionType.SAVING).first()
+                getCategoriesUseCase(TransactionType.SAVING).first() +
+                getCategoriesUseCase(TransactionType.INVESTMENT).first()
 
             // 각 카테고리별 사용 금액 계산
             val budgetsWithProgress = categoryBudgets.map { budget ->
@@ -449,10 +451,11 @@ class BudgetSettingsViewModel(
 
     fun showAddCategoryDialog() {
         viewModelScope.launch {
-            // 현재 예산이 설정되지 않은 지출/저축 카테고리 조회
+            // 현재 예산이 설정되지 않은 지출/저축/투자 카테고리 조회
             val expenseCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
             val savingCategories = getCategoriesUseCase(TransactionType.SAVING).first()
-            val allCategories = expenseCategories + savingCategories
+            val investmentCategories = getCategoriesUseCase(TransactionType.INVESTMENT).first()
+            val allCategories = expenseCategories + savingCategories + investmentCategories
             val usedCategoryIds = uiState.categoryBudgets.flatMap { it.categoryBudget.categoryIds }.toSet()
             val availableCategories = allCategories.filter { it.id !in usedCategoryIds }
 
@@ -593,7 +596,8 @@ class BudgetSettingsViewModel(
         viewModelScope.launch {
             val expenseCategories = getCategoriesUseCase(TransactionType.EXPENSE).first()
             val savingCategories = getCategoriesUseCase(TransactionType.SAVING).first()
-            val allCategories = expenseCategories + savingCategories
+            val investmentCategories = getCategoriesUseCase(TransactionType.INVESTMENT).first()
+            val allCategories = expenseCategories + savingCategories + investmentCategories
 
             // 다른 예산 아이템이 사용 중인 카테고리 IDs (현재 편집 대상 제외)
             val otherUsedCategoryIds = uiState.categoryBudgets

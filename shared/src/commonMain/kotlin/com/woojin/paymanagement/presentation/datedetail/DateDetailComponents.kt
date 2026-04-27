@@ -47,6 +47,7 @@ import com.woojin.paymanagement.domain.model.DailySummary
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.strings.AppStrings
 import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.theme.InvestmentColor
 import com.woojin.paymanagement.theme.SavingColor
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.datetime.LocalDate
@@ -254,6 +255,42 @@ fun DailySummaryCard(
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = SavingColor.color
+                    )
+                }
+            }
+
+            // 투자 합계 (투자 거래가 있을 때만 표시)
+            if (summary.totalInvestment > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                androidx.compose.material3.HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    thickness = 0.5.dp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "💹",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = strings.investment,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = InvestmentColor.color
+                        )
+                    }
+                    Text(
+                        text = "-${strings.amountWithUnit(Utils.formatAmount(summary.totalInvestment))}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = InvestmentColor.color
                     )
                 }
             }

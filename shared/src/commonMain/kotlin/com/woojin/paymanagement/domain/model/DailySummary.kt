@@ -4,5 +4,6 @@ data class DailySummary(
     val totalIncome: Double,
     val totalExpense: Double,
     val dailyBalance: Double,
-    val totalSaving: Double = 0.0
+    val totalSaving: Double = 0.0,
+    val totalInvestment: Double = 0.0
 )
