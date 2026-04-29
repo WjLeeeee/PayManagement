@@ -260,7 +260,7 @@ fun DailySummaryCard(
             }
 
             // 투자 합계 (투자 거래가 있을 때만 표시)
-            if (summary.totalInvestment > 0) {
+            if (summary.totalInvestment != 0.0) {
                 Spacer(modifier = Modifier.height(8.dp))
                 androidx.compose.material3.HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
@@ -287,7 +287,7 @@ fun DailySummaryCard(
                         )
                     }
                     Text(
-                        text = "-${strings.amountWithUnit(Utils.formatAmount(summary.totalInvestment))}",
+                        text = "${if (summary.totalInvestment > 0) "+" else "-"}${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(summary.totalInvestment)))}",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = InvestmentColor.color
@@ -422,12 +422,13 @@ fun TransactionDetailItem(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     // 금액
+                    val investmentIncomeCategories = setOf("익절", "배당금")
                     Text(
                         text = "${when (transaction.type) {
                             TransactionType.INCOME -> "+"
                             TransactionType.EXPENSE -> "-"
                             TransactionType.SAVING -> "-"
-                            TransactionType.INVESTMENT -> "±"
+                            TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
                         }}${
                             strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))
                         }",

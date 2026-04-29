@@ -615,12 +615,13 @@ private fun SearchResultItem(
                 }
             }
 
+            val investmentIncomeCategories = setOf("익절", "배당금")
             Text(
                 text = "${when (transaction.type) {
                     TransactionType.INCOME -> "+"
                     TransactionType.EXPENSE -> "-"
                     TransactionType.SAVING -> "-"
-                    TransactionType.INVESTMENT -> "±"
+                    TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
                 }}${strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
