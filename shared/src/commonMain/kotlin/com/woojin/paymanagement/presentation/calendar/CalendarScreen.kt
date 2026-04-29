@@ -526,9 +526,10 @@ private fun PayPeriodSummaryCard(
     val saving = periodTransactions
         .filter { it.type == TransactionType.SAVING }
         .sumOf { it.displayAmount }
+    val investmentIncomeCategories = setOf("익절", "배당금")
     val investment = periodTransactions
         .filter { it.type == TransactionType.INVESTMENT }
-        .sumOf { it.displayAmount }
+        .sumOf { t -> if (t.category in investmentIncomeCategories) t.displayAmount else -t.displayAmount }
     val balance = income - expense
 
     val strings = LocalStrings.current
@@ -725,7 +726,7 @@ private fun PayPeriodSummaryCard(
                 }
 
                 // 투자 합계 (투자 거래가 있을 때만 표시)
-                if (investment > 0) {
+                if (investment != 0.0) {
                     Spacer(modifier = Modifier.height(8.dp))
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
@@ -752,7 +753,7 @@ private fun PayPeriodSummaryCard(
                             )
                         }
                         Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(investment))}",
+                            text = "${if (investment > 0) "+" else "-"}${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(investment)))}",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = com.woojin.paymanagement.theme.InvestmentColor.color,
@@ -1209,12 +1210,13 @@ private fun TransactionItem(
                     }
                 }
 
+                val investmentIncomeCategories = setOf("익절", "배당금")
                 Text(
                     text = "${when (transaction.type) {
                         TransactionType.INCOME -> "+"
                         TransactionType.EXPENSE -> "-"
                         TransactionType.SAVING -> "-"
-                        TransactionType.INVESTMENT -> "±"
+                        TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
                     }}${
                         strings.amountWithUnit(Utils.formatAmount(
                             transaction.displayAmount

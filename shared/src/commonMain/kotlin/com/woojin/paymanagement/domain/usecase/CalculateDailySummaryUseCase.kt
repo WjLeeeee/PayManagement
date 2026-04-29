@@ -18,9 +18,10 @@ class CalculateDailySummaryUseCase {
             .filter { it.type == TransactionType.SAVING }
             .sumOf { it.displayAmount }
 
+        val investmentIncomeCategories = setOf("익절", "배당금")
         val totalInvestment = transactions
             .filter { it.type == TransactionType.INVESTMENT }
-            .sumOf { it.displayAmount }
+            .sumOf { t -> if (t.category in investmentIncomeCategories) t.displayAmount else -t.displayAmount }
 
         val dailyBalance = totalIncome - totalExpense
 
