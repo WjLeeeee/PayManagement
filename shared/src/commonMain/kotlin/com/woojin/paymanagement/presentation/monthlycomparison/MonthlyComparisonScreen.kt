@@ -209,11 +209,6 @@ fun MonthlyComparisonScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                     }
 
-                    // 마지막 아이템 뒤 광고
-                    if (hasNativeAd && nativeAdContent != null) {
-                        nativeAdContent()
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
                 } else {
                     Text(
                         text = strings.noComparisonData,
@@ -222,6 +217,12 @@ fun MonthlyComparisonScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(32.dp)
                     )
+                }
+
+                // 하단 광고 (아이템 개수와 무관하게 항상 표시)
+                if (hasNativeAd && nativeAdContent != null) {
+                    nativeAdContent()
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
