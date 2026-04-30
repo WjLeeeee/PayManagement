@@ -13,11 +13,13 @@ import com.google.android.gms.ads.nativead.NativeAdOptions
  * 네이티브 광고 관리자
  * 거래 내역 화면의 네이티브 광고 로드 및 관리
  */
-class NativeAdManager(private val context: Context) {
+class NativeAdManager(
+    private val context: Context,
+    private val adUnitId: String = "ca-app-pub-9195598687879551/3762445094"
+) {
 
     companion object {
         private const val TAG = "NativeAdManager"
-        private const val AD_UNIT_ID = "ca-app-pub-9195598687879551/3762445094"
     }
 
     private var currentNativeAd: NativeAd? = null
@@ -36,7 +38,7 @@ class NativeAdManager(private val context: Context) {
         currentNativeAd?.destroy()
         currentNativeAd = null
 
-        val adLoader = AdLoader.Builder(context, AD_UNIT_ID)
+        val adLoader = AdLoader.Builder(context, adUnitId)
             .forNativeAd { ad ->
                 Log.d(TAG, "네이티브 광고 로드 성공")
 

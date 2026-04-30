@@ -102,6 +102,7 @@ fun CalendarScreen(
     onAppExit: () -> Unit = {},
     nativeAdContent: @Composable (() -> Unit)? = null,
     hasNativeAd: Boolean = false,
+    exitDialogBannerContent: @Composable (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null
 ) {
@@ -384,7 +385,7 @@ fun CalendarScreen(
         var showButtons by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
-            if (hasNativeAd && !preferencesManager.isAdRemovalActive()) {
+            if ((exitDialogBannerContent != null || hasNativeAd) && !preferencesManager.isAdRemovalActive()) {
                 delay(2000)
             }
             showButtons = true
@@ -394,8 +395,12 @@ fun CalendarScreen(
             onDismissRequest = { showExitDialog = false },
             title = { Text(strings.exitConfirmMessage) },
             text = {
-                if (hasNativeAd && !preferencesManager.isAdRemovalActive()) {
-                    nativeAdContent?.invoke()
+                if (!preferencesManager.isAdRemovalActive()) {
+                    if (exitDialogBannerContent != null) {
+                        exitDialogBannerContent()
+                    } else if (hasNativeAd) {
+                        nativeAdContent?.invoke()
+                    }
                 }
             },
             confirmButton = {
