@@ -295,6 +295,24 @@ fun StatusBarOverlayScreen(
     val nativeAdManager = remember { com.woojin.paymanagement.android.ads.NativeAdManager(context) }
     val preferencesManagerForAd = remember { PreferencesManager(context = context) }
 
+    // 종료 다이얼로그 네이티브 광고 상태 관리
+    var exitDialogNativeAdState by remember { mutableStateOf<com.woojin.paymanagement.android.ads.NativeAdState>(com.woojin.paymanagement.android.ads.NativeAdState.Loading) }
+    val exitDialogNativeAdManager = remember {
+        com.woojin.paymanagement.android.ads.NativeAdManager(
+            context,
+            adUnitId = "ca-app-pub-9195598687879551/5464079274"
+        )
+    }
+
+    // 급여기간 비교 네이티브 광고 상태 관리
+    var comparisonNativeAdState by remember { mutableStateOf<com.woojin.paymanagement.android.ads.NativeAdState>(com.woojin.paymanagement.android.ads.NativeAdState.Loading) }
+    val comparisonNativeAdManager = remember {
+        com.woojin.paymanagement.android.ads.NativeAdManager(
+            context,
+            adUnitId = "ca-app-pub-9195598687879551/6825037066"
+        )
+    }
+
     // 광고 미리 로딩 (광고 제거가 활성화되지 않았을 때만)
     LaunchedEffect(Unit) {
         if (!preferencesManagerForAd.isAdRemovalActive()) {
@@ -306,9 +324,27 @@ fun StatusBarOverlayScreen(
                     nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
                 }
             )
+            exitDialogNativeAdManager.loadAd(
+                onAdLoaded = { ad ->
+                    exitDialogNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Success(ad)
+                },
+                onAdFailed = {
+                    exitDialogNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+                }
+            )
+            comparisonNativeAdManager.loadAd(
+                onAdLoaded = { ad ->
+                    comparisonNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Success(ad)
+                },
+                onAdFailed = {
+                    comparisonNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+                }
+            )
         } else {
             // 광고 제거가 활성화되어 있으면 Failed 상태로 설정 (광고 없이 거래내역만 표시)
             nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+            exitDialogNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+            comparisonNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
         }
     }
 
@@ -316,6 +352,8 @@ fun StatusBarOverlayScreen(
     DisposableEffect(Unit) {
         onDispose {
             nativeAdManager.destroy()
+            exitDialogNativeAdManager.destroy()
+            comparisonNativeAdManager.destroy()
         }
     }
 
@@ -462,6 +500,18 @@ fun StatusBarOverlayScreen(
                         }
                     },
                     hasNativeAd = nativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success,
+                    exitDialogBannerContent = if (exitDialogNativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
+                        {
+                            val ad = (exitDialogNativeAdState as com.woojin.paymanagement.android.ads.NativeAdState.Success).ad
+                            com.woojin.paymanagement.android.ads.NativeAdItem(nativeAd = ad)
+                        }
+                    } else null,
+                    comparisonNativeAdContent = if (comparisonNativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
+                        {
+                            val ad = (comparisonNativeAdState as com.woojin.paymanagement.android.ads.NativeAdState.Success).ad
+                            com.woojin.paymanagement.android.ads.NativeAdItem(nativeAd = ad)
+                        }
+                    } else null,
                     onRequestPostNotificationPermission = { callback ->
                         // 콜백 저장
                         permissionResultCallback = callback

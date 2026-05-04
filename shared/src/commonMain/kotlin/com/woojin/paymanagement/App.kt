@@ -123,6 +123,8 @@ fun App(
     onContactSupport: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
     hasNativeAd: Boolean = false,
+    exitDialogBannerContent: @Composable (() -> Unit)? = null,
+    comparisonNativeAdContent: @Composable (() -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null,
     onRequestReview: () -> Unit = {}
 ) {
@@ -175,6 +177,8 @@ fun App(
                 },
                 nativeAdContent = nativeAdContent,
                 hasNativeAd = hasNativeAd,
+                exitDialogBannerContent = exitDialogBannerContent,
+                comparisonNativeAdContent = comparisonNativeAdContent,
                 permissionGuideImage = permissionGuideImage
             )
             }
@@ -242,6 +246,8 @@ fun PayManagementApp(
     onLanguageChanged: ((String) -> Unit)? = null,
     nativeAdContent: @Composable () -> Unit = {},
     hasNativeAd: Boolean = false,
+    exitDialogBannerContent: @Composable (() -> Unit)? = null,
+    comparisonNativeAdContent: @Composable (() -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null
 ) {
     // DI로 의존성 주입받기
@@ -1775,6 +1781,7 @@ fun PayManagementApp(
                 notificationPermissionChecker = notificationPermissionChecker,
                 nativeAdContent = nativeAdContent,
                 hasNativeAd = hasNativeAd,
+                exitDialogBannerContent = exitDialogBannerContent,
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 permissionGuideImage = permissionGuideImage,
                 onOpenDrawer = {
@@ -2149,8 +2156,8 @@ fun PayManagementApp(
                     navigateBack()
                 },
                 showPreviousPeriodComparison = shouldShowPreviousPeriodComparison,
-                nativeAdContent = nativeAdContent,
-                hasNativeAd = hasNativeAd
+                nativeAdContent = comparisonNativeAdContent,
+                hasNativeAd = comparisonNativeAdContent != null
             )
         }
 
