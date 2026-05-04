@@ -140,6 +140,11 @@ actual class BillingClient(
                 return@suspendCancellableCoroutine
             }
 
+            if (billingClient?.isReady != true) {
+                continuation.resume(BillingResult.Error("결제 서비스에 연결되지 않았습니다. 잠시 후 다시 시도해주세요."))
+                return@suspendCancellableCoroutine
+            }
+
             val productDetails = productDetailsCache[productId.productId]
             if (productDetails == null) {
                 continuation.resume(BillingResult.Error("상품 정보를 찾을 수 없습니다"))
@@ -192,6 +197,11 @@ actual class BillingClient(
             val activity = activityProvider()
             if (activity == null) {
                 continuation.resume(BillingResult.Error("Activity not available"))
+                return@suspendCancellableCoroutine
+            }
+
+            if (billingClient?.isReady != true) {
+                continuation.resume(BillingResult.Error("결제 서비스에 연결되지 않았습니다. 잠시 후 다시 시도해주세요."))
                 return@suspendCancellableCoroutine
             }
 
