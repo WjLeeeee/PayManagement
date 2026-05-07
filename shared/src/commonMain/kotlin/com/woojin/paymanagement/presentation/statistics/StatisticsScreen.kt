@@ -77,6 +77,7 @@ fun StatisticsScreen(
 
     // 통계 데이터를 위한 별도 상태
     var statisticsData by remember { mutableStateOf(StatisticsUiState()) }
+    var selectedTab by remember { mutableStateOf(StatTab.INCOME) }
 
     LaunchedEffect(initialPayPeriod, availableBalanceCards, availableGiftCards) {
         viewModel.initializeStatistics(initialPayPeriod, availableBalanceCards, availableGiftCards)
@@ -159,8 +160,9 @@ fun StatisticsScreen(
         val lossCutAmount = lossCutTransactions.sumOf { it.displayAmount }
         val profitAmount = profitTransactions.sumOf { it.displayAmount }
         val dividendAmount = dividendTransactions.sumOf { it.displayAmount }
+        val hasInvestmentData = investmentAmount > 0 || lossCutAmount > 0 || profitAmount > 0 || dividendAmount > 0
 
-        if (investmentAmount > 0 || lossCutAmount > 0 || profitAmount > 0 || dividendAmount > 0) {
+        if (hasInvestmentData) {
             InvestmentSummaryCard(
                 investmentAmount = investmentAmount,
                 lossCutAmount = lossCutAmount,
@@ -171,69 +173,150 @@ fun StatisticsScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // Income Chart
-        statisticsData.chartData?.let { chartData ->
-            if (chartData.incomeItems.isNotEmpty()) {
-                ChartSection(
-                    title = strings.incomeAnalysis,
-                    items = chartData.incomeItems,
-                    total = chartData.totalIncome,
-                    availableCategories = uiState.availableCategories,
-                    transactions = statisticsData.transactions,
-                    transactionType = TransactionType.INCOME
-                )
+        // 카테고리별 탭 분기
+        val hasIncome = statisticsData.chartData?.incomeItems?.isNotEmpty() == true
+        val hasExpense = statisticsData.chartData?.expenseItems?.isNotEmpty() == true
+        val hasSaving = statisticsData.chartData?.savingItems?.isNotEmpty() == true
 
-                Spacer(modifier = Modifier.height(32.dp))
+        val availableTabs = listOfNotNull(
+            StatTab.INCOME.takeIf { hasIncome },
+            StatTab.EXPENSE.takeIf { hasExpense },
+            StatTab.SAVING.takeIf { hasSaving },
+            StatTab.INVESTMENT.takeIf { hasInvestmentData }
+        )
+        val showTabs = availableTabs.size >= 2
+
+        LaunchedEffect(hasIncome, hasExpense, hasSaving, hasInvestmentData) {
+            if (selectedTab !in availableTabs && availableTabs.isNotEmpty()) {
+                selectedTab = availableTabs.first()
             }
         }
 
-        // Expense Chart
-        statisticsData.chartData?.let { chartData ->
-            if (chartData.expenseItems.isNotEmpty()) {
-                ChartSection(
-                    title = strings.expenseAnalysis,
-                    items = chartData.expenseItems,
-                    total = chartData.totalExpense,
-                    availableCategories = uiState.availableCategories,
-                    transactions = statisticsData.transactions,
-                    transactionType = TransactionType.EXPENSE
-                )
+        if (showTabs) {
+            StatTabBar(
+                tabs = availableTabs,
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
 
-                Spacer(modifier = Modifier.height(32.dp))
-            }
-        }
+            Spacer(modifier = Modifier.height(24.dp))
 
-        // Investment Activity Chart (moved after Expense Chart)
-        if (investmentAmount > 0 || lossCutAmount > 0 || profitAmount > 0 || dividendAmount > 0) {
-            statisticsData.chartData?.let { chartData ->
-                if (chartData.investmentItems.isNotEmpty()) {
-                    ChartSection(
-                        title = strings.investmentActivityAnalysis,
-                        items = chartData.investmentItems,
-                        total = chartData.totalInvestment,
-                        availableCategories = uiState.availableCategories,
-                        transactions = statisticsData.transactions,
-                        transactionType = TransactionType.INCOME, // 투자는 수입/지출 혼합 (더미값)
-                        groupSmallItems = false, // 투자 활동은 기타로 묶지 않고 모두 표시
-                        filterByType = false // 투자 활동은 타입 필터링 하지 않음 (수입/지출 모두 포함)
-                    )
+            when (selectedTab) {
+                StatTab.INCOME -> statisticsData.chartData?.let { chartData ->
+                    if (chartData.incomeItems.isNotEmpty()) {
+                        ChartSection(
+                            title = strings.incomeAnalysis,
+                            items = chartData.incomeItems,
+                            total = chartData.totalIncome,
+                            availableCategories = uiState.availableCategories,
+                            transactions = statisticsData.transactions,
+                            transactionType = TransactionType.INCOME
+                        )
+                    }
+                }
+                StatTab.EXPENSE -> statisticsData.chartData?.let { chartData ->
+                    if (chartData.expenseItems.isNotEmpty()) {
+                        ChartSection(
+                            title = strings.expenseAnalysis,
+                            items = chartData.expenseItems,
+                            total = chartData.totalExpense,
+                            availableCategories = uiState.availableCategories,
+                            transactions = statisticsData.transactions,
+                            transactionType = TransactionType.EXPENSE
+                        )
+                    }
+                }
+                StatTab.SAVING -> statisticsData.chartData?.let { chartData ->
+                    if (chartData.savingItems.isNotEmpty()) {
+                        ChartSection(
+                            title = strings.savingActivitySummary,
+                            items = chartData.savingItems,
+                            total = chartData.totalSaving,
+                            availableCategories = uiState.availableCategories,
+                            transactions = statisticsData.transactions,
+                            transactionType = TransactionType.SAVING,
+                            groupSmallItems = false,
+                            filterByType = true
+                        )
+                    }
+                }
+                StatTab.INVESTMENT -> statisticsData.chartData?.let { chartData ->
+                    if (chartData.investmentItems.isNotEmpty()) {
+                        ChartSection(
+                            title = strings.investmentActivityAnalysis,
+                            items = chartData.investmentItems,
+                            total = chartData.totalInvestment,
+                            availableCategories = uiState.availableCategories,
+                            transactions = statisticsData.transactions,
+                            transactionType = TransactionType.INCOME,
+                            groupSmallItems = false,
+                            filterByType = false
+                        )
+                    }
                 }
             }
-        }
+        } else {
+            // 1개 이하 카테고리: 기존 방식대로 모두 표시
+            statisticsData.chartData?.let { chartData ->
+                if (chartData.incomeItems.isNotEmpty()) {
+                    ChartSection(
+                        title = strings.incomeAnalysis,
+                        items = chartData.incomeItems,
+                        total = chartData.totalIncome,
+                        availableCategories = uiState.availableCategories,
+                        transactions = statisticsData.transactions,
+                        transactionType = TransactionType.INCOME
+                    )
 
-        // Saving Activity Chart
-        statisticsData.chartData?.let { chartData ->
-            if (chartData.savingItems.isNotEmpty()) {
-                ChartSection(
-                    title = strings.savingActivitySummary,
-                    items = chartData.savingItems,
-                    total = chartData.totalSaving,
-                    availableCategories = uiState.availableCategories,
-                    transactions = statisticsData.transactions,
-                    transactionType = TransactionType.SAVING,
-                    groupSmallItems = false,
-                    filterByType = true
-                )
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+            }
+
+            statisticsData.chartData?.let { chartData ->
+                if (chartData.expenseItems.isNotEmpty()) {
+                    ChartSection(
+                        title = strings.expenseAnalysis,
+                        items = chartData.expenseItems,
+                        total = chartData.totalExpense,
+                        availableCategories = uiState.availableCategories,
+                        transactions = statisticsData.transactions,
+                        transactionType = TransactionType.EXPENSE
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+            }
+
+            if (hasInvestmentData) {
+                statisticsData.chartData?.let { chartData ->
+                    if (chartData.investmentItems.isNotEmpty()) {
+                        ChartSection(
+                            title = strings.investmentActivityAnalysis,
+                            items = chartData.investmentItems,
+                            total = chartData.totalInvestment,
+                            availableCategories = uiState.availableCategories,
+                            transactions = statisticsData.transactions,
+                            transactionType = TransactionType.INCOME,
+                            groupSmallItems = false,
+                            filterByType = false
+                        )
+                    }
+                }
+            }
+
+            statisticsData.chartData?.let { chartData ->
+                if (chartData.savingItems.isNotEmpty()) {
+                    ChartSection(
+                        title = strings.savingActivitySummary,
+                        items = chartData.savingItems,
+                        total = chartData.totalSaving,
+                        availableCategories = uiState.availableCategories,
+                        transactions = statisticsData.transactions,
+                        transactionType = TransactionType.SAVING,
+                        groupSmallItems = false,
+                        filterByType = true
+                    )
+                }
             }
         }
 
@@ -1439,6 +1522,52 @@ private fun GiftCardSummaryCard(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+private enum class StatTab { INCOME, EXPENSE, SAVING, INVESTMENT }
+
+@Composable
+private fun StatTabBar(
+    tabs: List<StatTab>,
+    selectedTab: StatTab,
+    onTabSelected: (StatTab) -> Unit
+) {
+    val strings = LocalStrings.current
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        tabs.forEach { tab ->
+            val isSelected = tab == selectedTab
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    .clickable { onTabSelected(tab) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = when (tab) {
+                        StatTab.INCOME -> strings.income
+                        StatTab.EXPENSE -> strings.expense
+                        StatTab.SAVING -> strings.saving
+                        StatTab.INVESTMENT -> strings.investment
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
