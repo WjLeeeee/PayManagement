@@ -636,6 +636,8 @@ object KoreanStrings : AppStrings {
     override val giftCardNameHint = "상품권 이름 (예: 신세계 상품권)"
     override val selectBalanceCardToCharge = "충전할 잔액권 선택"
     override val selectBalanceCardLabel = "잔액권 선택"
+    override val purchaseAmountLabel = "실제 구매금액 (선택)"
+    override val purchaseAmountHint = "할인 구매 시 실제 지불한 금액"
     override val selectGiftCardLabel = "상품권 선택"
     override val dutchPaySettlement = "더치페이/정산"
     override val settlementAmountLabel = "정산받을 금액"

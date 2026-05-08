@@ -627,6 +627,8 @@ interface AppStrings {
     val giftCardNameHint: String
     val selectBalanceCardToCharge: String
     val selectBalanceCardLabel: String
+    val purchaseAmountLabel: String
+    val purchaseAmountHint: String
     val selectGiftCardLabel: String
     val dutchPaySettlement: String
     val settlementAmountLabel: String

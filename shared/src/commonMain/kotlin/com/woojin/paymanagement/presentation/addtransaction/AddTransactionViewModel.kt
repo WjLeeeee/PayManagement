@@ -389,6 +389,21 @@ class AddTransactionViewModel(
         validateInput()
     }
 
+    fun updatePurchaseAmount(newValue: String) {
+        val digitsOnly = removeCommas(newValue)
+
+        if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
+            val formattedAmount = if (digitsOnly.isNotEmpty()) {
+                val number = digitsOnly.toLongOrNull() ?: 0L
+                formatWithCommas(number)
+            } else {
+                ""
+            }
+
+            uiState = uiState.copy(purchaseAmount = formattedAmount)
+        }
+    }
+
     fun updateCategory(category: String) {
         uiState = uiState.copy(category = category)
         validateInput()
@@ -526,6 +541,50 @@ class AddTransactionViewModel(
                     )
 
                     result.transactions
+                }
+
+                // 잔액권 할인 구매 (충전 수입 + 구매 지출 동시 생성)
+                !uiState.isEditMode &&
+                uiState.selectedType == TransactionType.INCOME &&
+                uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
+                uiState.purchaseAmount.isNotBlank() -> {
+                    val chargeAmount = parseAmountToDouble(uiState.amount.text)
+                    val purchaseAmountValue = parseAmountToDouble(uiState.purchaseAmount)
+
+                    val newCardId = generateUniqueId()
+                    val cardId = if (uiState.isChargingExistingBalanceCard)
+                        uiState.selectedBalanceCardForCharge?.id
+                    else
+                        newCardId
+                    val cardName = if (uiState.isChargingExistingBalanceCard)
+                        uiState.selectedBalanceCardForCharge?.name ?: ""
+                    else
+                        uiState.cardName
+
+                    val chargeTransaction = Transaction(
+                        id = generateUniqueId(),
+                        amount = chargeAmount,
+                        type = TransactionType.INCOME,
+                        category = uiState.category,
+                        memo = uiState.memo,
+                        date = currentDate,
+                        incomeType = IncomeType.BALANCE_CARD,
+                        balanceCardId = cardId,
+                        cardName = cardName
+                    )
+
+                    val purchaseTransaction = Transaction(
+                        id = generateUniqueId(),
+                        amount = purchaseAmountValue,
+                        type = TransactionType.EXPENSE,
+                        category = "기타지출",
+                        merchant = cardName.ifBlank { "잔액권 구매" },
+                        memo = "잔액권 구매",
+                        date = currentDate,
+                        paymentMethod = PaymentMethod.CASH
+                    )
+
+                    listOf(chargeTransaction, purchaseTransaction)
                 }
 
                 // 일반 거래 처리

@@ -110,7 +110,9 @@ fun AddTransactionScreen(
                 onChargingModeChanged = viewModel::updateChargingMode,
                 availableBalanceCards = uiState.availableBalanceCards,
                 selectedBalanceCardForCharge = uiState.selectedBalanceCardForCharge,
-                onBalanceCardForChargeSelected = viewModel::updateSelectedBalanceCardForCharge
+                onBalanceCardForChargeSelected = viewModel::updateSelectedBalanceCardForCharge,
+                purchaseAmount = uiState.purchaseAmount,
+                onPurchaseAmountChanged = viewModel::updatePurchaseAmount
             )
         }
 

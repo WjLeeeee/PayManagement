@@ -38,6 +38,7 @@ data class AddTransactionUiState(
     // 잔액권 충전 관련 (수입 시)
     val isChargingExistingBalanceCard: Boolean = false,
     val selectedBalanceCardForCharge: BalanceCard? = null,
+    val purchaseAmount: String = "",
 
     // 편집 모드
     val isEditMode: Boolean = false,
