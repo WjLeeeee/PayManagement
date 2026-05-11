@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
@@ -131,8 +132,8 @@ fun IncomeTypeSelector(
     availableBalanceCards: List<BalanceCard>,
     selectedBalanceCardForCharge: BalanceCard?,
     onBalanceCardForChargeSelected: (BalanceCard?) -> Unit,
-    purchaseAmount: String,
-    onPurchaseAmountChanged: (String) -> Unit,
+    purchaseAmount: TextFieldValue,
+    onPurchaseAmountChanged: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
@@ -636,8 +637,8 @@ private fun GiftCardUsageInfo(
 fun SettlementSection(
     isSettlement: Boolean,
     onSettlementChange: (Boolean) -> Unit,
-    settlementAmount: String,
-    onSettlementAmountChange: (String) -> Unit,
+    settlementAmount: TextFieldValue,
+    onSettlementAmountChange: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current

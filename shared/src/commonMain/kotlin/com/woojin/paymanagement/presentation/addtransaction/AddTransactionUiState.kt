@@ -26,7 +26,7 @@ data class AddTransactionUiState(
 
     // 더치페이 관련
     val isSettlement: Boolean = false,
-    val settlementAmount: String = "",
+    val settlementAmount: TextFieldValue = TextFieldValue(""),
 
     // 카드 목록
     val availableBalanceCards: List<BalanceCard> = emptyList(),
@@ -38,7 +38,7 @@ data class AddTransactionUiState(
     // 잔액권 충전 관련 (수입 시)
     val isChargingExistingBalanceCard: Boolean = false,
     val selectedBalanceCardForCharge: BalanceCard? = null,
-    val purchaseAmount: String = "",
+    val purchaseAmount: TextFieldValue = TextFieldValue(""),
 
     // 편집 모드
     val isEditMode: Boolean = false,

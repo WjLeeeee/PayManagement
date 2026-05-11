@@ -156,7 +156,10 @@ class AddTransactionViewModel(
                     memo = editTransaction.memo,
                     date = initialDate,
                     isSettlement = editTransaction.isSettlement,
-                    settlementAmount = editTransaction.settlementAmount?.toLong()?.toString() ?: "",
+                    settlementAmount = editTransaction.settlementAmount?.toLong()?.let {
+                        val text = formatWithCommas(it)
+                        TextFieldValue(text, selection = TextRange(text.length))
+                    } ?: TextFieldValue(""),
                     availableBalanceCards = availableBalanceCards,
                     availableGiftCards = availableGiftCards,
                     isEditMode = true,
@@ -389,8 +392,8 @@ class AddTransactionViewModel(
         validateInput()
     }
 
-    fun updatePurchaseAmount(newValue: String) {
-        val digitsOnly = removeCommas(newValue)
+    fun updatePurchaseAmount(newValue: TextFieldValue) {
+        val digitsOnly = removeCommas(newValue.text)
 
         if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
             val formattedAmount = if (digitsOnly.isNotEmpty()) {
@@ -400,7 +403,12 @@ class AddTransactionViewModel(
                 ""
             }
 
-            uiState = uiState.copy(purchaseAmount = formattedAmount)
+            uiState = uiState.copy(
+                purchaseAmount = TextFieldValue(
+                    text = formattedAmount,
+                    selection = TextRange(formattedAmount.length)
+                )
+            )
         }
     }
 
@@ -427,14 +435,14 @@ class AddTransactionViewModel(
         } else {
             uiState.copy(
                 isSettlement = false,
-                settlementAmount = ""
+                settlementAmount = TextFieldValue("")
             )
         }
         validateInput()
     }
 
-    fun updateSettlementAmount(newValue: String) {
-        val digitsOnly = removeCommas(newValue)
+    fun updateSettlementAmount(newValue: TextFieldValue) {
+        val digitsOnly = removeCommas(newValue.text)
 
         if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
             val formattedAmount = if (digitsOnly.isNotEmpty()) {
@@ -444,7 +452,12 @@ class AddTransactionViewModel(
                 ""
             }
 
-            uiState = uiState.copy(settlementAmount = formattedAmount)
+            uiState = uiState.copy(
+                settlementAmount = TextFieldValue(
+                    text = formattedAmount,
+                    selection = TextRange(formattedAmount.length)
+                )
+            )
         }
     }
 
@@ -547,9 +560,9 @@ class AddTransactionViewModel(
                 !uiState.isEditMode &&
                 uiState.selectedType == TransactionType.INCOME &&
                 uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
-                uiState.purchaseAmount.isNotBlank() -> {
+                uiState.purchaseAmount.text.isNotBlank() -> {
                     val chargeAmount = parseAmountToDouble(uiState.amount.text)
-                    val purchaseAmountValue = parseAmountToDouble(uiState.purchaseAmount)
+                    val purchaseAmountValue = parseAmountToDouble(uiState.purchaseAmount.text)
 
                     val newCardId = generateUniqueId()
                     val cardId = if (uiState.isChargingExistingBalanceCard)
@@ -645,7 +658,7 @@ class AddTransactionViewModel(
                             uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.name
                             else -> null
                         },
-                        settlementAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount) else null,
+                        settlementAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount.text) else null,
                         isSettlement = uiState.isSettlement
                     )
 
