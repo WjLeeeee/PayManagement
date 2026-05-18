@@ -1,5 +1,6 @@
 package com.woojin.paymanagement.presentation.datedetail
 
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,7 +25,9 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionDialog
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.BackHandler
+import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
 
 @Composable
@@ -43,6 +47,7 @@ fun DateDetailScreen(
 
     val uiState = viewModel.uiState
     val scope = rememberCoroutineScope()
+    val lazyListState = rememberLazyListState()
 
     // ViewModel 초기화
     LaunchedEffect(selectedDate) {
@@ -58,6 +63,32 @@ fun DateDetailScreen(
     LaunchedEffect(dayTransactions) {
         if (selectedDate != null) {
             viewModel.getTransactionsFlow(selectedDate).collect { /* Flow 수집 */ }
+        }
+    }
+
+    // 확장 애니메이션과 동시에 프레임마다 실시간으로 스크롤 추적
+    LaunchedEffect(uiState.expandedTransactionId) {
+        val expandedId = uiState.expandedTransactionId ?: return@LaunchedEffect
+        val transactionIndex = dayTransactions.indexOfFirst { it.id == expandedId }
+        if (transactionIndex < 0) return@LaunchedEffect
+        val lazyIndex = if (hasNativeAd) {
+            val adInsertPosition = minOf(3, dayTransactions.size)
+            if (transactionIndex >= adInsertPosition) transactionIndex + 1 else transactionIndex
+        } else {
+            transactionIndex
+        }
+        withTimeoutOrNull(600) {
+            snapshotFlow { lazyListState.layoutInfo }
+                .collect { layoutInfo ->
+                    val itemInfo = layoutInfo.visibleItemsInfo.find { it.index == lazyIndex }
+                    if (itemInfo != null) {
+                        val itemBottom = itemInfo.offset + itemInfo.size
+                        val viewportEnd = layoutInfo.viewportEndOffset
+                        if (itemBottom > viewportEnd) {
+                            lazyListState.scrollBy((itemBottom - viewportEnd).toFloat())
+                        }
+                    }
+                }
         }
     }
 
@@ -90,6 +121,7 @@ fun DateDetailScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn(
+            state = lazyListState,
             verticalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp),
             modifier = Modifier.weight(1f)

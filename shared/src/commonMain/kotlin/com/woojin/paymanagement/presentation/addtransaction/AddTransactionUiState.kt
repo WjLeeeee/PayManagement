@@ -21,12 +21,13 @@ data class AddTransactionUiState(
     val cardName: String = "",
     val category: String = "",
     val merchant: String = "", // 사용처 (지출일 때만 필수)
+    val merchantSuggestions: List<String> = emptyList(),
     val memo: String = "",
     val date: LocalDate? = null,
 
     // 더치페이 관련
     val isSettlement: Boolean = false,
-    val settlementAmount: String = "",
+    val settlementAmount: TextFieldValue = TextFieldValue(""),
 
     // 카드 목록
     val availableBalanceCards: List<BalanceCard> = emptyList(),
@@ -38,6 +39,7 @@ data class AddTransactionUiState(
     // 잔액권 충전 관련 (수입 시)
     val isChargingExistingBalanceCard: Boolean = false,
     val selectedBalanceCardForCharge: BalanceCard? = null,
+    val purchaseAmount: TextFieldValue = TextFieldValue(""),
 
     // 편집 모드
     val isEditMode: Boolean = false,

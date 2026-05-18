@@ -160,6 +160,17 @@ GROUP BY category
 ORDER BY COUNT(*) DESC
 LIMIT 1;
 
+getSuggestedMerchantsByCategory:
+SELECT merchant, COUNT(*) AS usageCount
+FROM TransactionEntity
+WHERE merchant IS NOT NULL AND merchant != ''
+AND merchant LIKE '%' || ? || '%'
+AND category = ?
+AND type = 'EXPENSE'
+GROUP BY merchant
+ORDER BY usageCount DESC
+LIMIT 3;
+
 searchTransactions:
 SELECT * FROM TransactionEntity
 WHERE merchant LIKE '%' || ? || '%' OR memo LIKE '%' || ? || '%'

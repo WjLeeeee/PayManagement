@@ -156,7 +156,10 @@ class AddTransactionViewModel(
                     memo = editTransaction.memo,
                     date = initialDate,
                     isSettlement = editTransaction.isSettlement,
-                    settlementAmount = editTransaction.settlementAmount?.toLong()?.toString() ?: "",
+                    settlementAmount = editTransaction.settlementAmount?.toLong()?.let {
+                        val text = formatWithCommas(it)
+                        TextFieldValue(text, selection = TextRange(text.length))
+                    } ?: TextFieldValue(""),
                     availableBalanceCards = availableBalanceCards,
                     availableGiftCards = availableGiftCards,
                     isEditMode = true,
@@ -389,6 +392,26 @@ class AddTransactionViewModel(
         validateInput()
     }
 
+    fun updatePurchaseAmount(newValue: TextFieldValue) {
+        val digitsOnly = removeCommas(newValue.text)
+
+        if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
+            val formattedAmount = if (digitsOnly.isNotEmpty()) {
+                val number = digitsOnly.toLongOrNull() ?: 0L
+                formatWithCommas(number)
+            } else {
+                ""
+            }
+
+            uiState = uiState.copy(
+                purchaseAmount = TextFieldValue(
+                    text = formattedAmount,
+                    selection = TextRange(formattedAmount.length)
+                )
+            )
+        }
+    }
+
     fun updateCategory(category: String) {
         uiState = uiState.copy(category = category)
         validateInput()
@@ -396,6 +419,19 @@ class AddTransactionViewModel(
 
     fun updateMerchant(merchant: String) {
         uiState = uiState.copy(merchant = merchant)
+        validateInput()
+        if (merchant.isNotEmpty() && uiState.category.isNotBlank()) {
+            viewModelScope.launch {
+                val suggestions = databaseHelper.getSuggestedMerchants(merchant, uiState.category)
+                uiState = uiState.copy(merchantSuggestions = suggestions)
+            }
+        } else {
+            uiState = uiState.copy(merchantSuggestions = emptyList())
+        }
+    }
+
+    fun selectMerchantSuggestion(merchant: String) {
+        uiState = uiState.copy(merchant = merchant, merchantSuggestions = emptyList())
         validateInput()
     }
 
@@ -412,14 +448,14 @@ class AddTransactionViewModel(
         } else {
             uiState.copy(
                 isSettlement = false,
-                settlementAmount = ""
+                settlementAmount = TextFieldValue("")
             )
         }
         validateInput()
     }
 
-    fun updateSettlementAmount(newValue: String) {
-        val digitsOnly = removeCommas(newValue)
+    fun updateSettlementAmount(newValue: TextFieldValue) {
+        val digitsOnly = removeCommas(newValue.text)
 
         if (digitsOnly.isEmpty() || digitsOnly.matches(Regex("^\\d+$"))) {
             val formattedAmount = if (digitsOnly.isNotEmpty()) {
@@ -429,7 +465,12 @@ class AddTransactionViewModel(
                 ""
             }
 
-            uiState = uiState.copy(settlementAmount = formattedAmount)
+            uiState = uiState.copy(
+                settlementAmount = TextFieldValue(
+                    text = formattedAmount,
+                    selection = TextRange(formattedAmount.length)
+                )
+            )
         }
     }
 
@@ -528,6 +569,50 @@ class AddTransactionViewModel(
                     result.transactions
                 }
 
+                // 잔액권 할인 구매 (충전 수입 + 구매 지출 동시 생성)
+                !uiState.isEditMode &&
+                uiState.selectedType == TransactionType.INCOME &&
+                uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
+                uiState.purchaseAmount.text.isNotBlank() -> {
+                    val chargeAmount = parseAmountToDouble(uiState.amount.text)
+                    val purchaseAmountValue = parseAmountToDouble(uiState.purchaseAmount.text)
+
+                    val newCardId = generateUniqueId()
+                    val cardId = if (uiState.isChargingExistingBalanceCard)
+                        uiState.selectedBalanceCardForCharge?.id
+                    else
+                        newCardId
+                    val cardName = if (uiState.isChargingExistingBalanceCard)
+                        uiState.selectedBalanceCardForCharge?.name ?: ""
+                    else
+                        uiState.cardName
+
+                    val chargeTransaction = Transaction(
+                        id = generateUniqueId(),
+                        amount = chargeAmount,
+                        type = TransactionType.INCOME,
+                        category = uiState.category,
+                        memo = uiState.memo,
+                        date = currentDate,
+                        incomeType = IncomeType.BALANCE_CARD,
+                        balanceCardId = cardId,
+                        cardName = cardName
+                    )
+
+                    val purchaseTransaction = Transaction(
+                        id = generateUniqueId(),
+                        amount = purchaseAmountValue,
+                        type = TransactionType.EXPENSE,
+                        category = "기타지출",
+                        merchant = cardName.ifBlank { "잔액권 구매" },
+                        memo = "잔액권 구매",
+                        date = currentDate,
+                        paymentMethod = PaymentMethod.CASH
+                    )
+
+                    listOf(chargeTransaction, purchaseTransaction)
+                }
+
                 // 일반 거래 처리
                 else -> {
                     val transaction = Transaction(
@@ -586,7 +671,7 @@ class AddTransactionViewModel(
                             uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.name
                             else -> null
                         },
-                        settlementAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount) else null,
+                        settlementAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount.text) else null,
                         isSettlement = uiState.isSettlement
                     )
 

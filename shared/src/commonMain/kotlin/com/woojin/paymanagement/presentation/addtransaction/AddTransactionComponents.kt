@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
@@ -131,6 +132,8 @@ fun IncomeTypeSelector(
     availableBalanceCards: List<BalanceCard>,
     selectedBalanceCardForCharge: BalanceCard?,
     onBalanceCardForChargeSelected: (BalanceCard?) -> Unit,
+    purchaseAmount: TextFieldValue,
+    onPurchaseAmountChanged: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
@@ -269,6 +272,31 @@ fun IncomeTypeSelector(
                     label = strings.selectBalanceCardToCharge
                 )
             }
+
+            // 할인 구매 금액 입력 (선택)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = purchaseAmount,
+                onValueChange = onPurchaseAmountChanged,
+                label = {
+                    Text(
+                        text = strings.purchaseAmountLabel,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                placeholder = {
+                    Text(
+                        text = strings.purchaseAmountHint,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                )
+            )
         }
 
         // 상품권 선택 시 - 기존 로직 유지
@@ -609,8 +637,8 @@ private fun GiftCardUsageInfo(
 fun SettlementSection(
     isSettlement: Boolean,
     onSettlementChange: (Boolean) -> Unit,
-    settlementAmount: String,
-    onSettlementAmountChange: (String) -> Unit,
+    settlementAmount: TextFieldValue,
+    onSettlementAmountChange: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current

@@ -677,6 +677,8 @@ object EnglishStrings : AppStrings {
     override val giftCardNameHint = "Gift card name (e.g., Department store)"
     override val selectBalanceCardToCharge = "Select balance card to charge"
     override val selectBalanceCardLabel = "Select Balance Card"
+    override val purchaseAmountLabel = "Actual Purchase Amount (Optional)"
+    override val purchaseAmountHint = "Amount paid for discounted card"
     override val selectGiftCardLabel = "Select Gift Card"
     override val dutchPaySettlement = "Dutch Pay / Settlement"
     override val settlementAmountLabel = "Settlement Amount"

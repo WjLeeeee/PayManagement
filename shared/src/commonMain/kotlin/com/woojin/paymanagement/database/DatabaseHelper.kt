@@ -138,6 +138,16 @@ class DatabaseHelper(
         }
     }
 
+    suspend fun getSuggestedMerchants(query: String, category: String): List<String> {
+        return try {
+            queries.getSuggestedMerchantsByCategory(query, category)
+                .executeAsList()
+                .mapNotNull { it.merchant }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     // BalanceCard 관련 메서드들
     fun getAllBalanceCards(): Flow<List<BalanceCard>> {
         return queries.selectAllBalanceCards()
