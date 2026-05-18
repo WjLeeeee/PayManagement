@@ -420,6 +420,19 @@ class AddTransactionViewModel(
     fun updateMerchant(merchant: String) {
         uiState = uiState.copy(merchant = merchant)
         validateInput()
+        if (merchant.isNotEmpty() && uiState.category.isNotBlank()) {
+            viewModelScope.launch {
+                val suggestions = databaseHelper.getSuggestedMerchants(merchant, uiState.category)
+                uiState = uiState.copy(merchantSuggestions = suggestions)
+            }
+        } else {
+            uiState = uiState.copy(merchantSuggestions = emptyList())
+        }
+    }
+
+    fun selectMerchantSuggestion(merchant: String) {
+        uiState = uiState.copy(merchant = merchant, merchantSuggestions = emptyList())
+        validateInput()
     }
 
     fun updateMemo(memo: String) {

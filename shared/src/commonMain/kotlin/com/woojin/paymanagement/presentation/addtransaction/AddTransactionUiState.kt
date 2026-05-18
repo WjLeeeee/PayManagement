@@ -21,6 +21,7 @@ data class AddTransactionUiState(
     val cardName: String = "",
     val category: String = "",
     val merchant: String = "", // 사용처 (지출일 때만 필수)
+    val merchantSuggestions: List<String> = emptyList(),
     val memo: String = "",
     val date: LocalDate? = null,
 

@@ -1,14 +1,20 @@
 package com.woojin.paymanagement.presentation.addtransaction
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -22,6 +28,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +49,7 @@ import com.woojin.paymanagement.utils.formatWithCommas
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddTransactionScreen(
     transactions: List<Transaction>,
@@ -79,9 +87,10 @@ fun AddTransactionScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
-    ) {
+                .padding(16.dp)
+        ) {
         Text(
             text = if (uiState.isEditMode) strings.editTransaction else strings.addTransaction,
             style = MaterialTheme.typography.headlineMedium,
@@ -236,6 +245,12 @@ fun AddTransactionScreen(
 
         // Merchant Input (지출일 때만 표시)
         if (uiState.selectedType == TransactionType.EXPENSE) {
+            val suggestionRequester = remember { BringIntoViewRequester() }
+            LaunchedEffect(uiState.merchantSuggestions) {
+                if (uiState.merchantSuggestions.isNotEmpty()) {
+                    suggestionRequester.bringIntoView()
+                }
+            }
             OutlinedTextField(
                 value = uiState.merchant,
                 onValueChange = viewModel::updateMerchant,
@@ -243,6 +258,21 @@ fun AddTransactionScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
+            if (uiState.merchantSuggestions.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .bringIntoViewRequester(suggestionRequester),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    uiState.merchantSuggestions.forEach { suggestion ->
+                        SuggestionChip(
+                            onClick = { viewModel.selectMerchantSuggestion(suggestion) },
+                            label = { Text(suggestion) }
+                        )
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
         }
 
