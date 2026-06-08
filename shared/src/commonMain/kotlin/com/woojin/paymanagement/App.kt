@@ -123,6 +123,7 @@ fun App(
     onContactSupport: () -> Unit = {},
     nativeAdContent: @Composable () -> Unit = {},
     hasNativeAd: Boolean = false,
+    calendarNativeAdContent: @Composable (() -> Unit)? = null,
     exitDialogBannerContent: @Composable (() -> Unit)? = null,
     comparisonNativeAdContent: @Composable (() -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null,
@@ -177,6 +178,7 @@ fun App(
                 },
                 nativeAdContent = nativeAdContent,
                 hasNativeAd = hasNativeAd,
+                calendarNativeAdContent = calendarNativeAdContent,
                 exitDialogBannerContent = exitDialogBannerContent,
                 comparisonNativeAdContent = comparisonNativeAdContent,
                 permissionGuideImage = permissionGuideImage
@@ -246,6 +248,7 @@ fun PayManagementApp(
     onLanguageChanged: ((String) -> Unit)? = null,
     nativeAdContent: @Composable () -> Unit = {},
     hasNativeAd: Boolean = false,
+    calendarNativeAdContent: @Composable (() -> Unit)? = null,
     exitDialogBannerContent: @Composable (() -> Unit)? = null,
     comparisonNativeAdContent: @Composable (() -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null
@@ -1781,6 +1784,7 @@ fun PayManagementApp(
                 notificationPermissionChecker = notificationPermissionChecker,
                 nativeAdContent = nativeAdContent,
                 hasNativeAd = hasNativeAd,
+                calendarNativeAdContent = calendarNativeAdContent,
                 exitDialogBannerContent = exitDialogBannerContent,
                 onRequestPostNotificationPermission = onRequestPostNotificationPermission,
                 permissionGuideImage = permissionGuideImage,

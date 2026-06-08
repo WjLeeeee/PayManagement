@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
@@ -102,6 +104,7 @@ fun CalendarScreen(
     onAppExit: () -> Unit = {},
     nativeAdContent: @Composable (() -> Unit)? = null,
     hasNativeAd: Boolean = false,
+    calendarNativeAdContent: @Composable (() -> Unit)? = null,
     exitDialogBannerContent: @Composable (() -> Unit)? = null,
     onRequestPostNotificationPermission: ((onPermissionResult: (Boolean) -> Unit) -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null
@@ -193,9 +196,11 @@ fun CalendarScreen(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { page ->
+            val scrollState = rememberScrollState()
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .verticalScroll(scrollState)
                     .padding(16.dp)
             ) {
             // Drawer Menu Button & Year/Month Header
@@ -312,12 +317,17 @@ fun CalendarScreen(
                     },
                     tutorialViewModel = tutorialViewModel
                 )
+
+                // 캘린더 화면 네이티브 광고
+                if (calendarNativeAdContent != null && !preferencesManager.isAdRemovalActive()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    calendarNativeAdContent()
+                }
             } else {
                 // 로딩 상태 표시 - Shimmer Effect
                 CalendarScreenShimmer()
             }
 
-            Spacer(modifier = Modifier.weight(1f))
             }
         }
 
@@ -817,16 +827,20 @@ private fun CalendarGrid(
         Spacer(modifier = Modifier.height(8.dp))
 
         // Calendar Days
+        val emptyDaysAtStart = (payPeriod.startDate.dayOfWeek.ordinal + 1) % 7
+        val rowCount = (emptyDaysAtStart + allDates.size + 6) / 7
+        val gridHeight = (rowCount * 40 + (rowCount - 1) * 4).dp
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
             verticalArrangement = Arrangement.spacedBy(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
-//            modifier = Modifier.height(300.dp)
+            modifier = Modifier.height(gridHeight),
+            userScrollEnabled = false
         ) {
             // Empty cells for days before first date starts
             // kotlinx.datetime ordinal은 ISO 8601 기준 (월=0, ..., 일=6)
             // 헤더가 일~토(일=0, 월=1, ..., 토=6)이므로 +1 후 %7로 변환
-            val emptyDaysAtStart = (payPeriod.startDate.dayOfWeek.ordinal + 1) % 7
             items(emptyDaysAtStart) {
                 Box(modifier = Modifier.height(40.dp))
             }
@@ -1003,7 +1017,7 @@ private fun DailyTransactionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 0.dp, max = 170.dp)
+            .heightIn(min = 0.dp, max = 160.dp)
             .clickable { onClick(selectedDate) }
             .onGloballyPositioned { coordinates ->
                 val bounds = coordinates.boundsInWindow()

@@ -313,6 +313,15 @@ fun StatusBarOverlayScreen(
         )
     }
 
+    // 캘린더 화면 네이티브 광고 상태 관리
+    var calendarNativeAdState by remember { mutableStateOf<com.woojin.paymanagement.android.ads.NativeAdState>(com.woojin.paymanagement.android.ads.NativeAdState.Loading) }
+    val calendarNativeAdManager = remember {
+        com.woojin.paymanagement.android.ads.NativeAdManager(
+            context,
+            adUnitId = "ca-app-pub-9195598687879551/9721395194"
+        )
+    }
+
     // 광고 미리 로딩 (광고 제거가 활성화되지 않았을 때만)
     LaunchedEffect(Unit) {
         if (!preferencesManagerForAd.isAdRemovalActive()) {
@@ -340,11 +349,20 @@ fun StatusBarOverlayScreen(
                     comparisonNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
                 }
             )
+            calendarNativeAdManager.loadAd(
+                onAdLoaded = { ad ->
+                    calendarNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Success(ad)
+                },
+                onAdFailed = {
+                    calendarNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+                }
+            )
         } else {
             // 광고 제거가 활성화되어 있으면 Failed 상태로 설정 (광고 없이 거래내역만 표시)
             nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
             exitDialogNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
             comparisonNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+            calendarNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
         }
     }
 
@@ -354,6 +372,7 @@ fun StatusBarOverlayScreen(
             nativeAdManager.destroy()
             exitDialogNativeAdManager.destroy()
             comparisonNativeAdManager.destroy()
+            calendarNativeAdManager.destroy()
         }
     }
 
@@ -500,6 +519,12 @@ fun StatusBarOverlayScreen(
                         }
                     },
                     hasNativeAd = nativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success,
+                    calendarNativeAdContent = if (calendarNativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
+                        {
+                            val ad = (calendarNativeAdState as com.woojin.paymanagement.android.ads.NativeAdState.Success).ad
+                            com.woojin.paymanagement.android.ads.NativeAdItem(nativeAd = ad)
+                        }
+                    } else null,
                     exitDialogBannerContent = if (exitDialogNativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
                         {
                             val ad = (exitDialogNativeAdState as com.woojin.paymanagement.android.ads.NativeAdState.Success).ad
