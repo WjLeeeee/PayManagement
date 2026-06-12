@@ -1098,7 +1098,7 @@ private fun DailyTransactionCard(
                 if (dayTransactions.isNotEmpty()) {
                     // LazyColumn으로 스크롤 가능한 거래 목록 생성
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(dayTransactions) { transaction ->
