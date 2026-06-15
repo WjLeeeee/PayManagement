@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -227,15 +228,24 @@ fun CalendarScreen(
                         )
                     }
 
-                    IconButton(
-                        onClick = onSearchClick,
-                        modifier = Modifier.align(Alignment.CenterEnd)
+                    Row(
+                        modifier = Modifier.align(Alignment.CenterEnd),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = strings.search,
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                        // 공유 모드 토글 (공유방에 있을 때만 표시)
+                        if (uiState.isInSharedRoom) {
+                            SharedModeToggle(
+                                isSharedMode = uiState.isSharedMode,
+                                onClick = { viewModel.toggleSharedMode() }
+                            )
+                        }
+                        IconButton(onClick = onSearchClick) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = strings.search,
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             } else {
@@ -267,7 +277,10 @@ fun CalendarScreen(
 
                 // Pay Period Summary
                 PayPeriodSummaryCard(
-                    transactions = uiState.transactions,
+                    transactions = if (uiState.isSharedMode)
+                        uiState.sharedTransactions.map { it.transaction }
+                    else
+                        uiState.transactions,
                     payPeriod = uiState.currentPayPeriod,
                     isMoneyVisible = uiState.isMoneyVisible,
                     onToggleVisibility = { viewModel.toggleMoneyVisibility() },
@@ -280,7 +293,10 @@ fun CalendarScreen(
                 // Calendar Grid
                 CalendarGrid(
                     payPeriod = uiState.currentPayPeriod,
-                    transactions = uiState.transactions,
+                    transactions = if (uiState.isSharedMode)
+                        uiState.sharedTransactions.map { it.transaction }
+                    else
+                        uiState.transactions,
                     selectedDate = uiState.selectedDate,
                     holidays = uiState.holidays,
                     isMoveMode = uiState.isMoveMode,
@@ -299,7 +315,15 @@ fun CalendarScreen(
                 // Daily Transaction Display
                 DailyTransactionCard(
                     selectedDate = uiState.selectedDate,
-                    transactions = uiState.transactions,
+                    transactions = if (uiState.isSharedMode)
+                        uiState.sharedTransactions.map { it.transaction }
+                    else
+                        uiState.transactions,
+                    myTransactionIds = if (uiState.isSharedMode)
+                        uiState.sharedTransactions.filter { it.isMine }.map { it.transaction.id }.toSet()
+                    else
+                        null,
+                    isSharedMode = uiState.isSharedMode,
                     holidayNames = uiState.holidayNames,
                     isMoveMode = uiState.isMoveMode,
                     transactionToMove = uiState.transactionToMove,
@@ -375,6 +399,21 @@ fun CalendarScreen(
                 onComplete = tutorialViewModel::completeTutorial,
                 calendarGridBounds = tutorialViewModel.getTargetBounds("calendar_grid")
             )
+        }
+
+        // 공유 모드 연결 오류 배너
+        uiState.sharedError?.let { errorMsg ->
+            LaunchedEffect(errorMsg) {
+                kotlinx.coroutines.delay(3000)
+                viewModel.clearSharedError()
+            }
+            Snackbar(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 80.dp + navigationBarHeight)
+            ) {
+                Text(errorMsg)
+            }
         }
     }
 
@@ -1000,6 +1039,8 @@ private fun CalendarDay(
 private fun DailyTransactionCard(
     selectedDate: LocalDate?,
     transactions: List<Transaction>,
+    myTransactionIds: Set<String>? = null,
+    isSharedMode: Boolean = false,
     holidayNames: Map<LocalDate, String> = emptyMap(),
     isMoveMode: Boolean = false,
     transactionToMove: Transaction? = null,
@@ -1106,7 +1147,8 @@ private fun DailyTransactionCard(
                                 transaction = transaction,
                                 isSelected = isMoveMode && transaction.id == transactionToMove?.id,
                                 onLongClick = { onTransactionLongClick(transaction) },
-                                availableCategories = availableCategories
+                                availableCategories = availableCategories,
+                                showMineIndicator = isSharedMode && myTransactionIds != null && transaction.id in myTransactionIds
                             )
                         }
                     }
@@ -1134,7 +1176,8 @@ private fun TransactionItem(
     transaction: Transaction,
     isSelected: Boolean = false,
     onLongClick: () -> Unit = {},
-    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
+    showMineIndicator: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -1197,6 +1240,22 @@ private fun TransactionItem(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
+                    if (showMineIndicator) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                .padding(horizontal = 4.dp, vertical = 1.dp)
+                        ) {
+                            Text(
+                                text = "나",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
 
                     // 결제 수단 표시 (카테고리 옆에 괄호로)
                     val paymentMethodText = when (transaction.type) {
@@ -1411,5 +1470,37 @@ private fun YearMonthPickerDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SharedModeToggle(
+    isSharedMode: Boolean,
+    onClick: () -> Unit
+) {
+    val containerColor = if (isSharedMode)
+        MaterialTheme.colorScheme.primary
+    else
+        MaterialTheme.colorScheme.surfaceVariant
+
+    val contentColor = if (isSharedMode)
+        MaterialTheme.colorScheme.onPrimary
+    else
+        MaterialTheme.colorScheme.onSurfaceVariant
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(containerColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = if (isSharedMode) "공유" else "개인",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = contentColor
+        )
     }
 }

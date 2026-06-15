@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.domain.repository.SharedModeManager
 import com.woojin.paymanagement.utils.BackHandler
 import com.woojin.paymanagement.utils.Utils
 import kotlin.math.round
@@ -119,7 +120,8 @@ fun MonthlyComparisonScreen(
                 previousPeriod = uiState.previousMonth,
                 onPreviousPeriod = { viewModel.moveToPreviousPeriod() },
                 onNextPeriod = { viewModel.moveToNextPeriod() },
-                canNavigateNext = viewModel.canNavigateNext()
+                canNavigateNext = viewModel.canNavigateNext() && !SharedModeManager.isSharedMode,
+                canNavigatePrevious = !SharedModeManager.isSharedMode
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -237,7 +239,8 @@ private fun PeriodNavigationCard(
     previousPeriod: String,
     onPreviousPeriod: () -> Unit,
     onNextPeriod: () -> Unit,
-    canNavigateNext: Boolean
+    canNavigateNext: Boolean,
+    canNavigatePrevious: Boolean = true
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -265,8 +268,13 @@ private fun PeriodNavigationCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(onClick = onPreviousPeriod) {
-                    Text("◀", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
+                TextButton(onClick = onPreviousPeriod, enabled = canNavigatePrevious) {
+                    Text(
+                        "◀",
+                        fontSize = 24.sp,
+                        color = if (canNavigatePrevious) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
                 }
 
                 Column(

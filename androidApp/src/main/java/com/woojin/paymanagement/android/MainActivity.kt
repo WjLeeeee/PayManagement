@@ -481,6 +481,14 @@ fun StatusBarOverlayScreen(
                     }
                 }
 
+                val sharedRoomRepository = remember {
+                    com.woojin.paymanagement.android.shared.FirebaseSharedRoomRepository(
+                        auth = com.google.firebase.auth.FirebaseAuth.getInstance(),
+                        firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance(),
+                        preferencesManager = preferencesManager
+                    )
+                }
+
                 App(
                     modifier = Modifier
                         .weight(1f)
@@ -492,6 +500,7 @@ fun StatusBarOverlayScreen(
                     fileHandler = fileHandler,
                     billingClient = billingClient,
                     autoExecuteNotifier = autoExecuteNotifier,
+                    sharedRoomRepository = sharedRoomRepository,
                     interstitialAdManager = interstitialAdManager,
                     shouldNavigateToParsedTransactions = shouldNavigateToParsedTransactions,
                     shouldNavigateToRecurringTransactions = shouldNavigateToRecurringTransactions,

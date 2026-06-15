@@ -7,6 +7,7 @@ import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
+import com.woojin.paymanagement.domain.repository.SharedModeManager
 import com.woojin.paymanagement.domain.usecase.AnalyzePaymentMethodsUseCase
 import com.woojin.paymanagement.domain.usecase.CalculateChartDataUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodTransactionsUseCase
@@ -16,6 +17,7 @@ import com.woojin.paymanagement.utils.PayPeriodCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
 class StatisticsViewModel(
@@ -67,10 +69,25 @@ class StatisticsViewModel(
         availableBalanceCards: List<BalanceCard>,
         availableGiftCards: List<GiftCard>
     ): Flow<StatisticsUiState> {
-        val currentPayPeriod = uiState.currentPayPeriod ?: return kotlinx.coroutines.flow.flowOf(uiState)
+        val currentPayPeriod = uiState.currentPayPeriod ?: return flowOf(uiState)
+
+        // 공유 모드에서는 캐시된 공유 거래를 급여 기간으로 필터링
+        if (SharedModeManager.isSharedMode) {
+            val sharedTransactions = SharedModeManager.cachedSharedTransactions
+                .map { it.transaction }
+                .filter { it.date >= currentPayPeriod.startDate && it.date <= currentPayPeriod.endDate }
+            val chartData = calculateChartDataUseCase(sharedTransactions)
+            val paymentSummary = analyzePaymentMethodsUseCase(sharedTransactions, availableBalanceCards, availableGiftCards)
+            return flowOf(uiState.copy(
+                transactions = sharedTransactions,
+                chartData = chartData,
+                paymentSummary = paymentSummary,
+                isLoading = false
+            ))
+        }
 
         return getPayPeriodTransactionsUseCase(currentPayPeriod)
-            .combine(kotlinx.coroutines.flow.flowOf(availableBalanceCards)) { transactions, balanceCards ->
+            .combine(flowOf(availableBalanceCards)) { transactions, balanceCards ->
                 val chartData = calculateChartDataUseCase(transactions)
                 val paymentSummary = analyzePaymentMethodsUseCase(transactions, balanceCards, availableGiftCards)
 
@@ -84,6 +101,7 @@ class StatisticsViewModel(
     }
 
     fun moveToPreviousPeriod() {
+        if (SharedModeManager.isSharedMode) return
         val currentPeriod = uiState.currentPayPeriod ?: return
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()
@@ -95,6 +113,7 @@ class StatisticsViewModel(
     }
 
     fun moveToNextPeriod() {
+        if (SharedModeManager.isSharedMode) return
         val currentPeriod = uiState.currentPayPeriod ?: return
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()

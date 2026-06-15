@@ -11,6 +11,11 @@ import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.data.Category
 import kotlinx.datetime.LocalDate
 
+enum class SaveTarget {
+    PERSONAL_ONLY,
+    SHARED_ONLY,
+    BOTH
+}
 data class AddTransactionUiState(
     val amount: TextFieldValue = TextFieldValue(""),
     val selectedType: TransactionType = TransactionType.EXPENSE,
@@ -56,7 +61,11 @@ data class AddTransactionUiState(
     val selectedCustomCardName: String? = null,
 
     // 예산 초과 알림
-    val budgetExceededMessage: String? = null
+    val budgetExceededMessage: String? = null,
+
+    // 공유방 저장 대상 (공유방 참여 중일 때만 사용)
+    val isInSharedRoom: Boolean = false,
+    val saveTarget: SaveTarget = SaveTarget.BOTH
 )
 
 val AddTransactionUiState.categories: List<String>

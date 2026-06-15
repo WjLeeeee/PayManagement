@@ -14,6 +14,8 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.domain.repository.SharedModeManager
+import com.woojin.paymanagement.domain.repository.SharedRoomRepository
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
 import com.woojin.paymanagement.domain.usecase.GetAvailableGiftCardsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
@@ -45,7 +47,8 @@ class AddTransactionViewModel(
     private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase,
     private val getCategoriesUseCase: com.woojin.paymanagement.domain.usecase.GetCategoriesSortedByUsageUseCase,
     private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
-    private val databaseHelper: DatabaseHelper
+    private val databaseHelper: DatabaseHelper,
+    private val sharedRoomRepository: SharedRoomRepository? = null
 ) : ViewModel() {
     var uiState by mutableStateOf(AddTransactionUiState())
         private set
@@ -56,6 +59,14 @@ class AddTransactionViewModel(
     init {
         loadCategories()
         loadCustomPaymentMethods()
+        // 공유방 참여 여부 확인
+        if (SharedModeManager.sharedRoomId != null) {
+            uiState = uiState.copy(isInSharedRoom = true)
+        }
+    }
+
+    fun updateSaveTarget(target: SaveTarget) {
+        uiState = uiState.copy(saveTarget = target)
     }
 
     private fun loadCustomPaymentMethods() {
@@ -99,7 +110,8 @@ class AddTransactionViewModel(
         val currentSelectedCardName = uiState.selectedCustomCardName
         uiState = AddTransactionUiState(
             customPaymentMethods = currentCustomPaymentMethods,
-            selectedCustomCardName = currentSelectedCardName
+            selectedCustomCardName = currentSelectedCardName,
+            isInSharedRoom = SharedModeManager.sharedRoomId != null
         )
     }
 
@@ -142,6 +154,11 @@ class AddTransactionViewModel(
                     availableGiftCards.find { it.id == editTransaction.giftCardId }
                 } else null
 
+                // 공유만 저장된 거래인지 확인 (공유 캐시에 있고 로컬 transactions 목록에 없으면 공유만)
+                val isSharedOnly = SharedModeManager.isSharedMode &&
+                    SharedModeManager.cachedSharedTransactions.any { it.transaction.id == editTransaction.id } &&
+                    transactions.none { it.id == editTransaction.id }
+
                 uiState = uiState.copy(
                     amount = TextFieldValue(
                         text = if (initialAmount.isNotEmpty()) formatWithCommas(initialAmount.toLong()) else "",
@@ -164,6 +181,7 @@ class AddTransactionViewModel(
                     availableGiftCards = availableGiftCards,
                     isEditMode = true,
                     editTransaction = editTransaction,
+                    saveTarget = if (isSharedOnly) SaveTarget.SHARED_ONLY else SaveTarget.BOTH,
                     selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null,
                     selectedBalanceCard = preselectedBalanceCard,
                     selectedGiftCard = preselectedGiftCard
@@ -679,21 +697,39 @@ class AddTransactionViewModel(
                 }
             }
 
+            // 저장 대상 결정 (공유방 없으면 항상 개인만)
+            val roomId = SharedModeManager.sharedRoomId
+            val effectiveSaveTarget = if (roomId != null) uiState.saveTarget else SaveTarget.PERSONAL_ONLY
+
             // 저장 실행
             var budgetExceededResult: com.woojin.paymanagement.domain.usecase.BudgetExceededResult? = null
             if (uiState.isEditMode && uiState.editTransaction != null) {
-                // 편집 모드에서는 단일 거래만 업데이트
                 if (transactions.size == 1) {
-                    updateTransactionUseCase(transactions.first())
+                    // 개인 DB 업데이트 (공유만 모드가 아닐 때)
+                    if (effectiveSaveTarget != SaveTarget.SHARED_ONLY) {
+                        updateTransactionUseCase(transactions.first())
+                    }
+                    // Firestore 업데이트 (개인만 모드가 아닐 때)
+                    if (effectiveSaveTarget != SaveTarget.PERSONAL_ONLY && roomId != null && sharedRoomRepository != null) {
+                        runCatching { sharedRoomRepository?.updateTransaction(roomId, transactions.first()) }
+                    }
                 }
             } else {
-                // 새 거래 추가
-                if (transactions.size == 1) {
-                    budgetExceededResult = saveTransactionUseCase(transactions.first())
-                    println("AddTransactionViewModel: budgetExceededResult = $budgetExceededResult")
-                } else {
-                    budgetExceededResult = saveMultipleTransactionsUseCase(transactions)
-                    println("AddTransactionViewModel: budgetExceededResult (multiple) = $budgetExceededResult")
+                // 개인 DB 저장 (공유만 모드가 아닐 때)
+                if (effectiveSaveTarget != SaveTarget.SHARED_ONLY) {
+                    if (transactions.size == 1) {
+                        budgetExceededResult = saveTransactionUseCase(transactions.first())
+                        println("AddTransactionViewModel: budgetExceededResult = $budgetExceededResult")
+                    } else {
+                        budgetExceededResult = saveMultipleTransactionsUseCase(transactions)
+                        println("AddTransactionViewModel: budgetExceededResult (multiple) = $budgetExceededResult")
+                    }
+                }
+                // Firestore 저장 (개인만 모드가 아닐 때)
+                if (effectiveSaveTarget != SaveTarget.PERSONAL_ONLY && roomId != null && sharedRoomRepository != null) {
+                    transactions.forEach { t ->
+                        runCatching { sharedRoomRepository?.addTransaction(roomId, t) }
+                    }
                 }
             }
 

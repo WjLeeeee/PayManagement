@@ -22,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.domain.repository.SharedModeManager
 import com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionDialog
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.BackHandler
@@ -58,6 +59,14 @@ fun DateDetailScreen(
     val dayTransactions = selectedDate?.let { date ->
         transactions.filter { it.date == date }
     } ?: emptyList()
+
+    // 공유 모드일 때 내 거래 ID 세트
+    val myTransactionIds = if (SharedModeManager.isSharedMode) {
+        SharedModeManager.cachedSharedTransactions
+            .filter { it.deviceId == SharedModeManager.myDeviceId }
+            .map { it.transaction.id }
+            .toSet()
+    } else emptySet()
 
     // 일일 요약 계산 (ViewModel 사용)
     LaunchedEffect(dayTransactions) {
@@ -150,7 +159,8 @@ fun DateDetailScreen(
                             viewModel.showDeleteConfirmation(transaction)
                         },
                         onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
-                        availableCategories = uiState.availableCategories
+                        availableCategories = uiState.availableCategories,
+                        showMineIndicator = transaction.id in myTransactionIds
                     )
                 }
 
@@ -172,7 +182,8 @@ fun DateDetailScreen(
                             viewModel.showDeleteConfirmation(transaction)
                         },
                         onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
-                        availableCategories = uiState.availableCategories
+                        availableCategories = uiState.availableCategories,
+                        showMineIndicator = transaction.id in myTransactionIds
                     )
                 }
             } else {
@@ -188,7 +199,8 @@ fun DateDetailScreen(
                             viewModel.showDeleteConfirmation(transaction)
                         },
                         onSaveAsRecurring = { viewModel.showRecurringTransactionDialog(transaction) },
-                        availableCategories = uiState.availableCategories
+                        availableCategories = uiState.availableCategories,
+                        showMineIndicator = transaction.id in myTransactionIds
                     )
                 }
             }

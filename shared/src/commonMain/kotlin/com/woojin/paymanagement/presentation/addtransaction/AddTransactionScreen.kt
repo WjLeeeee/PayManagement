@@ -1,7 +1,14 @@
 package com.woojin.paymanagement.presentation.addtransaction
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -287,6 +294,15 @@ fun AddTransactionScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // 공유방 참여 중일 때 저장 대상 선택
+        if (uiState.isInSharedRoom) {
+            SaveTargetSelector(
+                selected = uiState.saveTarget,
+                onSelect = viewModel::updateSaveTarget
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
         // Save/Cancel Buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -350,6 +366,55 @@ fun AddTransactionScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
         }
+        }
+    }
+}
+
+@Composable
+private fun SaveTargetSelector(
+    selected: SaveTarget,
+    onSelect: (SaveTarget) -> Unit
+) {
+    val options = listOf(
+        SaveTarget.PERSONAL_ONLY to "개인만",
+        SaveTarget.SHARED_ONLY to "공유만",
+        SaveTarget.BOTH to "둘 다"
+    )
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "저장 대상",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            options.forEach { (target, label) ->
+                val isSelected = selected == target
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        .clickable { onSelect(target) }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }

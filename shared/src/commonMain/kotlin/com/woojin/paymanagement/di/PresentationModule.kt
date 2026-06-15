@@ -13,6 +13,7 @@ import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransaction
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupViewModel
 import com.woojin.paymanagement.presentation.recurringtransaction.RecurringTransactionViewModel
 import com.woojin.paymanagement.presentation.search.SearchViewModel
+import com.woojin.paymanagement.presentation.sharedroom.SharedRoomViewModel
 import com.woojin.paymanagement.presentation.statistics.StatisticsViewModel
 import com.woojin.paymanagement.presentation.tipdonation.TipDonationViewModel
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel
@@ -31,11 +32,12 @@ val presentationModule = module {
             getCategoriesUseCase = get(),
             payPeriodCalculator = get(),
             holidayRepository = get(),
-            coroutineScope = get()
+            coroutineScope = get(),
+            sharedRoomRepository = getOrNull()
         )
     }
-    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
-    factory { DateDetailViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
+    factory { DateDetailViewModel(get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
     factory { PaydaySetupViewModel(get(), get(), get(), get()) }
     factory { StatisticsViewModel(get(), get(), get(), get(), get(), get(), get()) }
     factory { CalendarTutorialViewModel(get()) }
@@ -49,4 +51,5 @@ val presentationModule = module {
     factory { MonthlyComparisonViewModel(get(), get(), get(), get(), get()) }
     factory { RecurringTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { SearchViewModel(get(), get(), get()) }
+    factory { SharedRoomViewModel(get()) }
 }

@@ -9,6 +9,8 @@ import com.woojin.paymanagement.data.RecurringTransaction
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.data.WeekendHandling
+import com.woojin.paymanagement.domain.repository.SharedModeManager
+import com.woojin.paymanagement.domain.repository.SharedRoomRepository
 import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
@@ -18,6 +20,7 @@ import com.woojin.paymanagement.domain.usecase.SaveRecurringTransactionUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -32,7 +35,8 @@ class DateDetailViewModel(
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val saveRecurringTransactionUseCase: SaveRecurringTransactionUseCase,
     private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val sharedRoomRepository: SharedRoomRepository? = null
 ) {
     var uiState by mutableStateOf(DateDetailUiState())
         private set
@@ -62,6 +66,14 @@ class DateDetailViewModel(
     }
 
     fun getTransactionsFlow(date: LocalDate): Flow<List<Transaction>> {
+        if (SharedModeManager.isSharedMode) {
+            val sharedForDate = SharedModeManager.cachedSharedTransactions
+                .filter { it.transaction.date == date }
+                .map { it.transaction }
+            val summary = calculateDailySummaryUseCase(sharedForDate)
+            uiState = uiState.copy(transactions = sharedForDate, dailySummary = summary)
+            return flowOf(sharedForDate)
+        }
         return getTransactionsByDateUseCase(date).map { transactions ->
             val summary = calculateDailySummaryUseCase(transactions)
             uiState = uiState.copy(
@@ -90,6 +102,11 @@ class DateDetailViewModel(
 
             // 2. 검증 통과 - 실제 삭제 실행
             deleteTransactionUseCase(transaction.id)
+            // 공유 모드일 때 Firestore에서도 삭제
+            val roomId = SharedModeManager.sharedRoomId
+            if (SharedModeManager.isSharedMode && roomId != null && sharedRoomRepository != null) {
+                runCatching { sharedRoomRepository?.deleteTransaction(roomId, transaction.id) }
+            }
             uiState = uiState.copy(isLoading = false)
             return true // 삭제 성공
         } catch (e: Exception) {
