@@ -260,10 +260,12 @@ private fun CategoryItem(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = category.emoji,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
+                    if (category.emoji.isNotBlank()) {
+                        Text(
+                            text = category.emoji,
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
                     Text(
                         text = category.name,
                         style = MaterialTheme.typography.bodyLarge,

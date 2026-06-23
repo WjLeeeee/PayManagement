@@ -247,10 +247,12 @@ fun RecurringTransactionDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(
-                                    text = category.emoji,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                if (category.emoji.isNotBlank()) {
+                                    Text(
+                                        text = category.emoji,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                                 Text(
                                     text = category.name,
                                     style = MaterialTheme.typography.bodyMedium,

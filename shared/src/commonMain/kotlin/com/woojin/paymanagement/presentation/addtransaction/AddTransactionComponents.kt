@@ -821,10 +821,13 @@ fun CategoryChipGrid(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
-                        text = getCategoryEmoji(category, uiState),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    val categoryEmoji = getCategoryEmoji(category, uiState)
+                    if (categoryEmoji.isNotBlank()) {
+                        Text(
+                            text = categoryEmoji,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                     Text(
                         text = category,
                         style = MaterialTheme.typography.bodyMedium,

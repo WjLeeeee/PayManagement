@@ -393,10 +393,13 @@ fun TransactionDetailItem(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = getCategoryEmoji(transaction.category, availableCategories),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        val categoryEmoji = getCategoryEmoji(transaction.category, availableCategories)
+                        if (categoryEmoji.isNotBlank()) {
+                            Text(
+                                text = categoryEmoji,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                         Text(
                             text = transaction.category,
                             style = MaterialTheme.typography.titleSmall,

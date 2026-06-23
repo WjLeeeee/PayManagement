@@ -333,7 +333,9 @@ private fun SearchFilterSheet(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(text = emoji, style = MaterialTheme.typography.bodyMedium)
+                                if (emoji.isNotBlank()) {
+                                    Text(text = emoji, style = MaterialTheme.typography.bodyMedium)
+                                }
                                 Text(
                                     text = category.name,
                                     style = MaterialTheme.typography.bodyMedium,
@@ -574,21 +576,23 @@ private fun SearchResultItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(contentAlignment = Alignment.BottomEnd) {
-                Text(text = categoryEmoji, style = MaterialTheme.typography.headlineSmall)
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(
-                            when (transaction.type) {
-                                TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                                TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                                TransactionType.SAVING -> SavingColor.color
-                                TransactionType.INVESTMENT -> InvestmentColor.color
-                            }
-                        )
-                )
+            if (categoryEmoji.isNotBlank()) {
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    Text(text = categoryEmoji, style = MaterialTheme.typography.headlineSmall)
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when (transaction.type) {
+                                    TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                                    TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                    TransactionType.SAVING -> SavingColor.color
+                                    TransactionType.INVESTMENT -> InvestmentColor.color
+                                }
+                            )
+                    )
+                }
             }
 
             Column(modifier = Modifier.weight(1f)) {

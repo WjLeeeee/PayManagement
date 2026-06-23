@@ -68,7 +68,7 @@ class CategoryManagementViewModel(
     }
 
     fun addCategory() {
-        if (uiState.newCategoryName.isBlank() || uiState.newCategoryEmoji.isBlank()) {
+        if (uiState.newCategoryName.isBlank()) {
             return
         }
 
@@ -145,7 +145,7 @@ class CategoryManagementViewModel(
 
     fun updateCategory() {
         val editingCategory = uiState.editingCategory ?: return
-        if (uiState.editCategoryName.isBlank() || uiState.editCategoryEmoji.isBlank()) {
+        if (uiState.editCategoryName.isBlank()) {
             return
         }
 

@@ -759,7 +759,7 @@ object EnglishStrings : AppStrings {
     // ===== Category Management (additional) =====
     override val emojiLabel = "Emoji"
     override val continueAction = "Continue"
-    override fun deleteCategoryConfirmMessage(emoji: String, name: String) = "Are you sure you want to delete the $emoji $name category?"
+    override fun deleteCategoryConfirmMessage(emoji: String, name: String) = "Are you sure you want to delete the ${if (emoji.isNotBlank()) "$emoji " else ""}$name category?"
     override val deleteCategoryTransactionWarning = "Existing transactions in this category will not be deleted."
 
     // ===== Card Management (additional) =====

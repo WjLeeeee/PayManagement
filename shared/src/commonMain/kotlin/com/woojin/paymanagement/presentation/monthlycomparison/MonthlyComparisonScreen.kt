@@ -460,10 +460,13 @@ private fun CategoryComparisonCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = getCategoryEmoji(comparison.categoryName, availableCategories),
-                    style = MaterialTheme.typography.titleMedium
-                )
+                val categoryEmoji = getCategoryEmoji(comparison.categoryName, availableCategories)
+                if (categoryEmoji.isNotBlank()) {
+                    Text(
+                        text = categoryEmoji,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
                 Text(
                     text = comparison.categoryName,
                     style = MaterialTheme.typography.titleMedium,

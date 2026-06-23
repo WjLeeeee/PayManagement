@@ -341,10 +341,12 @@ private fun RecurringTransactionItem(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(
-                            text = categoryEmoji,
-                            style = MaterialTheme.typography.headlineMedium
-                        )
+                        if (categoryEmoji.isNotBlank()) {
+                            Text(
+                                text = categoryEmoji,
+                                style = MaterialTheme.typography.headlineMedium
+                            )
+                        }
 
                         Column {
                             Text(
