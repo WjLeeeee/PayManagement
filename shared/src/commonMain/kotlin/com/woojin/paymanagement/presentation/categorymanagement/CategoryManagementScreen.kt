@@ -95,14 +95,38 @@ fun CategoryManagementScreen(
                     )
                 }
 
-                // 기존 카테고리들
-                items(uiState.categories) { category ->
+                // 상위 카테고리들 (parentId == null인 것만)
+                val parentCategories = uiState.categories.filter { it.parentId == null }
+                val subCategoryMap = uiState.categories
+                    .filter { it.parentId != null }
+                    .groupBy { it.parentId }
+
+                items(parentCategories) { category ->
                     CategoryItem(
                         category = category,
+                        subCategories = subCategoryMap[category.id] ?: emptyList(),
                         onEdit = { viewModel.showEditDialog(category) },
-                        onDelete = { viewModel.showDeleteConfirmDialog(category) }
+                        onDelete = { viewModel.showDeleteConfirmDialog(category) },
+                        onAddSubCategory = { viewModel.showAddSubDialog(category) },
+                        onEditSub = { viewModel.showEditDialog(it) },
+                        onDeleteSub = { viewModel.showDeleteConfirmDialog(it) }
                     )
                 }
+            }
+        }
+
+        // 소분류 추가 다이얼로그
+        if (uiState.isAddSubDialogVisible) {
+            uiState.addSubParentCategory?.let { parent ->
+                AddSubCategoryDialog(
+                    parentName = parent.name,
+                    name = uiState.newSubCategoryName,
+                    emoji = uiState.newSubCategoryEmoji,
+                    onNameChange = { viewModel.updateNewSubCategoryName(it) },
+                    onEmojiChange = { viewModel.updateNewSubCategoryEmoji(it) },
+                    onConfirm = { viewModel.addSubCategory() },
+                    onDismiss = { viewModel.hideAddSubDialog() }
+                )
             }
         }
 
@@ -222,21 +246,21 @@ private fun AddCategoryItem(
 @Composable
 private fun CategoryItem(
     category: com.woojin.paymanagement.data.Category,
+    subCategories: List<com.woojin.paymanagement.data.Category>,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onAddSubCategory: () -> Unit,
+    onEditSub: (com.woojin.paymanagement.data.Category) -> Unit,
+    onDeleteSub: (com.woojin.paymanagement.data.Category) -> Unit
 ) {
     val strings = LocalStrings.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
@@ -249,6 +273,7 @@ private fun CategoryItem(
                     )
                 )
         ) {
+            // 상위 카테고리 행
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -261,10 +286,7 @@ private fun CategoryItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (category.emoji.isNotBlank()) {
-                        Text(
-                            text = category.emoji,
-                            style = MaterialTheme.typography.headlineMedium
-                        )
+                        Text(text = category.emoji, style = MaterialTheme.typography.headlineMedium)
                     }
                     Text(
                         text = category.name,
@@ -273,21 +295,52 @@ private fun CategoryItem(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-
                 Row {
+                    IconButton(onClick = onAddSubCategory) {
+                        Icon(Icons.Default.Add, contentDescription = strings.add, tint = MaterialTheme.colorScheme.tertiary)
+                    }
                     IconButton(onClick = onEdit) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = strings.edit,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.Default.Edit, contentDescription = strings.edit, tint = MaterialTheme.colorScheme.primary)
                     }
                     IconButton(onClick = onDelete) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = strings.delete,
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                        Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+
+            // 소분류 목록
+            if (subCategories.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                subCategories.forEach { sub ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 32.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "└", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+                            if (sub.emoji.isNotBlank()) {
+                                Text(text = sub.emoji, style = MaterialTheme.typography.bodyLarge)
+                            }
+                            Text(
+                                text = sub.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Row {
+                            IconButton(onClick = { onEditSub(sub) }) {
+                                Icon(Icons.Default.Edit, contentDescription = strings.edit, tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { onDeleteSub(sub) }) {
+                                Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
                     }
                 }
             }
@@ -435,6 +488,51 @@ private fun DeleteConfirmDialog(
                 )
             ) {
                 Text(strings.delete)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(strings.cancel)
+            }
+        }
+    )
+}
+
+@Composable
+private fun AddSubCategoryDialog(
+    parentName: String,
+    name: String,
+    emoji: String,
+    onNameChange: (String) -> Unit,
+    onEmojiChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val strings = LocalStrings.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("$parentName 소분류 추가") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = emoji,
+                    onValueChange = onEmojiChange,
+                    label = { Text(strings.emojiLabel) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    label = { Text(strings.categoryName) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(strings.add)
             }
         },
         dismissButton = {

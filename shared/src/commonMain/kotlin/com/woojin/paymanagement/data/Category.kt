@@ -6,5 +6,6 @@ data class Category(
     val emoji: String,
     val type: TransactionType,
     val isActive: Boolean = true,
-    val sortOrder: Int = 0
+    val sortOrder: Int = 0,
+    val parentId: String? = null
 )

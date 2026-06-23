@@ -765,9 +765,20 @@ fun CategoryChipGrid(
     onCategorySelected: (String) -> Unit,
     transactionType: TransactionType,
     uiState: AddTransactionUiState,
+    selectedSubCategory: String = "",
+    onSubCategorySelected: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
+
+    // 선택된 상위 카테고리의 소분류 목록
+    val subCategories = uiState.availableCategories
+        .filter { it.parentId != null }
+        .let { subs ->
+            val parentId = uiState.availableCategories
+                .firstOrNull { it.name == selectedCategory && it.parentId == null }?.id
+            if (parentId != null) subs.filter { it.parentId == parentId } else emptyList()
+        }
 
     Column(modifier = modifier) {
         Text(
@@ -787,22 +798,22 @@ fun CategoryChipGrid(
             categories.forEach { category ->
                 val isSelected = category == selectedCategory
                 val backgroundColor = when {
-                    isSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
-                    isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+                    isSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD)
+                    isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE)
                     isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.lightBackground
                     isSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.lightBackground
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
                 val borderColor = when {
-                    isSelected && transactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary // 파랑
-                    isSelected && transactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error // 빨강
+                    isSelected && transactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                    isSelected && transactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
                     isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
                     isSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
                     else -> Color.Transparent
                 }
                 val textColor = when {
-                    isSelected -> Color.Black  // 선택된 경우 항상 검은색 (배경이 밝은 색이므로)
-                    else -> MaterialTheme.colorScheme.onSurface  // 선택되지 않은 경우 테마 색상
+                    isSelected -> Color.Black
+                    else -> MaterialTheme.colorScheme.onSurface
                 }
 
                 Row(
@@ -812,10 +823,7 @@ fun CategoryChipGrid(
                             color = borderColor,
                             shape = RoundedCornerShape(20.dp)
                         )
-                        .background(
-                            color = backgroundColor,
-                            shape = RoundedCornerShape(20.dp)
-                        )
+                        .background(color = backgroundColor, shape = RoundedCornerShape(20.dp))
                         .clickable { onCategorySelected(category) }
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -823,10 +831,7 @@ fun CategoryChipGrid(
                 ) {
                     val categoryEmoji = getCategoryEmoji(category, uiState)
                     if (categoryEmoji.isNotBlank()) {
-                        Text(
-                            text = categoryEmoji,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Text(text = categoryEmoji, style = MaterialTheme.typography.bodyMedium)
                     }
                     Text(
                         text = category,
@@ -834,6 +839,63 @@ fun CategoryChipGrid(
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = textColor
                     )
+                }
+            }
+        }
+
+        // 소분류 칩 (선택된 카테고리에 소분류가 있을 때만 표시)
+        if (subCategories.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "소분류",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                subCategories.forEach { sub ->
+                    val isSubSelected = sub.name == selectedSubCategory
+                    val subBackgroundColor = when {
+                        isSubSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD)
+                        isSubSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE)
+                        isSubSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.lightBackground
+                        isSubSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.lightBackground
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                    val subBorderColor = when {
+                        isSubSelected && transactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                        isSubSelected && transactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                        isSubSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                        isSubSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
+                        else -> Color.Transparent
+                    }
+                    Row(
+                        modifier = Modifier
+                            .border(
+                                width = if (isSubSelected) 2.dp else 0.dp,
+                                color = subBorderColor,
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                            .background(color = subBackgroundColor, shape = RoundedCornerShape(20.dp))
+                            .clickable { onSubCategorySelected(if (isSubSelected) "" else sub.name) }
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (sub.emoji.isNotBlank()) {
+                            Text(text = sub.emoji, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Text(
+                            text = sub.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSubSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSubSelected) Color.Black else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }

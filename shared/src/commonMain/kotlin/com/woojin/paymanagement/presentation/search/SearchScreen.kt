@@ -32,6 +32,7 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
 import com.woojin.paymanagement.strings.AppStrings
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.SavingColor
@@ -606,7 +607,7 @@ private fun SearchResultItem(
                 )
                 val methodText = getPaymentMethodText(transaction, strings)
                 val subLine = buildString {
-                    append(transaction.category)
+                    append(formatCategoryDisplay(transaction.category, transaction.subCategory))
                     append("  ·  ")
                     append(transaction.date)
                     if (methodText.isNotBlank()) { append("  ·  "); append(methodText) }

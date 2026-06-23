@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialOverlay
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PayPeriod
@@ -1238,7 +1239,7 @@ private fun TransactionItem(
                         )
                     }
                     Text(
-                        text = transaction.category,
+                        text = formatCategoryDisplay(transaction.category, transaction.subCategory),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface

@@ -7,9 +7,11 @@ import kotlinx.coroutines.flow.Flow
 interface CategoryRepository {
     fun getAllCategories(): Flow<List<Category>>
     fun getCategoriesByType(type: TransactionType): Flow<List<Category>>
+    fun getSubCategoriesByParentId(parentId: String): Flow<List<Category>>
     suspend fun getCategoryById(id: String): Category?
     suspend fun insertCategory(category: Category)
     suspend fun updateCategory(category: Category)
     suspend fun deleteCategory(id: String)
+    suspend fun deleteSubCategoriesByParentId(parentId: String)
     suspend fun initializeDefaultCategories()
 }

@@ -20,6 +20,10 @@ class CategoryRepositoryImpl(
         return databaseHelper.getCategoriesByType(type)
     }
 
+    override fun getSubCategoriesByParentId(parentId: String): Flow<List<Category>> {
+        return databaseHelper.getSubCategoriesByParentId(parentId)
+    }
+
     override suspend fun getCategoryById(id: String): Category? {
         return databaseHelper.getCategoryById(id)
     }
@@ -34,6 +38,10 @@ class CategoryRepositoryImpl(
 
     override suspend fun deleteCategory(id: String) {
         databaseHelper.deleteCategory(id)
+    }
+
+    override suspend fun deleteSubCategoriesByParentId(parentId: String) {
+        databaseHelper.deleteSubCategoriesByParentId(parentId)
     }
 
     override suspend fun initializeDefaultCategories() {

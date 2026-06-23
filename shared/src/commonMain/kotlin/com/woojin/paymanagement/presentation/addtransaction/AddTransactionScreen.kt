@@ -232,7 +232,9 @@ fun AddTransactionScreen(
             selectedCategory = uiState.category,
             onCategorySelected = viewModel::updateCategory,
             transactionType = uiState.selectedType,
-            uiState = uiState
+            uiState = uiState,
+            selectedSubCategory = uiState.subCategory,
+            onSubCategorySelected = viewModel::updateSubCategory
         )
 
         Spacer(modifier = Modifier.height(16.dp))

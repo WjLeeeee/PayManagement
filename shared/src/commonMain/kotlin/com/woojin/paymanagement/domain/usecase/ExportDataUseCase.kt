@@ -108,9 +108,10 @@ class ExportDataUseCase(
         giftCardId = giftCardId,
         cardName = cardName,
         merchant = merchant,
-        actualAmount = null, // actualAmount 필드는 더 이상 사용하지 않음
+        actualAmount = null,
         settlementAmount = settlementAmount,
-        isSettlement = isSettlement
+        isSettlement = isSettlement,
+        subCategory = subCategory
     )
 
     private fun com.woojin.paymanagement.data.BalanceCard.toBackup() = BalanceCardBackup(
@@ -138,7 +139,8 @@ class ExportDataUseCase(
         emoji = emoji,
         type = type.name,
         isActive = isActive,
-        sortOrder = sortOrder
+        sortOrder = sortOrder,
+        parentId = parentId
     )
 
     private fun com.woojin.paymanagement.data.BudgetPlan.toBackup() = BudgetPlanBackup(

@@ -46,6 +46,7 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.domain.model.DailySummary
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
 import com.woojin.paymanagement.strings.AppStrings
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.InvestmentColor
@@ -401,7 +402,7 @@ fun TransactionDetailItem(
                             )
                         }
                         Text(
-                            text = transaction.category,
+                            text = formatCategoryDisplay(transaction.category, transaction.subCategory),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface

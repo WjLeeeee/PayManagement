@@ -169,6 +169,7 @@ class AddTransactionViewModel(
                     selectedPaymentMethod = editTransaction.paymentMethod ?: PaymentMethod.CASH,
                     cardName = editTransaction.cardName ?: "",
                     category = editTransaction.category,
+                    subCategory = editTransaction.subCategory ?: "",
                     merchant = editTransaction.merchant ?: "",
                     memo = editTransaction.memo,
                     date = initialDate,
@@ -431,8 +432,12 @@ class AddTransactionViewModel(
     }
 
     fun updateCategory(category: String) {
-        uiState = uiState.copy(category = category)
+        uiState = uiState.copy(category = category, subCategory = "")
         validateInput()
+    }
+
+    fun updateSubCategory(subCategory: String) {
+        uiState = uiState.copy(subCategory = subCategory)
     }
 
     fun updateMerchant(merchant: String) {
@@ -690,7 +695,8 @@ class AddTransactionViewModel(
                             else -> null
                         },
                         settlementAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount.text) else null,
-                        isSettlement = uiState.isSettlement
+                        isSettlement = uiState.isSettlement,
+                        subCategory = uiState.subCategory.ifBlank { null }
                     )
 
                     listOf(transaction)
