@@ -348,9 +348,10 @@ class AddTransactionViewModel(
         if (uiState.selectedType != type) {
             uiState = uiState.copy(
                 selectedType = type,
-                category = ""
+                category = "",
+                subCategory = ""
             )
-            loadCategories() // 타입 변경 시 카테고리 다시 로드
+            loadCategories()
             validateInput()
         }
     }

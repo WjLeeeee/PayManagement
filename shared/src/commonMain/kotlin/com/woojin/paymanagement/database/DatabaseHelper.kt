@@ -119,6 +119,10 @@ class DatabaseHelper(
         queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName)
     }
 
+    suspend fun updateTransactionsSubCategoryName(oldSubCategoryName: String, newSubCategoryName: String) {
+        queries.updateTransactionsSubCategoryName(newSubCategoryName, oldSubCategoryName)
+    }
+
     fun searchTransactions(keyword: String): Flow<List<Transaction>> {
         return queries.searchTransactions(keyword, keyword)
             .asFlow()

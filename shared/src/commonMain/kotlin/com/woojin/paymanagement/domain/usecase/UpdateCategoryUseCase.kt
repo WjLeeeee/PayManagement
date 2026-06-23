@@ -16,14 +16,21 @@ class UpdateCategoryUseCase(
      * @throws IllegalArgumentException 이름이 중복되는 경우
      */
     suspend operator fun invoke(oldCategory: Category, newCategory: Category) {
-        // 이름이 변경되었는지 확인
         val nameChanged = oldCategory.name != newCategory.name
+        val isSubCategory = newCategory.parentId != null
 
         if (nameChanged) {
-            // 같은 타입의 다른 카테고리 중에 동일한 이름이 있는지 확인
             val existingCategories = categoryRepository.getCategoriesByType(newCategory.type).first()
-            val hasDuplicateName = existingCategories.any {
-                it.id != newCategory.id && it.name == newCategory.name
+            val hasDuplicateName = if (isSubCategory) {
+                // 소분류: 같은 부모 아래에서만 중복 체크
+                existingCategories.any {
+                    it.id != newCategory.id && it.parentId == newCategory.parentId && it.name == newCategory.name
+                }
+            } else {
+                // 상위 카테고리: 상위 카테고리끼리만 중복 체크
+                existingCategories.any {
+                    it.id != newCategory.id && it.parentId == null && it.name == newCategory.name
+                }
             }
 
             if (hasDuplicateName) {
@@ -31,15 +38,20 @@ class UpdateCategoryUseCase(
             }
         }
 
-        // 카테고리 업데이트
         categoryRepository.updateCategory(newCategory)
 
-        // 이름이 변경되었다면 해당 카테고리를 사용하는 모든 거래 내역도 업데이트
         if (nameChanged) {
-            transactionRepository.updateTransactionsCategoryName(
-                oldCategoryName = oldCategory.name,
-                newCategoryName = newCategory.name
-            )
+            if (isSubCategory) {
+                transactionRepository.updateTransactionsSubCategoryName(
+                    oldSubCategoryName = oldCategory.name,
+                    newSubCategoryName = newCategory.name
+                )
+            } else {
+                transactionRepository.updateTransactionsCategoryName(
+                    oldCategoryName = oldCategory.name,
+                    newCategoryName = newCategory.name
+                )
+            }
         }
     }
 }

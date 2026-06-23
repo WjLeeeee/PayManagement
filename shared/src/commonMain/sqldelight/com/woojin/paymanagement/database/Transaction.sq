@@ -154,6 +154,11 @@ UPDATE TransactionEntity
 SET category = ?
 WHERE category = ?;
 
+updateTransactionsSubCategoryName:
+UPDATE TransactionEntity
+SET subCategory = ?
+WHERE subCategory = ?;
+
 getSuggestedCategoryByMerchant:
 SELECT category, COUNT(*)
 FROM TransactionEntity
