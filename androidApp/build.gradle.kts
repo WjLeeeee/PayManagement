@@ -27,8 +27,8 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 70
-        versionName = "4.4"
+        versionCode = 73
+        versionName = "5.1"
     }
 
     // 서명 설정
@@ -115,6 +115,8 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.config)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
 
     debugImplementation(libs.compose.ui.tooling)
 }

@@ -140,4 +140,16 @@ actual class PreferencesManager(private val context: Context) {
     actual fun setReviewRequested() {
         prefs.edit().putBoolean("review_requested", true).apply()
     }
+
+    actual fun getSharedRoomId(): String? = prefs.getString("shared_room_id", null)
+
+    actual fun setSharedRoomId(roomId: String?) {
+        prefs.edit().putString("shared_room_id", roomId).apply()
+    }
+
+    actual fun isSharedMode(): Boolean = prefs.getBoolean("is_shared_mode", false)
+
+    actual fun setIsSharedMode(enabled: Boolean) {
+        prefs.edit().putBoolean("is_shared_mode", enabled).apply()
+    }
 }

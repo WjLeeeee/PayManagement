@@ -13,5 +13,6 @@ interface TransactionRepository {
     suspend fun updateTransaction(transaction: Transaction)
     suspend fun deleteTransaction(transactionId: String)
     suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String)
+    suspend fun updateTransactionsSubCategoryName(oldSubCategoryName: String, newSubCategoryName: String)
     suspend fun getOldestTransactionDate(): LocalDate?
 }

@@ -11,6 +11,11 @@ import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.data.Category
 import kotlinx.datetime.LocalDate
 
+enum class SaveTarget {
+    PERSONAL_ONLY,
+    SHARED_ONLY,
+    BOTH
+}
 data class AddTransactionUiState(
     val amount: TextFieldValue = TextFieldValue(""),
     val selectedType: TransactionType = TransactionType.EXPENSE,
@@ -20,6 +25,7 @@ data class AddTransactionUiState(
     val selectedGiftCard: GiftCard? = null,
     val cardName: String = "",
     val category: String = "",
+    val subCategory: String = "",
     val merchant: String = "", // 사용처 (지출일 때만 필수)
     val merchantSuggestions: List<String> = emptyList(),
     val memo: String = "",
@@ -56,13 +62,17 @@ data class AddTransactionUiState(
     val selectedCustomCardName: String? = null,
 
     // 예산 초과 알림
-    val budgetExceededMessage: String? = null
+    val budgetExceededMessage: String? = null,
+
+    // 공유방 저장 대상 (공유방 참여 중일 때만 사용)
+    val isInSharedRoom: Boolean = false,
+    val saveTarget: SaveTarget = SaveTarget.BOTH
 )
 
 val AddTransactionUiState.categories: List<String>
     get() = if (availableCategories.isNotEmpty()) {
-        // 데이터베이스에서 로드된 카테고리 사용
-        availableCategories.map { it.name }
+        // 상위 카테고리만 칩에 표시 (소분류는 CategoryChipGrid 내부에서 처리)
+        availableCategories.filter { it.parentId == null }.map { it.name }
     } else {
         // 기본값 (데이터베이스가 아직 로드되지 않았을 때)
         when (selectedType) {
@@ -114,11 +124,13 @@ fun getCategoryEmoji(category: String, uiState: AddTransactionUiState? = null): 
 
 // 카테고리 리스트에서 이모지 찾기 (다른 UiState에서도 사용 가능)
 fun getCategoryEmoji(category: String, availableCategories: List<Category>): String {
-    // 카테고리 리스트에서 찾아서 이모지 반환
     availableCategories.find { it.name == category }?.let {
         return it.emoji
     }
-
-    // 못 찾으면 기본값 사용
     return getCategoryEmoji(category, null)
+}
+
+// 카테고리 + 소분류를 "카테고리 > 소분류" 형태로 표시
+fun formatCategoryDisplay(category: String, subCategory: String?): String {
+    return if (!subCategory.isNullOrBlank()) "$category > $subCategory" else category
 }

@@ -7,6 +7,7 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.repository.CategoryRepository
+import com.woojin.paymanagement.domain.repository.SharedModeManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -90,7 +91,12 @@ class SearchViewModel(
             return
         }
 
-        val filtered = allTransactions.filter { tx ->
+        val source = if (SharedModeManager.isSharedMode)
+            SharedModeManager.cachedSharedTransactions.map { it.transaction }
+        else
+            allTransactions
+
+        val filtered = source.filter { tx ->
             val keywordMatch = keyword.isBlank() ||
                 (tx.merchant?.contains(keyword, ignoreCase = true) == true) ||
                 tx.memo.contains(keyword, ignoreCase = true)

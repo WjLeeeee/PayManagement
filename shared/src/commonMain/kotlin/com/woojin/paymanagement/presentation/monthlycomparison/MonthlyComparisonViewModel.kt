@@ -7,6 +7,7 @@ import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.repository.CategoryRepository
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
+import com.woojin.paymanagement.domain.repository.SharedModeManager
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import kotlinx.coroutines.CoroutineScope
@@ -83,8 +84,11 @@ class MonthlyComparisonViewModel(
             // 카테고리 정보 로드
             val categories = categoryRepository.getAllCategories().firstOrNull() ?: emptyList()
 
-            // 거래 데이터 로드
-            val transactions = databaseHelper.getAllTransactions().firstOrNull() ?: emptyList()
+            // 거래 데이터 로드 (공유 모드면 공유 거래 사용)
+            val transactions = if (SharedModeManager.isSharedMode)
+                SharedModeManager.cachedSharedTransactions.map { it.transaction }
+            else
+                databaseHelper.getAllTransactions().firstOrNull() ?: emptyList()
 
             // 현재 급여 기간 거래 필터링
             val currentPeriodTransactions = transactions.filter { transaction ->
@@ -225,6 +229,7 @@ class MonthlyComparisonViewModel(
     }
 
     fun moveToPreviousPeriod() {
+        if (SharedModeManager.isSharedMode) return
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()
 
@@ -249,6 +254,7 @@ class MonthlyComparisonViewModel(
     }
 
     fun moveToNextPeriod() {
+        if (SharedModeManager.isSharedMode) return
         val payday = preferencesRepository.getPayday()
         val adjustment = preferencesRepository.getPaydayAdjustment()
         val today = Clock.System.todayIn(TimeZone.currentSystemDefault())

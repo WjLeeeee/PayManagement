@@ -82,10 +82,11 @@ class DatabaseHelper(
             giftCardId = transaction.giftCardId,
             cardName = transaction.cardName,
             settlementAmount = transaction.settlementAmount,
-            isSettlement = if (transaction.isSettlement) 1L else 0L
+            isSettlement = if (transaction.isSettlement) 1L else 0L,
+            subCategory = transaction.subCategory
         )
     }
-    
+
     suspend fun updateTransaction(transaction: Transaction) {
         queries.updateTransaction(
             amount = transaction.amount,
@@ -101,6 +102,7 @@ class DatabaseHelper(
             cardName = transaction.cardName,
             settlementAmount = transaction.settlementAmount,
             isSettlement = if (transaction.isSettlement) 1L else 0L,
+            subCategory = transaction.subCategory,
             id = transaction.id
         )
     }
@@ -115,6 +117,10 @@ class DatabaseHelper(
 
     suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String) {
         queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName)
+    }
+
+    suspend fun updateTransactionsSubCategoryName(oldSubCategoryName: String, newSubCategoryName: String) {
+        queries.updateTransactionsSubCategoryName(newSubCategoryName, oldSubCategoryName)
     }
 
     fun searchTransactions(keyword: String): Flow<List<Transaction>> {
@@ -382,7 +388,8 @@ class DatabaseHelper(
             emoji = category.emoji,
             type = category.type.name,
             isActive = if (category.isActive) 1L else 0L,
-            sortOrder = category.sortOrder.toLong()
+            sortOrder = category.sortOrder.toLong(),
+            parentId = category.parentId
         )
     }
 
@@ -393,8 +400,20 @@ class DatabaseHelper(
             type = category.type.name,
             isActive = if (category.isActive) 1L else 0L,
             sortOrder = category.sortOrder.toLong(),
+            parentId = category.parentId,
             id = category.id
         )
+    }
+
+    fun getSubCategoriesByParentId(parentId: String): Flow<List<Category>> {
+        return queries.selectSubCategoriesByParentId(parentId)
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities -> entities.map { it.toCategory() } }
+    }
+
+    suspend fun deleteSubCategoriesByParentId(parentId: String) {
+        queries.deleteSubCategoriesByParentId(parentId)
     }
 
     suspend fun deleteCategory(id: String) {
@@ -527,7 +546,8 @@ class DatabaseHelper(
             giftCardId = this.giftCardId,
             cardName = this.cardName,
             settlementAmount = this.settlementAmount,
-            isSettlement = this.isSettlement == 1L
+            isSettlement = this.isSettlement == 1L,
+            subCategory = this.subCategory
         )
     }
 
@@ -573,7 +593,8 @@ class DatabaseHelper(
             emoji = this.emoji,
             type = TransactionType.valueOf(this.type),
             isActive = this.isActive == 1L,
-            sortOrder = this.sortOrder.toInt()
+            sortOrder = this.sortOrder.toInt(),
+            parentId = this.parentId
         )
     }
 

@@ -217,7 +217,8 @@ class ImportDataUseCase(
         cardName = cardName,
         merchant = merchant,
         settlementAmount = settlementAmount,
-        isSettlement = isSettlement
+        isSettlement = isSettlement,
+        subCategory = subCategory
     )
 
     private fun BalanceCardBackup.toBalanceCard() = BalanceCard(
@@ -245,7 +246,8 @@ class ImportDataUseCase(
         emoji = emoji,
         type = resolveTransactionType(type, name),
         isActive = isActive,
-        sortOrder = sortOrder
+        sortOrder = sortOrder,
+        parentId = parentId
     )
 
     private fun BudgetPlanBackup.toBudgetPlan(): BudgetPlan {

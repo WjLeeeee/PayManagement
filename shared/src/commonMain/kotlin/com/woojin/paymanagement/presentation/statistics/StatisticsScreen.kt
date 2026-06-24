@@ -52,6 +52,7 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.components.PieChart
+import com.woojin.paymanagement.domain.repository.SharedModeManager
 import com.woojin.paymanagement.utils.BackHandler
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
@@ -133,7 +134,8 @@ fun StatisticsScreen(
             PayPeriodNavigationCard(
                 currentPayPeriod = currentPayPeriod,
                 onPreviousPeriod = { viewModel.moveToPreviousPeriod() },
-                onNextPeriod = { viewModel.moveToNextPeriod() }
+                onNextPeriod = { viewModel.moveToNextPeriod() },
+                navigationEnabled = !SharedModeManager.isSharedMode
             )
         }
 
@@ -358,7 +360,8 @@ fun StatisticsScreen(
 private fun PayPeriodNavigationCard(
     currentPayPeriod: PayPeriod,
     onPreviousPeriod: () -> Unit,
-    onNextPeriod: () -> Unit
+    onNextPeriod: () -> Unit,
+    navigationEnabled: Boolean = true
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -386,8 +389,13 @@ private fun PayPeriodNavigationCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(onClick = onPreviousPeriod) {
-                    Text("◀", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
+                TextButton(onClick = onPreviousPeriod, enabled = navigationEnabled) {
+                    Text(
+                        "◀",
+                        fontSize = 24.sp,
+                        color = if (navigationEnabled) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
                 }
 
                 Text(
@@ -399,8 +407,13 @@ private fun PayPeriodNavigationCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                TextButton(onClick = onNextPeriod) {
-                    Text("▶", fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
+                TextButton(onClick = onNextPeriod, enabled = navigationEnabled) {
+                    Text(
+                        "▶",
+                        fontSize = 24.sp,
+                        color = if (navigationEnabled) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
                 }
             }
         }
@@ -946,10 +959,13 @@ private fun ChartLegendItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
-                        text = getCategoryEmoji(item.category, availableCategories),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    val categoryEmoji = getCategoryEmoji(item.category, availableCategories)
+                    if (categoryEmoji.isNotBlank()) {
+                        Text(
+                            text = categoryEmoji,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
                     Text(
                         text = item.category,
                         style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,

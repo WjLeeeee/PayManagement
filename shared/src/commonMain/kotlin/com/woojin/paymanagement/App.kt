@@ -71,6 +71,7 @@ import com.woojin.paymanagement.presentation.monthlycomparison.MonthlyComparison
 import com.woojin.paymanagement.presentation.parsedtransaction.ParsedTransactionListScreen
 import com.woojin.paymanagement.presentation.paydaysetup.PaydaySetupScreen
 import com.woojin.paymanagement.presentation.settings.ThemeSettingsDialog
+import com.woojin.paymanagement.domain.repository.SharedModeManager
 import com.woojin.paymanagement.presentation.search.SearchScreen
 import com.woojin.paymanagement.presentation.statistics.StatisticsScreen
 import com.woojin.paymanagement.utils.LifecycleObserverHelper
@@ -108,6 +109,7 @@ fun App(
     fileHandler: com.woojin.paymanagement.utils.FileHandler,
     billingClient: com.woojin.paymanagement.utils.BillingClient,
     autoExecuteNotifier: com.woojin.paymanagement.utils.AutoExecuteNotifier = com.woojin.paymanagement.utils.NoOpAutoExecuteNotifier(),
+    sharedRoomRepository: com.woojin.paymanagement.domain.repository.SharedRoomRepository? = null,
     interstitialAdManager: com.woojin.paymanagement.utils.InterstitialAdManager? = null,
     shouldNavigateToParsedTransactions: Boolean = false,
     shouldNavigateToRecurringTransactions: Boolean = false,
@@ -133,7 +135,7 @@ fun App(
 
     // Koin 초기화
     LaunchedEffect(Unit) {
-        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo, fileHandler, billingClient, autoExecuteNotifier)
+        initializeKoin(databaseDriverFactory, preferencesManager, notificationPermissionChecker, appInfo, fileHandler, billingClient, autoExecuteNotifier, sharedRoomRepository)
         isKoinInitialized = true
     }
 
@@ -198,7 +200,8 @@ private fun initializeKoin(
     appInfo: com.woojin.paymanagement.utils.AppInfo,
     fileHandler: com.woojin.paymanagement.utils.FileHandler,
     billingClient: com.woojin.paymanagement.utils.BillingClient,
-    autoExecuteNotifier: com.woojin.paymanagement.utils.AutoExecuteNotifier = com.woojin.paymanagement.utils.NoOpAutoExecuteNotifier()
+    autoExecuteNotifier: com.woojin.paymanagement.utils.AutoExecuteNotifier = com.woojin.paymanagement.utils.NoOpAutoExecuteNotifier(),
+    sharedRoomRepository: com.woojin.paymanagement.domain.repository.SharedRoomRepository? = null
 ) {
     try {
         val koin = startKoin {
@@ -213,6 +216,9 @@ private fun initializeKoin(
                     single<com.woojin.paymanagement.utils.BillingClient> { billingClient }
                     single<com.woojin.paymanagement.utils.AutoExecuteNotifier> { autoExecuteNotifier }
                     single<CoroutineScope> { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
+                    if (sharedRoomRepository != null) {
+                        single<com.woojin.paymanagement.domain.repository.SharedRoomRepository> { sharedRoomRepository }
+                    }
                 },
                 // 공통 의존성들
                 databaseModule,
@@ -295,6 +301,7 @@ fun PayManagementApp(
             Screen.Coupon -> "쿠폰_입력"
             Screen.RecurringTransaction -> "반복_거래"
             Screen.TransactionSearch -> "거래_검색"
+            Screen.SharedRoom -> "캘린더_공유"
         }
 
         analyticsLogger.logScreenView(
@@ -1054,6 +1061,40 @@ fun PayManagementApp(
                                                 }
                                             }
                                         )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    // 캘린더 공유
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                navigateTo(Screen.SharedRoom)
+                                                scope.launch { drawerState.close() }
+                                            }
+                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        horizontalArrangement = Arrangement.Start,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "🔗",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = "캘린더 공유",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Text(
+                                                text = "가족/연인과 가계부 함께 관리",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
 
                                 }
@@ -1973,18 +2014,17 @@ fun PayManagementApp(
 
             DateDetailScreen(
                 selectedDate = selectedDate,
-                transactions = transactions,
+                transactions = if (SharedModeManager.isSharedMode)
+                    SharedModeManager.cachedSharedTransactions.map { it.transaction }
+                else
+                    transactions,
                 viewModel = dateDetailViewModel,
                 onBack = { navigateBack() },
                 onEditTransaction = { transaction ->
                     editTransaction = transaction
                     navigateTo(Screen.AddTransaction)
                 },
-                onDeleteTransaction = { transaction ->
-                    scope.launch {
-                        databaseHelper.deleteTransaction(transaction.id)
-                    }
-                },
+                onDeleteTransaction = { },
                 onAddTransaction = {
                     editTransaction = null
                     navigateTo(Screen.AddTransaction)
@@ -2217,6 +2257,19 @@ fun PayManagementApp(
                 onNavigateBack = { navigateBack() }
             )
         }
+
+        Screen.SharedRoom -> {
+            val sharedRoomViewModel = remember { koinInject<com.woojin.paymanagement.presentation.sharedroom.SharedRoomViewModel>() }
+            val calendarViewModelForShared = remember { koinInject<com.woojin.paymanagement.presentation.calendar.CalendarViewModel>() }
+
+            com.woojin.paymanagement.presentation.sharedroom.SharedRoomScreen(
+                viewModel = sharedRoomViewModel,
+                onBack = {
+                    calendarViewModelForShared.refreshSharedRoomState()
+                    navigateBack()
+                }
+            )
+        }
         }
     } // Scaffold 닫기
 
@@ -2268,7 +2321,8 @@ enum class Screen {
     AdRemoval,
     Coupon,
     RecurringTransaction,
-    TransactionSearch
+    TransactionSearch,
+    SharedRoom
 }
 
 enum class ExpandableMenu {

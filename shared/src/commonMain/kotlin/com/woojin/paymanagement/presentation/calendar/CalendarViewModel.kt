@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
+import com.woojin.paymanagement.domain.repository.SharedModeManager
+import com.woojin.paymanagement.domain.repository.SharedRoomRepository
 import com.woojin.paymanagement.domain.usecase.GetDailyTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodSummaryUseCase
 import com.woojin.paymanagement.domain.usecase.GetMoneyVisibilityUseCase
@@ -15,6 +17,7 @@ import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
@@ -33,7 +36,8 @@ class CalendarViewModel(
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val payPeriodCalculator: PayPeriodCalculator,
     private val holidayRepository: com.woojin.paymanagement.domain.repository.HolidayRepository,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val sharedRoomRepository: SharedRoomRepository? = null
 ) {
     var uiState by mutableStateOf(CalendarUiState())
         private set
@@ -41,11 +45,45 @@ class CalendarViewModel(
     private val payday: Int get() = preferencesRepository.getPayday()
     private val adjustment: com.woojin.paymanagement.utils.PaydayAdjustment get() = preferencesRepository.getPaydayAdjustment()
 
+    private var sharedTransactionJob: Job? = null
+    private var observedStartDate: LocalDate? = null
+    private var observedEndDate: LocalDate? = null
+
     companion object {
         private val HOLIDAY_API_KEY = com.woojin.paymanagement.BuildKonfig.HOLIDAY_API_KEY
     }
 
     init {
+        // 공유방 참여 여부 확인 및 이전 공유 모드 상태 복원
+        if (sharedRoomRepository != null) {
+            coroutineScope.launch {
+                val room = runCatching { sharedRoomRepository.getCurrentRoom() }.getOrNull()
+                if (room != null) {
+                    SharedModeManager.myDeviceId = sharedRoomRepository.getDeviceId()
+                    SharedModeManager.sharedRoomId = room.roomId
+                    uiState = uiState.copy(isInSharedRoom = true)
+                    // 앱 재시작 후 공유 모드 상태 복원 (PreferencesRepository에서)
+                    val savedSharedMode = preferencesRepository.isSharedMode()
+                    if (savedSharedMode) {
+                        SharedModeManager.isSharedMode = true
+                        uiState = uiState.copy(isSharedMode = true)
+                        // initializeCalendar가 먼저 실행된 경우 isSharedMode=false로 리스너를 못 시작했을 수 있음.
+                        // 이 시점에 급여기간이 이미 알려져 있으면 즉시 리스너를 시작하고,
+                        // 아직 모르면 현재 날짜 기준으로 직접 계산해서 시작.
+                        val payPeriod = uiState.currentPayPeriod
+                            ?: payPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
+                        startObservingSharedTransactions(payPeriod.startDate, payPeriod.endDate)
+                    }
+                } else {
+                    // 공유방 없으면 SharedModeManager 및 저장 상태 초기화
+                    SharedModeManager.sharedRoomId = null
+                    SharedModeManager.isSharedMode = false
+                    SharedModeManager.cachedSharedTransactions = emptyList()
+                    preferencesRepository.setIsSharedMode(false)
+                }
+            }
+        }
+
         // 카테고리 목록을 로드하여 UiState에 반영
         coroutineScope.launch {
             combine(
@@ -81,6 +119,11 @@ class CalendarViewModel(
                 selectedDate = recommendedDate,
                 isMoneyVisible = isMoneyVisible
             )
+
+            // init에서 복원된 공유 모드의 리스너를 급여기간 확정 후 여기서 시작
+            if (uiState.isSharedMode) {
+                startObservingSharedTransactions(currentPayPeriod.startDate, currentPayPeriod.endDate)
+            }
         }
     }
 
@@ -121,6 +164,9 @@ class CalendarViewModel(
                 payPeriod = previousPeriod,
                 selectedDate = newSelectedDate
             )
+            if (uiState.isSharedMode) {
+                startObservingSharedTransactions(previousPeriod.startDate, previousPeriod.endDate)
+            }
         }
     }
 
@@ -156,6 +202,9 @@ class CalendarViewModel(
                 payPeriod = nextPeriod,
                 selectedDate = newSelectedDate
             )
+            if (uiState.isSharedMode) {
+                startObservingSharedTransactions(nextPeriod.startDate, nextPeriod.endDate)
+            }
         }
     }
 
@@ -186,6 +235,84 @@ class CalendarViewModel(
                 payPeriod = targetPayPeriod,
                 selectedDate = targetPayday
             )
+            if (uiState.isSharedMode) {
+                startObservingSharedTransactions(targetPayPeriod.startDate, targetPayPeriod.endDate)
+            }
+        }
+    }
+
+    fun refreshSharedRoomState() {
+        if (sharedRoomRepository == null) return
+        coroutineScope.launch {
+            val room = runCatching { sharedRoomRepository.getCurrentRoom() }.getOrNull()
+            if (room == null) {
+                sharedTransactionJob?.cancel()
+                sharedTransactionJob = null
+                SharedModeManager.isSharedMode = false
+                SharedModeManager.sharedRoomId = null
+                SharedModeManager.cachedSharedTransactions = emptyList()
+                preferencesRepository.setIsSharedMode(false)
+                uiState = uiState.copy(
+                    isInSharedRoom = false,
+                    isSharedMode = false,
+                    sharedTransactions = emptyList()
+                )
+            }
+        }
+    }
+
+    fun toggleSharedMode() {
+        val newMode = !uiState.isSharedMode
+        SharedModeManager.isSharedMode = newMode
+        preferencesRepository.setIsSharedMode(newMode)
+        uiState = uiState.copy(isSharedMode = newMode)
+
+        if (newMode) {
+            val payPeriod = uiState.currentPayPeriod ?: return
+            startObservingSharedTransactions(payPeriod.startDate, payPeriod.endDate)
+        } else {
+            sharedTransactionJob?.cancel()
+            sharedTransactionJob = null
+            uiState = uiState.copy(sharedTransactions = emptyList())
+        }
+    }
+
+    fun clearSharedError() {
+        uiState = uiState.copy(sharedError = null)
+    }
+
+    private fun startObservingSharedTransactions(startDate: LocalDate, endDate: LocalDate) {
+        val roomId = SharedModeManager.sharedRoomId ?: return
+        val repo = sharedRoomRepository ?: return
+
+        // 동일 기간을 이미 감지 중이면 리스너를 재시작하지 않음 (화면 복귀 시 불필요한 재구독 방지)
+        if (sharedTransactionJob?.isActive == true &&
+            observedStartDate == startDate &&
+            observedEndDate == endDate) return
+
+        observedStartDate = startDate
+        observedEndDate = endDate
+        sharedTransactionJob?.cancel()
+        sharedTransactionJob = coroutineScope.launch {
+            repo.observeTransactions(roomId, startDate, endDate).collect { result ->
+                result.onSuccess { sharedList ->
+                    SharedModeManager.cachedSharedTransactions = sharedList
+                    uiState = uiState.copy(sharedTransactions = sharedList, sharedError = null)
+                }.onFailure {
+                    if (SharedModeManager.cachedSharedTransactions.isEmpty()) {
+                        // 캐시도 없고 연결도 안 됨 → 토글 되돌리기
+                        SharedModeManager.isSharedMode = false
+                        preferencesRepository.setIsSharedMode(false)
+                        uiState = uiState.copy(
+                            isSharedMode = false,
+                            sharedTransactions = emptyList(),
+                            sharedError = "인터넷 연결을 확인해주세요."
+                        )
+                        sharedTransactionJob?.cancel()
+                    }
+                    // 캐시가 있으면 기존 데이터 유지 (아무것도 안 함)
+                }
+            }
         }
     }
 

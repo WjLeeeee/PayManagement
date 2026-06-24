@@ -715,7 +715,7 @@ fun CategoryBudgetCard(
                             Spacer(modifier = Modifier.height(4.dp))
                             budget.categories.forEach { category ->
                                 Text(
-                                    text = "  └─ ${category.emoji} ${category.name}",
+                                    text = "  └─ ${if (category.emoji.isNotBlank()) "${category.emoji} " else ""}${category.name}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -898,7 +898,7 @@ fun CategoryProgressCard(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "  ├─ ${category.emoji} ${category.name}:",
+                                        text = "  ├─ ${if (category.emoji.isNotBlank()) "${category.emoji} " else ""}${category.name}:",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
@@ -1017,10 +1017,12 @@ fun AddCategoryBudgetDialog(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Text(
-                                        text = category.emoji,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                    if (category.emoji.isNotBlank()) {
+                                        Text(
+                                            text = category.emoji,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
                                     Text(
                                         text = category.name,
                                         style = MaterialTheme.typography.bodyMedium,
@@ -1230,7 +1232,9 @@ fun EditCategoryBudgetDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(text = category.emoji, fontSize = 16.sp)
+                                if (category.emoji.isNotBlank()) {
+                                    Text(text = category.emoji, fontSize = 16.sp)
+                                }
                                 Text(
                                     text = category.name,
                                     style = MaterialTheme.typography.bodyMedium,

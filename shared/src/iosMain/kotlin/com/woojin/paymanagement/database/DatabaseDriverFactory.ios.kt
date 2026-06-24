@@ -576,6 +576,30 @@ actual class DatabaseDriverFactory {
             // 이미 존재하면 무시
         }
 
+        // CategoryEntity에 parentId 컬럼 추가 (Schema v20 - 소분류 지원)
+        try {
+            driver.execute(
+                null,
+                "ALTER TABLE CategoryEntity ADD COLUMN parentId TEXT",
+                0,
+                null
+            )
+        } catch (e: Exception) {
+            // 이미 존재하면 무시
+        }
+
+        // TransactionEntity에 subCategory 컬럼 추가 (Schema v20 - 소분류 지원)
+        try {
+            driver.execute(
+                null,
+                "ALTER TABLE TransactionEntity ADD COLUMN subCategory TEXT",
+                0,
+                null
+            )
+        } catch (e: Exception) {
+            // 이미 존재하면 무시
+        }
+
         // 기존 "적금" 거래/카테고리/반복거래를 SAVING 타입으로 마이그레이션 (Schema v18)
         try {
             driver.execute(

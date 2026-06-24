@@ -39,12 +39,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.domain.model.DailySummary
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
 import com.woojin.paymanagement.strings.AppStrings
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.InvestmentColor
@@ -334,7 +336,8 @@ fun TransactionDetailItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onSaveAsRecurring: () -> Unit,
-    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList()
+    availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
+    showMineIndicator: Boolean = false
 ) {
     val strings = LocalStrings.current
     Card(
@@ -391,12 +394,15 @@ fun TransactionDetailItem(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        val categoryEmoji = getCategoryEmoji(transaction.category, availableCategories)
+                        if (categoryEmoji.isNotBlank()) {
+                            Text(
+                                text = categoryEmoji,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                         Text(
-                            text = getCategoryEmoji(transaction.category, availableCategories),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = transaction.category,
+                            text = formatCategoryDisplay(transaction.category, transaction.subCategory),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -416,6 +422,22 @@ fun TransactionDetailItem(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+
+                        if (showMineIndicator) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    text = "나",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
                         }
                     }
 

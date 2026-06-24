@@ -11,4 +11,7 @@ interface PreferencesRepository {
     fun setMoneyVisible(visible: Boolean)
     fun getMonthlySalary(): Double
     fun setMonthlySalary(salary: Double)
+
+    fun isSharedMode(): Boolean
+    fun setIsSharedMode(enabled: Boolean)
 }

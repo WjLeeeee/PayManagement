@@ -718,7 +718,7 @@ object KoreanStrings : AppStrings {
     // ===== Category Management (additional) =====
     override val emojiLabel = "이모지"
     override val continueAction = "계속"
-    override fun deleteCategoryConfirmMessage(emoji: String, name: String) = "$emoji $name 카테고리를 정말 삭제하시겠습니까?"
+    override fun deleteCategoryConfirmMessage(emoji: String, name: String) = "${if (emoji.isNotBlank()) "$emoji " else ""}$name 카테고리를 정말 삭제하시겠습니까?"
     override val deleteCategoryTransactionWarning = "해당 카테고리로 등록된 기존 거래 내역은 삭제되지 않습니다."
 
     // ===== Card Management (additional) =====

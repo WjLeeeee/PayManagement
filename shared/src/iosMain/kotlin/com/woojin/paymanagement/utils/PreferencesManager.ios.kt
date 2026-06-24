@@ -165,4 +165,24 @@ actual class PreferencesManager {
     actual fun setReviewRequested() {
         userDefaults.setBool(true, forKey = "review_requested")
     }
+
+    actual fun getSharedRoomId(): String? = userDefaults.stringForKey("shared_room_id")
+
+    actual fun setSharedRoomId(roomId: String?) {
+        if (roomId != null) {
+            userDefaults.setObject(roomId, forKey = "shared_room_id")
+        } else {
+            userDefaults.removeObjectForKey("shared_room_id")
+        }
+    }
+
+    actual fun isSharedMode(): Boolean {
+        return userDefaults.boolForKey("is_shared_mode").takeIf {
+            userDefaults.objectForKey("is_shared_mode") != null
+        } ?: false
+    }
+
+    actual fun setIsSharedMode(enabled: Boolean) {
+        userDefaults.setBool(enabled, forKey = "is_shared_mode")
+    }
 }

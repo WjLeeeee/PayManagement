@@ -2,6 +2,7 @@ package com.woojin.paymanagement.presentation.calendar
 
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.domain.model.SharedTransaction
 import com.woojin.paymanagement.utils.PayPeriod
 import kotlinx.datetime.LocalDate
 
@@ -18,7 +19,12 @@ data class CalendarUiState(
     val transactionToMove: Transaction? = null,
     val availableCategories: List<Category> = emptyList(),
     val holidays: Set<LocalDate> = emptySet(),
-    val holidayNames: Map<LocalDate, String> = emptyMap()
+    val holidayNames: Map<LocalDate, String> = emptyMap(),
+    // 공유 모드
+    val isInSharedRoom: Boolean = false,
+    val isSharedMode: Boolean = false,
+    val sharedTransactions: List<SharedTransaction> = emptyList(),
+    val sharedError: String? = null
 )
 
 data class PayPeriodSummary(

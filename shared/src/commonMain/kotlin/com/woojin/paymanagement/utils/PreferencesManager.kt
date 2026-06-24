@@ -53,6 +53,14 @@ expect class PreferencesManager {
     // 앱 리뷰 요청
     fun isReviewRequested(): Boolean
     fun setReviewRequested()
+
+    // 공유방
+    fun getSharedRoomId(): String?
+    fun setSharedRoomId(roomId: String?)
+
+    // 공유 모드 상태 (앱 재시작 후 복원용)
+    fun isSharedMode(): Boolean
+    fun setIsSharedMode(enabled: Boolean)
 }
 
 enum class PaydayAdjustment {

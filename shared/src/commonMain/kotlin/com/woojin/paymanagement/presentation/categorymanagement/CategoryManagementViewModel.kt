@@ -68,7 +68,7 @@ class CategoryManagementViewModel(
     }
 
     fun addCategory() {
-        if (uiState.newCategoryName.isBlank() || uiState.newCategoryEmoji.isBlank()) {
+        if (uiState.newCategoryName.isBlank()) {
             return
         }
 
@@ -83,6 +83,49 @@ class CategoryManagementViewModel(
                 )
                 addCategoryUseCase(newCategory)
                 hideAddDialog()
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+            }
+        }
+    }
+
+    fun showAddSubDialog(parentCategory: Category) {
+        uiState = uiState.copy(
+            isAddSubDialogVisible = true,
+            addSubParentCategory = parentCategory,
+            newSubCategoryName = "",
+            newSubCategoryEmoji = ""
+        )
+    }
+
+    fun hideAddSubDialog() {
+        uiState = uiState.copy(isAddSubDialogVisible = false, addSubParentCategory = null)
+    }
+
+    fun updateNewSubCategoryName(name: String) {
+        uiState = uiState.copy(newSubCategoryName = name)
+    }
+
+    fun updateNewSubCategoryEmoji(emoji: String) {
+        uiState = uiState.copy(newSubCategoryEmoji = emoji)
+    }
+
+    fun addSubCategory() {
+        val parent = uiState.addSubParentCategory ?: return
+        if (uiState.newSubCategoryName.isBlank()) return
+
+        viewModelScope.launch {
+            try {
+                val subCategory = Category(
+                    id = uuid4().toString(),
+                    name = uiState.newSubCategoryName.trim(),
+                    emoji = uiState.newSubCategoryEmoji.trim(),
+                    type = parent.type,
+                    sortOrder = 0,
+                    parentId = parent.id
+                )
+                addCategoryUseCase(subCategory)
+                hideAddSubDialog()
             } catch (e: Exception) {
                 uiState = uiState.copy(error = e.message)
             }
@@ -145,7 +188,7 @@ class CategoryManagementViewModel(
 
     fun updateCategory() {
         val editingCategory = uiState.editingCategory ?: return
-        if (uiState.editCategoryName.isBlank() || uiState.editCategoryEmoji.isBlank()) {
+        if (uiState.editCategoryName.isBlank()) {
             return
         }
 

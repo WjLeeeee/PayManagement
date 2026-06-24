@@ -39,4 +39,10 @@ class PreferencesRepositoryImpl(
     override fun setMonthlySalary(salary: Double) {
         preferencesManager.setMonthlySalary(salary)
     }
+
+    override fun isSharedMode(): Boolean = preferencesManager.isSharedMode()
+
+    override fun setIsSharedMode(enabled: Boolean) {
+        preferencesManager.setIsSharedMode(enabled)
+    }
 }

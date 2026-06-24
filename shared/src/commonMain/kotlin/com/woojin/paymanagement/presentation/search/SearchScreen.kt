@@ -32,6 +32,7 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
 import com.woojin.paymanagement.strings.AppStrings
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.SavingColor
@@ -333,7 +334,9 @@ private fun SearchFilterSheet(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(text = emoji, style = MaterialTheme.typography.bodyMedium)
+                                if (emoji.isNotBlank()) {
+                                    Text(text = emoji, style = MaterialTheme.typography.bodyMedium)
+                                }
                                 Text(
                                     text = category.name,
                                     style = MaterialTheme.typography.bodyMedium,
@@ -574,21 +577,23 @@ private fun SearchResultItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(contentAlignment = Alignment.BottomEnd) {
-                Text(text = categoryEmoji, style = MaterialTheme.typography.headlineSmall)
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(
-                            when (transaction.type) {
-                                TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                                TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                                TransactionType.SAVING -> SavingColor.color
-                                TransactionType.INVESTMENT -> InvestmentColor.color
-                            }
-                        )
-                )
+            if (categoryEmoji.isNotBlank()) {
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    Text(text = categoryEmoji, style = MaterialTheme.typography.headlineSmall)
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when (transaction.type) {
+                                    TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                                    TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                    TransactionType.SAVING -> SavingColor.color
+                                    TransactionType.INVESTMENT -> InvestmentColor.color
+                                }
+                            )
+                    )
+                }
             }
 
             Column(modifier = Modifier.weight(1f)) {
@@ -602,7 +607,7 @@ private fun SearchResultItem(
                 )
                 val methodText = getPaymentMethodText(transaction, strings)
                 val subLine = buildString {
-                    append(transaction.category)
+                    append(formatCategoryDisplay(transaction.category, transaction.subCategory))
                     append("  ·  ")
                     append(transaction.date)
                     if (methodText.isNotBlank()) { append("  ·  "); append(methodText) }

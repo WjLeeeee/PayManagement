@@ -18,7 +18,8 @@ data class Transaction(
     val giftCardId: String? = null,      // 상품권 ID (수입 시 생성, 지출 시 사용)
     val cardName: String? = null,        // 잔액권/상품권 이름
     val settlementAmount: Double? = null, // 정산받을 금액 (더치페이 시)
-    val isSettlement: Boolean = false    // 더치페이 여부
+    val isSettlement: Boolean = false,   // 더치페이 여부
+    val subCategory: String? = null      // 소분류
 ) {
     /**
      * 화면에 표시할 금액 (정산금액 제외)
