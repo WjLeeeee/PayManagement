@@ -46,6 +46,8 @@ class CalendarViewModel(
     private val adjustment: com.woojin.paymanagement.utils.PaydayAdjustment get() = preferencesRepository.getPaydayAdjustment()
 
     private var sharedTransactionJob: Job? = null
+    private var observedStartDate: LocalDate? = null
+    private var observedEndDate: LocalDate? = null
 
     companion object {
         private val HOLIDAY_API_KEY = com.woojin.paymanagement.BuildKonfig.HOLIDAY_API_KEY
@@ -65,6 +67,12 @@ class CalendarViewModel(
                     if (savedSharedMode) {
                         SharedModeManager.isSharedMode = true
                         uiState = uiState.copy(isSharedMode = true)
+                        // initializeCalendar가 먼저 실행된 경우 isSharedMode=false로 리스너를 못 시작했을 수 있음.
+                        // 이 시점에 급여기간이 이미 알려져 있으면 즉시 리스너를 시작하고,
+                        // 아직 모르면 현재 날짜 기준으로 직접 계산해서 시작.
+                        val payPeriod = uiState.currentPayPeriod
+                            ?: payPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
+                        startObservingSharedTransactions(payPeriod.startDate, payPeriod.endDate)
                     }
                 } else {
                     // 공유방 없으면 SharedModeManager 및 저장 상태 초기화
@@ -277,6 +285,13 @@ class CalendarViewModel(
         val roomId = SharedModeManager.sharedRoomId ?: return
         val repo = sharedRoomRepository ?: return
 
+        // 동일 기간을 이미 감지 중이면 리스너를 재시작하지 않음 (화면 복귀 시 불필요한 재구독 방지)
+        if (sharedTransactionJob?.isActive == true &&
+            observedStartDate == startDate &&
+            observedEndDate == endDate) return
+
+        observedStartDate = startDate
+        observedEndDate = endDate
         sharedTransactionJob?.cancel()
         sharedTransactionJob = coroutineScope.launch {
             repo.observeTransactions(roomId, startDate, endDate).collect { result ->

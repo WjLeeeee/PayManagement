@@ -2024,11 +2024,7 @@ fun PayManagementApp(
                     editTransaction = transaction
                     navigateTo(Screen.AddTransaction)
                 },
-                onDeleteTransaction = { transaction ->
-                    scope.launch {
-                        databaseHelper.deleteTransaction(transaction.id)
-                    }
-                },
+                onDeleteTransaction = { },
                 onAddTransaction = {
                     editTransaction = null
                     navigateTo(Screen.AddTransaction)

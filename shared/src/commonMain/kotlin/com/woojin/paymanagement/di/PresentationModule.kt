@@ -21,7 +21,7 @@ import org.koin.dsl.module
 
 val presentationModule = module {
     // ViewModels
-    factory {
+    single {
         CalendarViewModel(
             preferencesRepository = get(),
             getPayPeriodSummaryUseCase = get(),
