@@ -19,6 +19,11 @@
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-9195598687879551~4586180090"/>
 
+        <!-- Compose 단일 Activity 앱이므로 자동 화면 추적 비활성화 (수동 logScreenView 사용) -->
+        <meta-data
+            android:name="google_analytics_automatic_screen_reporting_enabled"
+            android:value="false"/>
+
         <!-- AD_SERVICES_CONFIG 충돌 해결 (AdMob vs Firebase Analytics) -->
         <property
             android:name="android.adservices.AD_SERVICES_CONFIG"
