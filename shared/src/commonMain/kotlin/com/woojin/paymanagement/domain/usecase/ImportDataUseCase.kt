@@ -301,6 +301,7 @@ class ImportDataUseCase(
         dayOfMonth = dayOfMonth,
         dayOfWeek = dayOfWeek,
         weekendHandling = WeekendHandling.valueOf(weekendHandling),
+        includeWeekends = includeWeekends,
         isActive = isActive,
         createdAt = createdAt,
         lastExecutedDate = lastExecutedDate

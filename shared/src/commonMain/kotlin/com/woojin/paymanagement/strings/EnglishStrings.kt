@@ -789,6 +789,9 @@ object EnglishStrings : AppStrings {
     override val applyAsIs = "Keep as is"
     override val moveToPreviousWeekday = "Move to previous weekday"
     override val moveToNextWeekday = "Move to next weekday"
+    override val includeWeekendsOptionLabel = "Include Weekends"
+    override val includeWeekendsOption = "Include weekends"
+    override val excludeWeekendsOption = "Exclude weekends"
     override val noCategoriesRegistered = "No categories registered"
     override val memoOptionalShort = "Memo (optional)"
 

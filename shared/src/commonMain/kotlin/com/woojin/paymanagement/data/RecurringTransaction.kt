@@ -10,7 +10,8 @@ import kotlinx.datetime.plus
  */
 enum class RecurringPattern {
     MONTHLY,  // 매달 (특정 날짜)
-    WEEKLY    // 매주 (특정 요일)
+    WEEKLY,   // 매주 (특정 요일)
+    DAILY     // 매일
 }
 
 /**
@@ -40,6 +41,7 @@ data class RecurringTransaction(
     val dayOfMonth: Int? = null,  // 1~31 (MONTHLY일 때 사용)
     val dayOfWeek: Int? = null,   // 1~7 (월~일, WEEKLY일 때 사용)
     val weekendHandling: WeekendHandling = WeekendHandling.AS_IS,  // 주말 처리 방식
+    val includeWeekends: Boolean = true,  // 주말 포함 여부 (DAILY일 때 사용)
     val isActive: Boolean = true,  // 활성화 여부
     val createdAt: Long,
     val lastExecutedDate: String? = null  // "2025-01-15" 마지막으로 자동 추가된 날짜
@@ -65,6 +67,13 @@ data class RecurringTransaction(
                 // 매주 패턴은 특정 요일이므로 주말 처리 필요 없음
                 // DayOfWeek.ordinal + 1 = ISO day number (1=월요일, 7=일요일)
                 return dayOfWeek != null && (today.dayOfWeek.ordinal + 1) == dayOfWeek
+            }
+            RecurringPattern.DAILY -> {
+                // 주말 미포함 설정이면 토/일에는 실행하지 않음
+                if (!includeWeekends && (today.dayOfWeek == DayOfWeek.SATURDAY || today.dayOfWeek == DayOfWeek.SUNDAY)) {
+                    return false
+                }
+                return true
             }
         }
 

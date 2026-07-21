@@ -748,6 +748,9 @@ object KoreanStrings : AppStrings {
     override val applyAsIs = "그대로 적용"
     override val moveToPreviousWeekday = "이전 평일로"
     override val moveToNextWeekday = "다음 평일로"
+    override val includeWeekendsOptionLabel = "주말 포함 여부"
+    override val includeWeekendsOption = "주말 포함"
+    override val excludeWeekendsOption = "주말 미포함"
     override val noCategoriesRegistered = "등록된 카테고리가 없습니다"
     override val memoOptionalShort = "메모 (선택)"
 
