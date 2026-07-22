@@ -2,21 +2,20 @@ package com.woojin.paymanagement.utils
 
 import android.app.Activity
 import android.content.Context
-import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient.BillingResponseCode
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
-import com.android.billingclient.api.BillingResult as GoogleBillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
-import com.android.billingclient.api.queryProductDetails
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import com.android.billingclient.api.BillingClient as GoogleBillingClient
+import com.android.billingclient.api.BillingResult as GoogleBillingResult
 
 /**
  * Android 인앱 결제 클라이언트 구현
@@ -60,7 +59,11 @@ actual class BillingClient(
     actual fun initialize(onReady: () -> Unit) {
         billingClient = GoogleBillingClient.newBuilder(context)
             .setListener(purchasesUpdatedListener)
-            .enablePendingPurchases()
+            .enablePendingPurchases(
+                PendingPurchasesParams.newBuilder()
+                    .enableOneTimeProducts()
+                    .build()
+            )
             .build()
 
         billingClient?.startConnection(object : BillingClientStateListener {
@@ -122,9 +125,9 @@ actual class BillingClient(
             .setProductList(productList)
             .build()
 
-        billingClient?.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+        billingClient?.queryProductDetailsAsync(params) { billingResult, queryProductDetailsResult ->
             if (billingResult.responseCode == BillingResponseCode.OK) {
-                productDetailsCache = productDetailsList.associateBy { it.productId }
+                productDetailsCache = queryProductDetailsResult.productDetailsList.associateBy { it.productId }
             }
         }
     }

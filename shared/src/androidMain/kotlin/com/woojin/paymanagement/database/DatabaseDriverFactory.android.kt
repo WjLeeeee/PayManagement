@@ -396,6 +396,7 @@ actual class DatabaseDriverFactory(private val context: Context) {
                 dayOfMonth INTEGER,
                 dayOfWeek INTEGER,
                 weekendHandling TEXT NOT NULL DEFAULT 'AS_IS',
+                includeWeekends INTEGER NOT NULL DEFAULT 1,
                 isActive INTEGER NOT NULL DEFAULT 1,
                 createdAt INTEGER NOT NULL,
                 lastExecutedDate TEXT
@@ -554,6 +555,17 @@ actual class DatabaseDriverFactory(private val context: Context) {
             driver.execute(
                 null,
                 "ALTER TABLE TransactionEntity ADD COLUMN subCategory TEXT",
+                0
+            )
+        } catch (e: Exception) {
+            // 이미 존재하면 무시
+        }
+
+        // RecurringTransactionEntity에 includeWeekends 컬럼 추가 (Schema v21 - 매일 반복 주말 포함 여부)
+        try {
+            driver.execute(
+                null,
+                "ALTER TABLE RecurringTransactionEntity ADD COLUMN includeWeekends INTEGER NOT NULL DEFAULT 1",
                 0
             )
         } catch (e: Exception) {

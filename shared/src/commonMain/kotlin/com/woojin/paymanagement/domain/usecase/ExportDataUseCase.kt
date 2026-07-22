@@ -175,6 +175,7 @@ class ExportDataUseCase(
         dayOfMonth = dayOfMonth,
         dayOfWeek = dayOfWeek,
         weekendHandling = weekendHandling.name,
+        includeWeekends = includeWeekends,
         isActive = isActive,
         createdAt = createdAt,
         lastExecutedDate = lastExecutedDate

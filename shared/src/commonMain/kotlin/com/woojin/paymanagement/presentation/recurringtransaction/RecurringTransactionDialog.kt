@@ -78,6 +78,7 @@ fun RecurringTransactionDialog(
     var dayOfMonth by remember { mutableStateOf(transaction?.dayOfMonth ?: 1) }
     var dayOfWeek by remember { mutableStateOf(transaction?.dayOfWeek ?: 1) }
     var selectedWeekendHandling by remember { mutableStateOf(transaction?.weekendHandling ?: com.woojin.paymanagement.data.WeekendHandling.AS_IS) }
+    var includeWeekends by remember { mutableStateOf(transaction?.includeWeekends ?: true) }
 
     // 카테고리 목록 필터링
     val filteredCategories = categories.filter { it.type == selectedType }
@@ -491,10 +492,61 @@ fun RecurringTransactionDialog(
                             selectedLabelColor = Color.White
                         )
                     )
+
+                    FilterChip(
+                        onClick = { selectedPattern = RecurringPattern.DAILY },
+                        label = { Text(strings.daily) },
+                        selected = selectedPattern == RecurringPattern.DAILY,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = if (selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            selectedLabelColor = Color.White
+                        )
+                    )
                 }
 
                 // 날짜 선택
-                if (selectedPattern == RecurringPattern.MONTHLY) {
+                if (selectedPattern == RecurringPattern.DAILY) {
+                    Text(
+                        text = strings.includeWeekendsOptionLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        listOf(
+                            true to strings.includeWeekendsOption,
+                            false to strings.excludeWeekendsOption
+                        ).forEach { (value, label) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { includeWeekends = value },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                androidx.compose.material3.RadioButton(
+                                    selected = includeWeekends == value,
+                                    onClick = { includeWeekends = value },
+                                    modifier = Modifier.size(40.dp),
+                                    colors = androidx.compose.material3.RadioButtonDefaults.colors(
+                                        selectedColor = if (selectedType == TransactionType.INCOME)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.error
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                } else if (selectedPattern == RecurringPattern.MONTHLY) {
                     Text(
                         text = strings.whichDayOfMonth,
                         style = MaterialTheme.typography.titleMedium,
@@ -678,6 +730,7 @@ fun RecurringTransactionDialog(
                                     dayOfMonth = if (selectedPattern == RecurringPattern.MONTHLY) dayOfMonth else null,
                                     dayOfWeek = if (selectedPattern == RecurringPattern.WEEKLY) dayOfWeek else null,
                                     weekendHandling = selectedWeekendHandling,
+                                    includeWeekends = includeWeekends,
                                     isActive = transaction?.isActive ?: true,
                                     createdAt = transaction?.createdAt ?: Clock.System.now().toEpochMilliseconds(),
                                     lastExecutedDate = transaction?.lastExecutedDate

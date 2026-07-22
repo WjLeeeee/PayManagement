@@ -126,6 +126,7 @@ object RecurringTransactionNotificationHelper {
             val patternText = when (firstTransaction.pattern) {
                 com.woojin.paymanagement.data.RecurringPattern.MONTHLY -> "매달"
                 com.woojin.paymanagement.data.RecurringPattern.WEEKLY -> "매주"
+                com.woojin.paymanagement.data.RecurringPattern.DAILY -> "매일"
             }
 
             // 금액 포맷 (콤마 추가)

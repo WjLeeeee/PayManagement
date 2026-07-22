@@ -739,6 +739,9 @@ interface AppStrings {
     val applyAsIs: String
     val moveToPreviousWeekday: String
     val moveToNextWeekday: String
+    val includeWeekendsOptionLabel: String
+    val includeWeekendsOption: String
+    val excludeWeekendsOption: String
     val noCategoriesRegistered: String
     val memoOptionalShort: String
 

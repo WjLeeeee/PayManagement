@@ -485,6 +485,13 @@ private fun getPatternText(transaction: RecurringTransaction, strings: AppString
             }
             strings.recurringDayOfWeek(dayName)
         }
+        RecurringPattern.DAILY -> {
+            if (transaction.includeWeekends) {
+                strings.everyDay
+            } else {
+                "${strings.everyDay} (${strings.excludeWeekendsOption})"
+            }
+        }
     }
 }
 

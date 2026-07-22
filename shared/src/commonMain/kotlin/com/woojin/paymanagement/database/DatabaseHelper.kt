@@ -661,6 +661,7 @@ class DatabaseHelper(
             dayOfMonth = recurringTransaction.dayOfMonth?.toLong(),
             dayOfWeek = recurringTransaction.dayOfWeek?.toLong(),
             weekendHandling = recurringTransaction.weekendHandling.name,
+            includeWeekends = if (recurringTransaction.includeWeekends) 1 else 0,
             isActive = if (recurringTransaction.isActive) 1 else 0,
             createdAt = recurringTransaction.createdAt,
             lastExecutedDate = recurringTransaction.lastExecutedDate
@@ -682,6 +683,7 @@ class DatabaseHelper(
             dayOfMonth = recurringTransaction.dayOfMonth?.toLong(),
             dayOfWeek = recurringTransaction.dayOfWeek?.toLong(),
             weekendHandling = recurringTransaction.weekendHandling.name,
+            includeWeekends = if (recurringTransaction.includeWeekends) 1 else 0,
             isActive = if (recurringTransaction.isActive) 1 else 0,
             id = recurringTransaction.id
         )
@@ -722,6 +724,7 @@ class DatabaseHelper(
             } catch (e: Exception) {
                 com.woojin.paymanagement.data.WeekendHandling.AS_IS
             },
+            includeWeekends = this.includeWeekends == 1L,
             isActive = this.isActive == 1L,
             createdAt = this.createdAt,
             lastExecutedDate = this.lastExecutedDate

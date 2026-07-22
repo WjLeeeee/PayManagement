@@ -107,10 +107,11 @@ data class RecurringTransactionBackup(
     val balanceCardId: String? = null,
     val giftCardId: String? = null,
     val cardName: String? = null, // 커스텀 카드명 (CARD 결제 시)
-    val pattern: String, // "MONTHLY" or "WEEKLY"
+    val pattern: String, // "MONTHLY", "WEEKLY" or "DAILY"
     val dayOfMonth: Int? = null,
     val dayOfWeek: Int? = null,
     val weekendHandling: String = "AS_IS",
+    val includeWeekends: Boolean = true,
     val isActive: Boolean = true,
     val createdAt: Long,
     val lastExecutedDate: String? = null
