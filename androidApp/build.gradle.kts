@@ -22,11 +22,11 @@ play {
 
 android {
     namespace = "com.woojin.paymanagement.android"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 74
         versionName = "5.1"
     }
