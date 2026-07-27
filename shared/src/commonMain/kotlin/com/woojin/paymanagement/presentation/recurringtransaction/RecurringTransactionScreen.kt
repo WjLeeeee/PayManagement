@@ -13,6 +13,10 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -35,6 +39,7 @@ fun RecurringTransactionScreen(
 ) {
     val strings = LocalStrings.current
     val uiState = viewModel.uiState
+    var transactionToDelete by remember { mutableStateOf<RecurringTransaction?>(null) }
 
     // Android 뒤로가기 버튼 처리
     PlatformBackHandler(onBack = onNavigateBack)
@@ -100,7 +105,7 @@ fun RecurringTransactionScreen(
                             isHighlighted = true,
                             categories = uiState.categories,
                             onEdit = { viewModel.showEditDialog(transaction) },
-                            onDelete = { viewModel.deleteRecurringTransaction(transaction.id) },
+                            onDelete = { transactionToDelete = transaction },
                             onToggleActive = { viewModel.toggleActive(transaction) },
                             onClick = { onNavigateToAddTransaction(transaction) }
                         )
@@ -147,7 +152,7 @@ fun RecurringTransactionScreen(
                         isHighlighted = false,
                         categories = uiState.categories,
                         onEdit = { viewModel.showEditDialog(transaction) },
-                        onDelete = { viewModel.deleteRecurringTransaction(transaction.id) },
+                        onDelete = { transactionToDelete = transaction },
                         onToggleActive = { viewModel.toggleActive(transaction) },
                         onClick = null
                     )
@@ -164,6 +169,31 @@ fun RecurringTransactionScreen(
                 onDismiss = { viewModel.hideDialog() },
                 onSave = { transaction ->
                     viewModel.saveRecurringTransaction(transaction)
+                }
+            )
+        }
+
+        // 반복 거래 삭제 확인 다이얼로그
+        transactionToDelete?.let { transaction ->
+            AlertDialog(
+                onDismissRequest = { transactionToDelete = null },
+                title = { Text(strings.deleteRecurringTransaction) },
+                text = { Text(strings.deleteRecurringTransactionConfirm) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteRecurringTransaction(transaction.id)
+                            transactionToDelete = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(strings.delete)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { transactionToDelete = null }) {
+                        Text(strings.cancel)
+                    }
                 }
             )
         }
