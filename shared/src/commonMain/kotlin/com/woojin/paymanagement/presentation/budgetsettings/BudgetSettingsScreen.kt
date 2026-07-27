@@ -136,6 +136,7 @@ fun BudgetSettingsTab(
     onNavigateToCategoryManagement: () -> Unit
 ) {
     val strings = LocalStrings.current
+    var budgetToDelete by remember { mutableStateOf<CategoryBudgetWithProgress?>(null) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -321,7 +322,7 @@ fun BudgetSettingsTab(
             CategoryBudgetCard(
                 budget = budget,
                 onEdit = { viewModel.showEditDialog(budget) },
-                onDelete = { viewModel.deleteCategoryBudget(budget) }
+                onDelete = { budgetToDelete = budget }
             )
         }
 
@@ -420,6 +421,31 @@ fun BudgetSettingsTab(
                 }
             }
         }
+    }
+
+    // 카테고리 예산 삭제 확인 다이얼로그
+    budgetToDelete?.let { budget ->
+        AlertDialog(
+            onDismissRequest = { budgetToDelete = null },
+            title = { Text(strings.deleteBudget) },
+            text = { Text(strings.deleteBudgetConfirm) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteCategoryBudget(budget)
+                        budgetToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(strings.delete)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { budgetToDelete = null }) {
+                    Text(strings.cancel)
+                }
+            }
+        )
     }
 }
 
