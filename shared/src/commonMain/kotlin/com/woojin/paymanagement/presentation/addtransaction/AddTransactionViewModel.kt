@@ -154,10 +154,15 @@ class AddTransactionViewModel(
                     availableGiftCards.find { it.id == editTransaction.giftCardId }
                 } else null
 
-                // 공유만 저장된 거래인지 확인 (공유 캐시에 있고 로컬 transactions 목록에 없으면 공유만)
-                val isSharedOnly = SharedModeManager.isSharedMode &&
-                    SharedModeManager.cachedSharedTransactions.any { it.transaction.id == editTransaction.id } &&
-                    transactions.none { it.id == editTransaction.id }
+                // 기존 저장 대상 확인 (로컬/공유 캐시 존재 여부로 개인만/공유만/둘다 판별)
+                val isInLocal = transactions.any { it.id == editTransaction.id }
+                val isInSharedCache = SharedModeManager.isSharedMode &&
+                    SharedModeManager.cachedSharedTransactions.any { it.transaction.id == editTransaction.id }
+                val existingSaveTarget = when {
+                    isInSharedCache && isInLocal -> SaveTarget.BOTH
+                    isInSharedCache -> SaveTarget.SHARED_ONLY
+                    else -> SaveTarget.PERSONAL_ONLY
+                }
 
                 uiState = uiState.copy(
                     amount = TextFieldValue(
@@ -182,7 +187,7 @@ class AddTransactionViewModel(
                     availableGiftCards = availableGiftCards,
                     isEditMode = true,
                     editTransaction = editTransaction,
-                    saveTarget = if (isSharedOnly) SaveTarget.SHARED_ONLY else SaveTarget.BOTH,
+                    saveTarget = existingSaveTarget,
                     selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null,
                     selectedBalanceCard = preselectedBalanceCard,
                     selectedGiftCard = preselectedGiftCard

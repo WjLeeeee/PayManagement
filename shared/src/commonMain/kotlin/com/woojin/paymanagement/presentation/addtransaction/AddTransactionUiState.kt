@@ -66,7 +66,7 @@ data class AddTransactionUiState(
 
     // 공유방 저장 대상 (공유방 참여 중일 때만 사용)
     val isInSharedRoom: Boolean = false,
-    val saveTarget: SaveTarget = SaveTarget.BOTH
+    val saveTarget: SaveTarget = SaveTarget.PERSONAL_ONLY
 )
 
 val AddTransactionUiState.categories: List<String>
