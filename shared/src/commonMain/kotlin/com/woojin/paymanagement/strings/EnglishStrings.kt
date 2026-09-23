@@ -785,7 +785,7 @@ object EnglishStrings : AppStrings {
     override val recurringPatternLabel = "Recurrence Pattern"
     override val whichDayOfMonth = "Which day of the month?"
     override val whichDayOfWeek = "Which day of the week?"
-    override val weekendHandling = "Weekend Handling"
+    override val weekendHandling = "Weekend/Holiday Handling"
     override val applyAsIs = "Keep as is"
     override val moveToPreviousWeekday = "Move to previous weekday"
     override val moveToNextWeekday = "Move to next weekday"

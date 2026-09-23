@@ -744,7 +744,7 @@ object KoreanStrings : AppStrings {
     override val recurringPatternLabel = "반복 패턴"
     override val whichDayOfMonth = "매달 몇 일?"
     override val whichDayOfWeek = "매주 무슨 요일?"
-    override val weekendHandling = "주말 처리"
+    override val weekendHandling = "주말/공휴일 처리"
     override val applyAsIs = "그대로 적용"
     override val moveToPreviousWeekday = "이전 평일로"
     override val moveToNextWeekday = "다음 평일로"
