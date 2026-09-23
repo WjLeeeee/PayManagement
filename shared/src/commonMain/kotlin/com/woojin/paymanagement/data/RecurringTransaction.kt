@@ -47,9 +47,12 @@ data class RecurringTransaction(
     val lastExecutedDate: String? = null  // "2025-01-15" 마지막으로 자동 추가된 날짜
 ) {
     /**
-     * 오늘 실행해야 하는지 확인 (주말 처리 포함)
+     * 오늘 실행해야 하는지 확인 (주말/공휴일 처리 포함)
      */
-    fun shouldExecuteToday(today: LocalDate): Boolean {
+    suspend fun shouldExecuteToday(
+        today: LocalDate,
+        isHoliday: suspend (LocalDate) -> Boolean = { false }
+    ): Boolean {
         if (!isActive) return false
 
         // 원래 실행 날짜 계산
@@ -77,17 +80,20 @@ data class RecurringTransaction(
             }
         }
 
-        // 주말 처리 적용
-        val adjustedDate = adjustForWeekend(originalDate)
+        // 주말/공휴일 처리 적용
+        val adjustedDate = adjustForWeekend(originalDate, isHoliday)
         return today == adjustedDate
     }
 
     /**
-     * 주말이면 weekendHandling 설정에 따라 날짜 조정
+     * 주말/공휴일이면 weekendHandling 설정에 따라 날짜 조정
      */
-    private fun adjustForWeekend(date: LocalDate): LocalDate {
-        // 주말이 아니면 그대로 반환
-        if (date.dayOfWeek != DayOfWeek.SATURDAY && date.dayOfWeek != DayOfWeek.SUNDAY) {
+    private suspend fun adjustForWeekend(
+        date: LocalDate,
+        isHoliday: suspend (LocalDate) -> Boolean
+    ): LocalDate {
+        // 주말/공휴일이 아니면 그대로 반환
+        if (!isNonBusinessDay(date, isHoliday)) {
             return date
         }
 
@@ -96,7 +102,7 @@ data class RecurringTransaction(
             WeekendHandling.PREVIOUS_WEEKDAY -> {
                 // 이전 평일 찾기
                 var adjusted = date
-                while (adjusted.dayOfWeek == DayOfWeek.SATURDAY || adjusted.dayOfWeek == DayOfWeek.SUNDAY) {
+                while (isNonBusinessDay(adjusted, isHoliday)) {
                     adjusted = adjusted.plus(DatePeriod(days = -1))
                 }
                 adjusted
@@ -104,12 +110,20 @@ data class RecurringTransaction(
             WeekendHandling.NEXT_WEEKDAY -> {
                 // 다음 평일 찾기
                 var adjusted = date
-                while (adjusted.dayOfWeek == DayOfWeek.SATURDAY || adjusted.dayOfWeek == DayOfWeek.SUNDAY) {
+                while (isNonBusinessDay(adjusted, isHoliday)) {
                     adjusted = adjusted.plus(DatePeriod(days = 1))
                 }
                 adjusted
             }
         }
+    }
+
+    private suspend fun isNonBusinessDay(
+        date: LocalDate,
+        isHoliday: suspend (LocalDate) -> Boolean
+    ): Boolean {
+        val isWeekend = date.dayOfWeek == DayOfWeek.SATURDAY || date.dayOfWeek == DayOfWeek.SUNDAY
+        return isWeekend || isHoliday(date)
     }
 
     /**

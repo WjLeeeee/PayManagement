@@ -2294,7 +2294,10 @@ fun PayManagementApp(
 
         currentPayPeriod?.let { period ->
             CalculatorDialog(
-                transactions = transactions,
+                transactions = if (SharedModeManager.isSharedMode)
+                    SharedModeManager.cachedSharedTransactions.map { it.transaction }
+                else
+                    transactions,
                 onDismiss = { showCalculatorDialog = false },
                 initialPayPeriod = period,
                 allCategories = categories
