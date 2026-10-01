@@ -607,6 +607,14 @@ interface AppStrings {
     val groupNameInput: String
     val groupNameLabel: String
     val memoOptional: String
+    val budgetItemsOptional: String
+    val budgetItems: String
+    val addBudgetItem: String
+    val budgetItemName: String
+    val budgetItemsTotal: String
+    val applyItemsTotal: String
+    fun itemsExceedBudget(amount: String): String
+    fun itemsRemainder(amount: String): String
     val noCategoriesAvailable: String
     val includedCategories: String
     val categorySpending: String

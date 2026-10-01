@@ -8,6 +8,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benasher44.uuid.uuid4
+import com.woojin.paymanagement.data.BudgetItem
 import com.woojin.paymanagement.data.BudgetPlan
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.CategoryBudget
@@ -464,7 +465,8 @@ class BudgetSettingsViewModel(
                 availableCategories = availableCategories,
                 selectedCategories = emptySet(),
                 groupName = "",
-                newBudgetAmount = TextFieldValue("")
+                newBudgetAmount = TextFieldValue(""),
+                newBudgetItems = emptyList()
             )
         }
     }
@@ -475,7 +477,8 @@ class BudgetSettingsViewModel(
             selectedCategories = emptySet(),
             groupName = "",
             newBudgetAmount = TextFieldValue(""),
-            newBudgetMemo = ""
+            newBudgetMemo = "",
+            newBudgetItems = emptyList()
         )
     }
 
@@ -550,6 +553,7 @@ class BudgetSettingsViewModel(
 
                 // 카테고리 예산 추가
                 val memo = uiState.newBudgetMemo.ifBlank { null }
+                val items = uiState.newBudgetItems.toBudgetItems()
                 val categoryBudget = if (selectedCategories.size == 1) {
                     // 단일 카테고리
                     val category = selectedCategories.first()
@@ -560,7 +564,8 @@ class BudgetSettingsViewModel(
                         categoryName = category.name,
                         categoryEmoji = category.emoji,
                         allocatedAmount = amount,
-                        memo = memo
+                        memo = memo,
+                        items = items
                     )
                 } else {
                     // 카테고리 그룹
@@ -575,7 +580,8 @@ class BudgetSettingsViewModel(
                         categoryName = groupName,
                         categoryEmoji = "📦",  // 그룹은 항상 📦 이모지 사용
                         allocatedAmount = amount,
-                        memo = memo
+                        memo = memo,
+                        items = items
                     )
                 }
 
@@ -622,6 +628,7 @@ class BudgetSettingsViewModel(
                     selection = TextRange(formattedAmount.length)
                 ),
                 editMemo = budget.categoryBudget.memo ?: "",
+                editItems = budget.categoryBudget.items.map { it.toDraft() },
                 editAvailableCategories = editAvailableCategories,
                 editSelectedCategories = editSelectedCategories,
                 editGroupName = if (budget.categoryBudget.isGroup) budget.categoryBudget.categoryName else ""
@@ -635,6 +642,7 @@ class BudgetSettingsViewModel(
             editingBudget = null,
             editAmount = TextFieldValue(""),
             editMemo = "",
+            editItems = emptyList(),
             editAvailableCategories = emptyList(),
             editSelectedCategories = emptySet(),
             editGroupName = ""
@@ -704,7 +712,8 @@ class BudgetSettingsViewModel(
                     memo = memo,
                     categoryIds = categoryIds,
                     categoryName = categoryName,
-                    categoryEmoji = categoryEmoji
+                    categoryEmoji = categoryEmoji,
+                    items = uiState.editItems.toBudgetItems()
                 )
                 hideEditDialog()
             } catch (e: CancellationException) {
@@ -735,6 +744,84 @@ class BudgetSettingsViewModel(
 
     fun updateNewBudgetMemo(newMemo: String) {
         uiState = uiState.copy(newBudgetMemo = newMemo)
+    }
+
+    // ===== 세부 항목 (예산 추가 다이얼로그) =====
+
+    fun addNewBudgetItem() {
+        uiState = uiState.copy(newBudgetItems = uiState.newBudgetItems + BudgetItemDraft(id = uuid4().toString()))
+    }
+
+    fun updateNewBudgetItemName(itemId: String, name: String) {
+        uiState = uiState.copy(newBudgetItems = uiState.newBudgetItems.updateItem(itemId) { it.copy(name = name) })
+    }
+
+    fun updateNewBudgetItemAmount(itemId: String, newValue: TextFieldValue) {
+        val formatted = formatAmountInput(newValue) ?: return
+        uiState = uiState.copy(newBudgetItems = uiState.newBudgetItems.updateItem(itemId) { it.copy(amount = formatted) })
+    }
+
+    fun removeNewBudgetItem(itemId: String) {
+        uiState = uiState.copy(newBudgetItems = uiState.newBudgetItems.filterNot { it.id == itemId })
+    }
+
+    // 항목 합계를 배분 금액으로 적용
+    fun applyNewBudgetItemsTotal() {
+        val total = uiState.newBudgetItems.totalAmount
+        if (total <= 0) return
+        updateNewBudgetAmount(TextFieldValue(total.toLong().toString()))
+    }
+
+    // ===== 세부 항목 (예산 수정 다이얼로그) =====
+
+    fun addEditItem() {
+        uiState = uiState.copy(editItems = uiState.editItems + BudgetItemDraft(id = uuid4().toString()))
+    }
+
+    fun updateEditItemName(itemId: String, name: String) {
+        uiState = uiState.copy(editItems = uiState.editItems.updateItem(itemId) { it.copy(name = name) })
+    }
+
+    fun updateEditItemAmount(itemId: String, newValue: TextFieldValue) {
+        val formatted = formatAmountInput(newValue) ?: return
+        uiState = uiState.copy(editItems = uiState.editItems.updateItem(itemId) { it.copy(amount = formatted) })
+    }
+
+    fun removeEditItem(itemId: String) {
+        uiState = uiState.copy(editItems = uiState.editItems.filterNot { it.id == itemId })
+    }
+
+    fun applyEditItemsTotal() {
+        val total = uiState.editItems.totalAmount
+        if (total <= 0) return
+        updateEditAmount(TextFieldValue(total.toLong().toString()))
+    }
+
+    // 숫자만 허용하고 쉼표 포맷. 숫자가 아닌 입력이면 null (기존 값 유지)
+    private fun formatAmountInput(newValue: TextFieldValue): TextFieldValue? {
+        val digitsOnly = removeCommas(newValue.text)
+        if (digitsOnly.isNotEmpty() && !digitsOnly.matches(Regex("^\\d+$"))) return null
+        val formatted = if (digitsOnly.isEmpty()) "" else formatWithCommas(digitsOnly.toLongOrNull() ?: 0L)
+        return TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+    }
+
+    private fun List<BudgetItemDraft>.updateItem(
+        itemId: String,
+        transform: (BudgetItemDraft) -> BudgetItemDraft
+    ): List<BudgetItemDraft> = map { if (it.id == itemId) transform(it) else it }
+
+    // 이름이 비었거나 금액이 0 이하인 행은 저장하지 않음
+    private fun List<BudgetItemDraft>.toBudgetItems(): List<BudgetItem> =
+        filter { it.name.isNotBlank() && it.amountValue > 0 }
+            .map { BudgetItem(id = it.id, name = it.name.trim(), amount = it.amountValue) }
+
+    private fun BudgetItem.toDraft(): BudgetItemDraft {
+        val formatted = formatWithCommas(amount.toLong())
+        return BudgetItemDraft(
+            id = id,
+            name = name,
+            amount = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+        )
     }
 
     fun clearError() {

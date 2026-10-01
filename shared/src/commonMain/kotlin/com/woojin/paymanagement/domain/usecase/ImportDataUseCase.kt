@@ -275,7 +275,8 @@ class ImportDataUseCase(
         categoryName = categoryName,
         categoryEmoji = categoryEmoji,
         allocatedAmount = allocatedAmount,
-        memo = memo
+        memo = memo,
+        items = items.map { BudgetItem(id = it.id, name = it.name, amount = it.amount) }
     )
 
     private fun CustomPaymentMethodBackup.toCustomPaymentMethod() = CustomPaymentMethod(

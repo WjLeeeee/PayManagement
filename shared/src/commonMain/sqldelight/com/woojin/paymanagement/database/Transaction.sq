@@ -86,6 +86,7 @@ CREATE TABLE CategoryBudgetEntity (
     categoryEmoji TEXT NOT NULL,
     allocatedAmount REAL NOT NULL,
     memo TEXT,  -- 카테고리 예산에 대한 메모
+    items TEXT,  -- 세부 항목 JSON 배열 문자열 (예: [{"id":"..","name":"월세","amount":500000.0}])
     FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
 );
 
@@ -374,8 +375,8 @@ DELETE FROM BudgetPlanEntity;
 
 -- CategoryBudget 관련 쿼리들
 insertCategoryBudget:
-INSERT INTO CategoryBudgetEntity(id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO CategoryBudgetEntity(id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo, items)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 selectCategoryBudgetsByPlanId:
 SELECT * FROM CategoryBudgetEntity
@@ -384,12 +385,12 @@ ORDER BY categoryName ASC;
 
 updateCategoryBudget:
 UPDATE CategoryBudgetEntity
-SET allocatedAmount = ?, memo = ?
+SET allocatedAmount = ?, memo = ?, items = ?
 WHERE id = ?;
 
 updateCategoryBudgetFull:
 UPDATE CategoryBudgetEntity
-SET categoryIds = ?, categoryName = ?, categoryEmoji = ?, allocatedAmount = ?, memo = ?
+SET categoryIds = ?, categoryName = ?, categoryEmoji = ?, allocatedAmount = ?, memo = ?, items = ?
 WHERE id = ?;
 
 deleteCategoryBudget:

@@ -6,6 +6,7 @@ import com.woojin.paymanagement.data.GiftCardBackup
 import com.woojin.paymanagement.data.TransactionBackup
 import com.woojin.paymanagement.data.CategoryBackup
 import com.woojin.paymanagement.data.BudgetPlanBackup
+import com.woojin.paymanagement.data.BudgetItemBackup
 import com.woojin.paymanagement.data.CategoryBudgetBackup
 import com.woojin.paymanagement.data.RecurringTransactionBackup
 import com.woojin.paymanagement.data.CustomPaymentMethodBackup
@@ -157,7 +158,8 @@ class ExportDataUseCase(
         categoryName = categoryName,
         categoryEmoji = categoryEmoji,
         allocatedAmount = allocatedAmount,
-        memo = memo
+        memo = memo,
+        items = items.map { BudgetItemBackup(id = it.id, name = it.name, amount = it.amount) }
     )
 
     private fun com.woojin.paymanagement.data.RecurringTransaction.toBackup() = RecurringTransactionBackup(

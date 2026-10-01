@@ -92,7 +92,15 @@ data class CategoryBudgetBackup(
     val categoryName: String,
     val categoryEmoji: String,
     val allocatedAmount: Double,
-    val memo: String? = null // v3부터 추가
+    val memo: String? = null, // v3부터 추가
+    val items: List<BudgetItemBackup> = emptyList() // 세부 항목, 구버전 백업은 빈 리스트
+)
+
+@Serializable
+data class BudgetItemBackup(
+    val id: String,
+    val name: String,
+    val amount: Double
 )
 
 @Serializable

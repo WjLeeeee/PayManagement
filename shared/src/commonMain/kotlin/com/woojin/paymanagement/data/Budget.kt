@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.data
 
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.Serializable
 
 /**
  * 예산 템플릿
@@ -25,9 +26,22 @@ data class CategoryBudget(
     val categoryName: String,        // 단일: 카테고리명, 그룹: 그룹명
     val categoryEmoji: String,       // 단일: 카테고리 이모지, 그룹: 그룹 이모지
     val allocatedAmount: Double,
-    val memo: String? = null         // 카테고리 예산에 대한 메모 (예: 세부 항목)
+    val memo: String? = null,        // 카테고리 예산에 대한 메모
+    val items: List<BudgetItem> = emptyList()  // 세부 항목 (예: 월세 500,000 / 관리비 150,000)
 ) {
     // 편의 속성
     val isGroup: Boolean get() = categoryIds.size > 1
+    val itemsTotal: Double get() = items.sumOf { it.amount }
     val categoryId: String get() = categoryIds.firstOrNull() ?: ""  // 하위 호환성
 }
+
+/**
+ * 카테고리 예산의 세부 항목
+ * allocatedAmount를 어디에 얼마씩 배정했는지 나타내는 내역 (지출 추적 단위는 아님)
+ */
+@Serializable
+data class BudgetItem(
+    val id: String,
+    val name: String,
+    val amount: Double
+)

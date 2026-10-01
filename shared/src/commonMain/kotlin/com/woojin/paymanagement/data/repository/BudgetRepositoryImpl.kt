@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.data.repository
 
 import com.woojin.paymanagement.data.BudgetPlan
+import com.woojin.paymanagement.data.BudgetItem
 import com.woojin.paymanagement.data.CategoryBudget
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.repository.BudgetRepository
@@ -35,8 +36,13 @@ class BudgetRepositoryImpl(
         databaseHelper.insertCategoryBudget(categoryBudget)
     }
 
-    override suspend fun updateCategoryBudget(id: String, allocatedAmount: Double, memo: String?) {
-        databaseHelper.updateCategoryBudget(id, allocatedAmount, memo)
+    override suspend fun updateCategoryBudget(
+        id: String,
+        allocatedAmount: Double,
+        memo: String?,
+        items: List<BudgetItem>
+    ) {
+        databaseHelper.updateCategoryBudget(id, allocatedAmount, memo, items)
     }
 
     override suspend fun updateCategoryBudgetFull(
@@ -45,9 +51,10 @@ class BudgetRepositoryImpl(
         categoryName: String,
         categoryEmoji: String,
         allocatedAmount: Double,
-        memo: String?
+        memo: String?,
+        items: List<BudgetItem>
     ) {
-        databaseHelper.updateCategoryBudgetFull(id, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo)
+        databaseHelper.updateCategoryBudgetFull(id, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo, items)
     }
 
     override suspend fun deleteCategoryBudget(id: String) {

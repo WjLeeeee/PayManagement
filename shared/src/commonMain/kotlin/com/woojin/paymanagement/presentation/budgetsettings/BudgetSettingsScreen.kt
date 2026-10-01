@@ -25,10 +25,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.woojin.paymanagement.data.BudgetItem
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.utils.Utils
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PlatformBackHandler
+import com.woojin.paymanagement.utils.removeCommas
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,6 +100,13 @@ fun BudgetSettingsScreen(
                 onGroupNameChanged = { viewModel.updateGroupName(it) },
                 onAmountChanged = { viewModel.updateNewBudgetAmount(it) },
                 onMemoChanged = { viewModel.updateNewBudgetMemo(it) },
+                itemsActions = BudgetItemsEditorActions(
+                    onAddItem = { viewModel.addNewBudgetItem() },
+                    onNameChanged = { id, name -> viewModel.updateNewBudgetItemName(id, name) },
+                    onAmountChanged = { id, value -> viewModel.updateNewBudgetItemAmount(id, value) },
+                    onRemoveItem = { viewModel.removeNewBudgetItem(it) },
+                    onApplyTotal = { viewModel.applyNewBudgetItemsTotal() }
+                ),
                 onConfirm = { viewModel.addCategoryBudget() }
             )
         }
@@ -110,6 +119,13 @@ fun BudgetSettingsScreen(
                 onGroupNameChanged = { viewModel.updateEditGroupName(it) },
                 onAmountChanged = { viewModel.updateEditAmount(it) },
                 onMemoChanged = { viewModel.updateEditMemo(it) },
+                itemsActions = BudgetItemsEditorActions(
+                    onAddItem = { viewModel.addEditItem() },
+                    onNameChanged = { id, name -> viewModel.updateEditItemName(id, name) },
+                    onAmountChanged = { id, value -> viewModel.updateEditItemAmount(id, value) },
+                    onRemoveItem = { viewModel.removeEditItem(it) },
+                    onApplyTotal = { viewModel.applyEditItemsTotal() }
+                ),
                 onConfirm = { viewModel.updateCategoryBudget() }
             )
         }
@@ -750,6 +766,12 @@ fun CategoryBudgetCard(
                     }
                 }
 
+                // 세부 항목 표시
+                if (budget.categoryBudget.items.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    BudgetItemsSummary(items = budget.categoryBudget.items)
+                }
+
                 // 메모 표시
                 budget.categoryBudget.memo?.let { memo ->
                     if (memo.isNotBlank()) {
@@ -958,6 +980,12 @@ fun CategoryProgressCard(
                         }
                     }
                 }
+
+                // 세부 항목 표시
+                if (budget.categoryBudget.items.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    BudgetItemsSummary(items = budget.categoryBudget.items)
+                }
             }
         }
     }
@@ -972,6 +1000,7 @@ fun AddCategoryBudgetDialog(
     onGroupNameChanged: (String) -> Unit,
     onAmountChanged: (TextFieldValue) -> Unit,
     onMemoChanged: (String) -> Unit,
+    itemsActions: BudgetItemsEditorActions,
     onConfirm: () -> Unit
 ) {
     val strings = LocalStrings.current
@@ -1145,6 +1174,18 @@ fun AddCategoryBudgetDialog(
                 }
 
                 item {
+                    BudgetItemsEditor(
+                        items = uiState.newBudgetItems,
+                        budgetAmountText = uiState.newBudgetAmount.text,
+                        actions = itemsActions
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                item {
                     Text(
                         text = strings.memoOptional,
                         style = MaterialTheme.typography.titleMedium,
@@ -1201,6 +1242,7 @@ fun EditCategoryBudgetDialog(
     onGroupNameChanged: (String) -> Unit,
     onAmountChanged: (TextFieldValue) -> Unit,
     onMemoChanged: (String) -> Unit,
+    itemsActions: BudgetItemsEditorActions,
     onConfirm: () -> Unit
 ) {
     val strings = LocalStrings.current
@@ -1322,6 +1364,16 @@ fun EditCategoryBudgetDialog(
                     )
                 }
 
+                // 세부 항목
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    BudgetItemsEditor(
+                        items = uiState.editItems,
+                        budgetAmountText = uiState.editAmount.text,
+                        actions = itemsActions
+                    )
+                }
+
                 // 메모
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
@@ -1359,4 +1411,187 @@ fun EditCategoryBudgetDialog(
             }
         }
     )
+}
+
+/**
+ * 세부 항목 편집 콜백 모음 (추가/수정 다이얼로그 공용)
+ */
+class BudgetItemsEditorActions(
+    val onAddItem: () -> Unit,
+    val onNameChanged: (itemId: String, name: String) -> Unit,
+    val onAmountChanged: (itemId: String, value: TextFieldValue) -> Unit,
+    val onRemoveItem: (itemId: String) -> Unit,
+    val onApplyTotal: () -> Unit
+)
+
+/**
+ * 세부 항목 편집기: 항목명·금액 행 목록 + 추가 버튼 + 합계/예산 비교
+ */
+@Composable
+fun BudgetItemsEditor(
+    items: List<BudgetItemDraft>,
+    budgetAmountText: String,
+    actions: BudgetItemsEditorActions
+) {
+    val strings = LocalStrings.current
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        focusedLabelColor = MaterialTheme.colorScheme.primary
+    )
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = strings.budgetItemsOptional,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        items.forEach { item ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = item.name,
+                    onValueChange = { actions.onNameChanged(item.id, it) },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text(strings.budgetItemName) },
+                    singleLine = true,
+                    colors = fieldColors
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedTextField(
+                    value = item.amount,
+                    onValueChange = { actions.onAmountChanged(item.id, it) },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("0") },
+                    suffix = { Text(strings.currencySymbol) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    colors = fieldColors
+                )
+                IconButton(onClick = { actions.onRemoveItem(item.id) }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = strings.delete,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        TextButton(onClick = actions.onAddItem) {
+            Text(strings.addBudgetItem)
+        }
+
+        if (items.isNotEmpty()) {
+            val total = items.totalAmount
+            val budgetAmount = removeCommas(budgetAmountText).toDoubleOrNull() ?: 0.0
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = strings.budgetItemsTotal,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = strings.amountWithUnit(Utils.formatAmount(total)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            if (total > 0 && total != budgetAmount) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val diffText = when {
+                        total > budgetAmount -> strings.itemsExceedBudget(Utils.formatAmount(total - budgetAmount))
+                        else -> strings.itemsRemainder(Utils.formatAmount(budgetAmount - total))
+                    }
+                    Text(
+                        text = diffText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (total > budgetAmount) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = actions.onApplyTotal) {
+                        Text(strings.applyItemsTotal)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 카드에 표시하는 세부 항목 목록 (읽기 전용)
+ */
+@Composable
+fun BudgetItemsSummary(items: List<BudgetItem>) {
+    val strings = LocalStrings.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = strings.budgetItems,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            items.forEach { item ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "  · ${item.name}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = strings.amountWithUnit(Utils.formatAmount(item.amount)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "  ${strings.budgetItemsTotal}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = strings.amountWithUnit(Utils.formatAmount(items.sumOf { it.amount })),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
 }

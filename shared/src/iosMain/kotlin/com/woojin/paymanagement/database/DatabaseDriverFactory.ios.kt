@@ -307,6 +307,7 @@ actual class DatabaseDriverFactory {
                     categoryEmoji TEXT NOT NULL,
                     allocatedAmount REAL NOT NULL,
                     memo TEXT,
+                    items TEXT,
                     FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
                 )
                 """.trimIndent(),
@@ -344,6 +345,7 @@ actual class DatabaseDriverFactory {
                         categoryEmoji TEXT NOT NULL,
                         allocatedAmount REAL NOT NULL,
                         memo TEXT,
+                        items TEXT,
                         FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
                     )
                     """.trimIndent(),
@@ -365,6 +367,7 @@ actual class DatabaseDriverFactory {
                     categoryEmoji TEXT NOT NULL,
                     allocatedAmount REAL NOT NULL,
                     memo TEXT,
+                    items TEXT,
                     FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
                 )
                 """.trimIndent(),
@@ -400,6 +403,41 @@ actual class DatabaseDriverFactory {
                 driver.execute(
                     null,
                     "ALTER TABLE CategoryBudgetEntity ADD COLUMN memo TEXT",
+                    0,
+                    null
+                )
+            } catch (e: Exception) {
+                // 컬럼이 이미 존재하거나 테이블이 없는 경우 무시
+            }
+        }
+
+        // items 컬럼 추가 마이그레이션 (예산 세부 항목)
+        val hasItemsColumn = try {
+            driver.executeQuery(
+                null,
+                "PRAGMA table_info(CategoryBudgetEntity)",
+                { cursor ->
+                    var hasItems = false
+                    while (cursor.next().value) {
+                        val columnName = cursor.getString(1)
+                        if (columnName == "items") {
+                            hasItems = true
+                            break
+                        }
+                    }
+                    app.cash.sqldelight.db.QueryResult.Value(hasItems)
+                },
+                0
+            ).value
+        } catch (e: Exception) {
+            false
+        }
+
+        if (hasItemsColumn == false) {
+            try {
+                driver.execute(
+                    null,
+                    "ALTER TABLE CategoryBudgetEntity ADD COLUMN items TEXT",
                     0,
                     null
                 )

@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.domain.repository
 
 import com.woojin.paymanagement.data.BudgetPlan
+import com.woojin.paymanagement.data.BudgetItem
 import com.woojin.paymanagement.data.CategoryBudget
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
@@ -13,14 +14,20 @@ interface BudgetRepository {
 
     fun getCategoryBudgetsByPlanId(budgetPlanId: String): Flow<List<CategoryBudget>>
     suspend fun insertCategoryBudget(categoryBudget: CategoryBudget)
-    suspend fun updateCategoryBudget(id: String, allocatedAmount: Double, memo: String? = null)
+    suspend fun updateCategoryBudget(
+        id: String,
+        allocatedAmount: Double,
+        memo: String? = null,
+        items: List<BudgetItem> = emptyList()
+    )
     suspend fun updateCategoryBudgetFull(
         id: String,
         categoryIds: List<String>,
         categoryName: String,
         categoryEmoji: String,
         allocatedAmount: Double,
-        memo: String? = null
+        memo: String? = null,
+        items: List<BudgetItem> = emptyList()
     )
     suspend fun deleteCategoryBudget(id: String)
 

@@ -4,6 +4,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.CategoryBudget
 import com.woojin.paymanagement.utils.PayPeriod
+import com.woojin.paymanagement.utils.removeCommas
 
 data class BudgetSettingsUiState(
     val currentPeriod: PayPeriod? = null,  // 실제 현재 급여 기간
@@ -25,6 +26,7 @@ data class BudgetSettingsUiState(
     val editingBudget: CategoryBudgetWithProgress? = null,
     val editAmount: TextFieldValue = TextFieldValue(""),
     val editMemo: String = "",  // 예산 수정 시 메모
+    val editItems: List<BudgetItemDraft> = emptyList(),  // 예산 수정 시 세부 항목
     val editAvailableCategories: List<Category> = emptyList(),  // 수정 다이얼로그용 선택 가능한 카테고리
     val editSelectedCategories: Set<Category> = emptySet(),  // 수정 다이얼로그에서 선택된 카테고리
     val editGroupName: String = "",  // 수정 다이얼로그에서 그룹명
@@ -32,8 +34,24 @@ data class BudgetSettingsUiState(
     val selectedCategories: Set<Category> = emptySet(),
     val groupName: String = "",
     val newBudgetAmount: TextFieldValue = TextFieldValue(""),
-    val newBudgetMemo: String = ""  // 예산 추가 시 메모
+    val newBudgetMemo: String = "",  // 예산 추가 시 메모
+    val newBudgetItems: List<BudgetItemDraft> = emptyList()  // 예산 추가 시 세부 항목
 )
+
+/**
+ * 다이얼로그에서 편집 중인 세부 항목 (금액은 쉼표 포맷된 입력값)
+ */
+data class BudgetItemDraft(
+    val id: String,
+    val name: String = "",
+    val amount: TextFieldValue = TextFieldValue("")
+) {
+    val amountValue: Double
+        get() = removeCommas(amount.text).toDoubleOrNull() ?: 0.0
+}
+
+val List<BudgetItemDraft>.totalAmount: Double
+    get() = sumOf { it.amountValue }
 
 enum class BudgetTab {
     SETTINGS,   // 예산 설정

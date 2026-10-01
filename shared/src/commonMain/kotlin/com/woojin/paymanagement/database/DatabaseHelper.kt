@@ -12,6 +12,7 @@ import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.data.FailedNotification
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.BudgetPlan
+import com.woojin.paymanagement.data.BudgetItem
 import com.woojin.paymanagement.data.CategoryBudget
 import com.woojin.paymanagement.data.RecurringTransaction
 import com.woojin.paymanagement.data.RecurringPattern
@@ -478,12 +479,18 @@ class DatabaseHelper(
             categoryName = categoryBudget.categoryName,
             categoryEmoji = categoryBudget.categoryEmoji,
             allocatedAmount = categoryBudget.allocatedAmount,
-            memo = categoryBudget.memo
+            memo = categoryBudget.memo,
+            items = encodeBudgetItems(categoryBudget.items)
         )
     }
 
-    suspend fun updateCategoryBudget(id: String, allocatedAmount: Double, memo: String? = null) {
-        queries.updateCategoryBudget(allocatedAmount, memo, id)
+    suspend fun updateCategoryBudget(
+        id: String,
+        allocatedAmount: Double,
+        memo: String? = null,
+        items: List<BudgetItem> = emptyList()
+    ) {
+        queries.updateCategoryBudget(allocatedAmount, memo, encodeBudgetItems(items), id)
     }
 
     suspend fun updateCategoryBudgetFull(
@@ -492,7 +499,8 @@ class DatabaseHelper(
         categoryName: String,
         categoryEmoji: String,
         allocatedAmount: Double,
-        memo: String? = null
+        memo: String? = null,
+        items: List<BudgetItem> = emptyList()
     ) {
         queries.updateCategoryBudgetFull(
             categoryIds = json.encodeToString(categoryIds),
@@ -500,8 +508,14 @@ class DatabaseHelper(
             categoryEmoji = categoryEmoji,
             allocatedAmount = allocatedAmount,
             memo = memo,
+            items = encodeBudgetItems(items),
             id = id
         )
+    }
+
+    // 세부 항목이 없으면 NULL로 저장
+    private fun encodeBudgetItems(items: List<BudgetItem>): String? {
+        return if (items.isEmpty()) null else json.encodeToString(items)
     }
 
     suspend fun deleteCategoryBudget(id: String) {
@@ -622,7 +636,14 @@ class DatabaseHelper(
             categoryName = this.categoryName,
             categoryEmoji = this.categoryEmoji,
             allocatedAmount = this.allocatedAmount,
-            memo = this.memo
+            memo = this.memo,
+            items = this.items?.let { raw ->
+                try {
+                    json.decodeFromString<List<BudgetItem>>(raw)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            } ?: emptyList()
         )
     }
 
