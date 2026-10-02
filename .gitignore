@@ -22,3 +22,8 @@ key.properties
 # Play Store 배포 인증 키 (절대 커밋하면 안 됨!)
 play-store-credentials.json
 *-credentials.json
+# 스토어 등록용 이미지 및 생성 스크립트 (로컬 보관용)
+store_assets/
+
+# Claude 앱이 채팅으로 보낸 파일을 자동 저장하는 폴더
+Claude outputs/
