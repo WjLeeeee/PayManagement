@@ -322,6 +322,15 @@ fun StatusBarOverlayScreen(
         )
     }
 
+    // 예산 관리 화면(예산 설정·사용 현황 탭 공용) 네이티브 광고 상태 관리
+    var budgetNativeAdState by remember { mutableStateOf<com.woojin.paymanagement.android.ads.NativeAdState>(com.woojin.paymanagement.android.ads.NativeAdState.Loading) }
+    val budgetNativeAdManager = remember {
+        com.woojin.paymanagement.android.ads.NativeAdManager(
+            context,
+            adUnitId = "ca-app-pub-9195598687879551/7183270228"
+        )
+    }
+
     // 광고 미리 로딩 (광고 제거가 활성화되지 않았을 때만)
     LaunchedEffect(Unit) {
         if (!preferencesManagerForAd.isAdRemovalActive()) {
@@ -357,12 +366,21 @@ fun StatusBarOverlayScreen(
                     calendarNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
                 }
             )
+            budgetNativeAdManager.loadAd(
+                onAdLoaded = { ad ->
+                    budgetNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Success(ad)
+                },
+                onAdFailed = {
+                    budgetNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+                }
+            )
         } else {
             // 광고 제거가 활성화되어 있으면 Failed 상태로 설정 (광고 없이 거래내역만 표시)
             nativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
             exitDialogNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
             comparisonNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
             calendarNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
+            budgetNativeAdState = com.woojin.paymanagement.android.ads.NativeAdState.Failed
         }
     }
 
@@ -373,6 +391,7 @@ fun StatusBarOverlayScreen(
             exitDialogNativeAdManager.destroy()
             comparisonNativeAdManager.destroy()
             calendarNativeAdManager.destroy()
+            budgetNativeAdManager.destroy()
         }
     }
 
@@ -543,6 +562,12 @@ fun StatusBarOverlayScreen(
                     comparisonNativeAdContent = if (comparisonNativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
                         {
                             val ad = (comparisonNativeAdState as com.woojin.paymanagement.android.ads.NativeAdState.Success).ad
+                            com.woojin.paymanagement.android.ads.NativeAdItem(nativeAd = ad)
+                        }
+                    } else null,
+                    budgetNativeAdContent = if (budgetNativeAdState is com.woojin.paymanagement.android.ads.NativeAdState.Success) {
+                        {
+                            val ad = (budgetNativeAdState as com.woojin.paymanagement.android.ads.NativeAdState.Success).ad
                             com.woojin.paymanagement.android.ads.NativeAdItem(nativeAd = ad)
                         }
                     } else null,

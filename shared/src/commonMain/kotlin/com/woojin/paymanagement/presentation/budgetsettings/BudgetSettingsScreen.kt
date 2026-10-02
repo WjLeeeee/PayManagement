@@ -40,7 +40,8 @@ import com.woojin.paymanagement.utils.removeCommas
 fun BudgetSettingsScreen(
     viewModel: BudgetSettingsViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToCategoryManagement: () -> Unit
+    onNavigateToCategoryManagement: () -> Unit,
+    nativeAdContent: (@Composable () -> Unit)? = null  // null이면 광고 없음 (로드 실패·광고 제거 구매 포함)
 ) {
     val strings = LocalStrings.current
     val uiState = viewModel.uiState
@@ -85,11 +86,13 @@ fun BudgetSettingsScreen(
                 BudgetTab.SETTINGS -> BudgetSettingsTab(
                     uiState = uiState,
                     viewModel = viewModel,
-                    onNavigateToCategoryManagement = onNavigateToCategoryManagement
+                    onNavigateToCategoryManagement = onNavigateToCategoryManagement,
+                    nativeAdContent = nativeAdContent
                 )
                 BudgetTab.PROGRESS -> BudgetProgressTab(
                     uiState = uiState,
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    nativeAdContent = nativeAdContent
                 )
             }
         }
@@ -173,7 +176,8 @@ fun BudgetSettingsScreen(
 fun BudgetSettingsTab(
     uiState: BudgetSettingsUiState,
     viewModel: BudgetSettingsViewModel,
-    onNavigateToCategoryManagement: () -> Unit
+    onNavigateToCategoryManagement: () -> Unit,
+    nativeAdContent: (@Composable () -> Unit)? = null
 ) {
     val strings = LocalStrings.current
     var budgetToDelete by remember { mutableStateOf<CategoryBudgetWithProgress?>(null) }
@@ -364,6 +368,11 @@ fun BudgetSettingsTab(
             }
         }
 
+        // 네이티브 광고
+        if (nativeAdContent != null) {
+            item { nativeAdContent() }
+        }
+
         // 카테고리별 예산 목록
         items(uiState.categoryBudgets) { budget ->
             CategoryBudgetCard(
@@ -500,7 +509,8 @@ fun BudgetSettingsTab(
 @Composable
 fun BudgetProgressTab(
     uiState: BudgetSettingsUiState,
-    viewModel: BudgetSettingsViewModel
+    viewModel: BudgetSettingsViewModel,
+    nativeAdContent: (@Composable () -> Unit)? = null
 ) {
     val strings = LocalStrings.current
     LazyColumn(
@@ -685,6 +695,11 @@ fun BudgetProgressTab(
                     }
                 }
             }
+        }
+
+        // 네이티브 광고
+        if (nativeAdContent != null) {
+            item { nativeAdContent() }
         }
 
         // 카테고리별 진행도
