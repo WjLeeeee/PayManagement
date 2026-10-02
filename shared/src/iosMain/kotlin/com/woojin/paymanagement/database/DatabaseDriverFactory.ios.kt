@@ -141,6 +141,7 @@ actual class DatabaseDriverFactory {
                 effectiveFromDate TEXT NOT NULL,
                 monthlySalary REAL NOT NULL,
                 createdAt TEXT NOT NULL,
+                transfers TEXT,
                 UNIQUE(effectiveFromDate)
             )
             """.trimIndent(),
@@ -308,6 +309,7 @@ actual class DatabaseDriverFactory {
                     allocatedAmount REAL NOT NULL,
                     memo TEXT,
                     items TEXT,
+                    transferItemId TEXT,
                     FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
                 )
                 """.trimIndent(),
@@ -346,6 +348,7 @@ actual class DatabaseDriverFactory {
                         allocatedAmount REAL NOT NULL,
                         memo TEXT,
                         items TEXT,
+                        transferItemId TEXT,
                         FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
                     )
                     """.trimIndent(),
@@ -368,6 +371,7 @@ actual class DatabaseDriverFactory {
                     allocatedAmount REAL NOT NULL,
                     memo TEXT,
                     items TEXT,
+                    transferItemId TEXT,
                     FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
                 )
                 """.trimIndent(),
@@ -445,6 +449,90 @@ actual class DatabaseDriverFactory {
                 // 컬럼이 이미 존재하거나 테이블이 없는 경우 무시
             }
         }
+
+        // BudgetPlanEntity.transfers 컬럼 추가 마이그레이션 (월급날 이체 계획)
+        val hasTransfersColumn = try {
+            driver.executeQuery(
+                null,
+                "PRAGMA table_info(BudgetPlanEntity)",
+                { cursor ->
+                    var found = false
+                    while (cursor.next().value) {
+                        val columnName = cursor.getString(1)
+                        if (columnName == "transfers") {
+                            found = true
+                            break
+                        }
+                    }
+                    app.cash.sqldelight.db.QueryResult.Value(found)
+                },
+                0
+            ).value
+        } catch (e: Exception) {
+            false
+        }
+
+        if (hasTransfersColumn == false) {
+            try {
+                driver.execute(
+                    null,
+                    "ALTER TABLE BudgetPlanEntity ADD COLUMN transfers TEXT",
+                    0,
+                    null
+                )
+            } catch (e: Exception) {
+                // 컬럼이 이미 존재하거나 테이블이 없는 경우 무시
+            }
+        }
+
+        // CategoryBudgetEntity.transferItemId 컬럼 추가 마이그레이션 (월급날 이체 계획)
+        val hasTransferItemIdColumn = try {
+            driver.executeQuery(
+                null,
+                "PRAGMA table_info(CategoryBudgetEntity)",
+                { cursor ->
+                    var found = false
+                    while (cursor.next().value) {
+                        val columnName = cursor.getString(1)
+                        if (columnName == "transferItemId") {
+                            found = true
+                            break
+                        }
+                    }
+                    app.cash.sqldelight.db.QueryResult.Value(found)
+                },
+                0
+            ).value
+        } catch (e: Exception) {
+            false
+        }
+
+        if (hasTransferItemIdColumn == false) {
+            try {
+                driver.execute(
+                    null,
+                    "ALTER TABLE CategoryBudgetEntity ADD COLUMN transferItemId TEXT",
+                    0,
+                    null
+                )
+            } catch (e: Exception) {
+                // 컬럼이 이미 존재하거나 테이블이 없는 경우 무시
+            }
+        }
+
+        // TransferCheckEntity 테이블이 없으면 생성 (급여 기간별 이체 완료 체크)
+        driver.execute(
+            null,
+            """
+            CREATE TABLE IF NOT EXISTS TransferCheckEntity (
+                periodStartDate TEXT NOT NULL,
+                transferItemId TEXT NOT NULL,
+                PRIMARY KEY (periodStartDate, transferItemId)
+            )
+            """.trimIndent(),
+            0,
+            null
+        )
 
         // RecurringTransactionEntity 테이블이 없으면 생성
         driver.execute(

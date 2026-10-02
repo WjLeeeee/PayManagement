@@ -1,8 +1,10 @@
 package com.woojin.paymanagement.domain.repository
 
 import com.woojin.paymanagement.data.BudgetPlan
+import com.woojin.paymanagement.data.BudgetAccountAllocation
 import com.woojin.paymanagement.data.BudgetItem
 import com.woojin.paymanagement.data.CategoryBudget
+import com.woojin.paymanagement.data.TransferItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
@@ -11,6 +13,10 @@ interface BudgetRepository {
     fun getAllBudgetPlans(): Flow<List<BudgetPlan>>
     suspend fun insertBudgetPlan(budgetPlan: BudgetPlan)
     suspend fun deleteBudgetPlan(id: String)
+    suspend fun updateBudgetPlanTransfers(id: String, transfers: List<TransferItem>)
+
+    fun getTransferChecksByPeriod(periodStartDate: LocalDate): Flow<Set<String>>
+    suspend fun setTransferChecked(periodStartDate: LocalDate, transferItemId: String, checked: Boolean)
 
     fun getCategoryBudgetsByPlanId(budgetPlanId: String): Flow<List<CategoryBudget>>
     suspend fun insertCategoryBudget(categoryBudget: CategoryBudget)
@@ -18,7 +24,8 @@ interface BudgetRepository {
         id: String,
         allocatedAmount: Double,
         memo: String? = null,
-        items: List<BudgetItem> = emptyList()
+        items: List<BudgetItem> = emptyList(),
+        accountAllocations: List<BudgetAccountAllocation> = emptyList()
     )
     suspend fun updateCategoryBudgetFull(
         id: String,
@@ -27,7 +34,8 @@ interface BudgetRepository {
         categoryEmoji: String,
         allocatedAmount: Double,
         memo: String? = null,
-        items: List<BudgetItem> = emptyList()
+        items: List<BudgetItem> = emptyList(),
+        accountAllocations: List<BudgetAccountAllocation> = emptyList()
     )
     suspend fun deleteCategoryBudget(id: String)
 

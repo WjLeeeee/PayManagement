@@ -44,7 +44,7 @@ val presentationModule = module {
     factory { ParsedTransactionViewModel(get(), get(), get()) }
     factory { CategoryManagementViewModel(get(), get(), get(), get()) }
     factory { CardManagementViewModel(get(), get(), get(), get(), get()) }
-    factory { BudgetSettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { BudgetSettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { TipDonationViewModel(get(), get()) }
     factory { AdRemovalViewModel(get(), get()) }
     factory { CouponViewModel(get()) }

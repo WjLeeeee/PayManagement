@@ -615,6 +615,24 @@ interface AppStrings {
     val applyItemsTotal: String
     fun itemsExceedBudget(amount: String): String
     fun itemsRemainder(amount: String): String
+    // 월급날 이체 계획
+    val transferPlan: String
+    val transferPlanShort: String
+    val setupTransferPlan: String
+    fun transferPlanSummary(count: Int, total: String): String
+    val editTransferPlan: String
+    val accountName: String
+    val transferTotal: String
+    fun transferExceedsSalary(amount: String): String
+    fun leftoverAfterTransfer(amount: String): String
+    fun linkedBudgetAmount(amount: String): String
+    fun shortageAmount(amount: String): String
+    val budgetAccountOptional: String
+    val accountSplitTotal: String
+    fun accountSplitExceeds(amount: String): String
+    fun accountSplitUnassigned(amount: String): String
+    val transferCheck: String
+    fun transferCheckProgress(done: Int, total: Int): String
     val noCategoriesAvailable: String
     val includedCategories: String
     val categorySpending: String

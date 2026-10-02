@@ -18,7 +18,8 @@ data class BackupData(
     val budgetPlans: List<BudgetPlanBackup> = emptyList(), // v3부터 추가
     val categoryBudgets: List<CategoryBudgetBackup> = emptyList(), // v3부터 추가
     val recurringTransactions: List<RecurringTransactionBackup> = emptyList(), // v5부터 추가
-    val customPaymentMethods: List<CustomPaymentMethodBackup> = emptyList() // v6부터 추가
+    val customPaymentMethods: List<CustomPaymentMethodBackup> = emptyList(), // v6부터 추가
+    val transferChecks: List<TransferCheckBackup> = emptyList() // 급여 기간별 이체 완료 체크
 )
 
 @Serializable
@@ -81,7 +82,21 @@ data class BudgetPlanBackup(
     val createdAt: String, // ISO 8601 형식
     // v3 하위 호환성을 위한 필드
     val periodStartDate: String? = null,
-    val periodEndDate: String? = null
+    val periodEndDate: String? = null,
+    val transfers: List<TransferItemBackup> = emptyList() // 월급날 이체 계획
+)
+
+@Serializable
+data class TransferItemBackup(
+    val id: String,
+    val accountName: String,
+    val amount: Double
+)
+
+@Serializable
+data class TransferCheckBackup(
+    val periodStartDate: String, // ISO 8601 형식 (YYYY-MM-DD)
+    val transferItemId: String
 )
 
 @Serializable
@@ -93,7 +108,14 @@ data class CategoryBudgetBackup(
     val categoryEmoji: String,
     val allocatedAmount: Double,
     val memo: String? = null, // v3부터 추가
-    val items: List<BudgetItemBackup> = emptyList() // 세부 항목, 구버전 백업은 빈 리스트
+    val items: List<BudgetItemBackup> = emptyList(), // 세부 항목, 구버전 백업은 빈 리스트
+    val accountAllocations: List<BudgetAccountAllocationBackup> = emptyList() // 사용 통장과 통장별 금액
+)
+
+@Serializable
+data class BudgetAccountAllocationBackup(
+    val transferItemId: String,
+    val amount: Double? = null // null = 예산 전액
 )
 
 @Serializable

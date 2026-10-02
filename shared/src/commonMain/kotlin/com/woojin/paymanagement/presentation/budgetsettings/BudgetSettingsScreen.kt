@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.Color
@@ -27,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.BudgetItem
 import com.woojin.paymanagement.data.Category
+import com.woojin.paymanagement.data.TransferItem
 import com.woojin.paymanagement.utils.Utils
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.PlatformBackHandler
@@ -107,6 +110,8 @@ fun BudgetSettingsScreen(
                     onRemoveItem = { viewModel.removeNewBudgetItem(it) },
                     onApplyTotal = { viewModel.applyNewBudgetItemsTotal() }
                 ),
+                onAccountToggled = { viewModel.toggleNewBudgetAccount(it) },
+                onAccountAmountChanged = { id, value -> viewModel.updateNewBudgetAccountAmount(id, value) },
                 onConfirm = { viewModel.addCategoryBudget() }
             )
         }
@@ -126,7 +131,26 @@ fun BudgetSettingsScreen(
                     onRemoveItem = { viewModel.removeEditItem(it) },
                     onApplyTotal = { viewModel.applyEditItemsTotal() }
                 ),
+                onAccountToggled = { viewModel.toggleEditAccount(it) },
+                onAccountAmountChanged = { id, value -> viewModel.updateEditAccountAmount(id, value) },
                 onConfirm = { viewModel.updateCategoryBudget() }
+            )
+        }
+
+        if (uiState.showTransferPlanSheet) {
+            TransferPlanSheet(
+                uiState = uiState,
+                onDismiss = { viewModel.hideTransferPlanSheet() },
+                onStartEditing = { viewModel.startTransferPlanEditing() },
+                onCancelEditing = { viewModel.cancelTransferPlanEditing() },
+                editorActions = BudgetItemsEditorActions(
+                    onAddItem = { viewModel.addTransferDraft() },
+                    onNameChanged = { id, name -> viewModel.updateTransferDraftName(id, name) },
+                    onAmountChanged = { id, value -> viewModel.updateTransferDraftAmount(id, value) },
+                    onRemoveItem = { viewModel.removeTransferDraft(it) },
+                    onApplyTotal = {}
+                ),
+                onSave = { viewModel.saveTransferPlan() }
             )
         }
 
@@ -255,6 +279,13 @@ fun BudgetSettingsTab(
                                 }
                             )
                         }
+
+                        // 월급날 이체 계획 요약 (탭하면 바텀시트)
+                        TransferPlanSummaryRow(
+                            transfers = uiState.transfers,
+                            salary = removeCommas(uiState.monthlySalary.text).toDoubleOrNull() ?: 0.0,
+                            onClick = { viewModel.showTransferPlanSheet() }
+                        )
                     }
                 }
             }
@@ -337,6 +368,7 @@ fun BudgetSettingsTab(
         items(uiState.categoryBudgets) { budget ->
             CategoryBudgetCard(
                 budget = budget,
+                accountSummary = uiState.accountSummaryOf(budget.categoryBudget),
                 onEdit = { viewModel.showEditDialog(budget) },
                 onDelete = { budgetToDelete = budget }
             )
@@ -527,6 +559,17 @@ fun BudgetProgressTab(
             }
         }
 
+        // 이체 체크 (보고 있는 급여 기간)
+        if (uiState.transfers.isNotEmpty()) {
+            item {
+                TransferCheckCard(
+                    transfers = uiState.transfers,
+                    checkedIds = uiState.transferChecks,
+                    onToggle = { viewModel.toggleTransferCheck(it) }
+                )
+            }
+        }
+
         // 전체 진행도
         item {
             Card(
@@ -646,7 +689,10 @@ fun BudgetProgressTab(
 
         // 카테고리별 진행도
         items(uiState.categoryBudgets) { budget ->
-            CategoryProgressCard(budget = budget)
+            CategoryProgressCard(
+                budget = budget,
+                accountSummary = uiState.accountSummaryOf(budget.categoryBudget)
+            )
         }
 
         if (uiState.categoryBudgets.isEmpty()) {
@@ -668,6 +714,7 @@ fun BudgetProgressTab(
 @Composable
 fun CategoryBudgetCard(
     budget: CategoryBudgetWithProgress,
+    accountSummary: List<Pair<String, Double?>>,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -724,6 +771,13 @@ fun CategoryBudgetCard(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            if (accountSummary.isNotEmpty()) {
+                                Text(
+                                    text = accountSummaryText(accountSummary, strings),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
 
@@ -808,7 +862,8 @@ fun CategoryBudgetCard(
 
 @Composable
 fun CategoryProgressCard(
-    budget: CategoryBudgetWithProgress
+    budget: CategoryBudgetWithProgress,
+    accountSummary: List<Pair<String, Double?>>
 ) {
     val strings = LocalStrings.current
     val progressColor = when {
@@ -852,12 +907,21 @@ fun CategoryProgressCard(
                         style = MaterialTheme.typography.headlineMedium
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = budget.categoryBudget.categoryName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Column {
+                        Text(
+                            text = budget.categoryBudget.categoryName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (accountSummary.isNotEmpty()) {
+                            Text(
+                                text = accountSummaryText(accountSummary, strings),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -1001,6 +1065,8 @@ fun AddCategoryBudgetDialog(
     onAmountChanged: (TextFieldValue) -> Unit,
     onMemoChanged: (String) -> Unit,
     itemsActions: BudgetItemsEditorActions,
+    onAccountToggled: (String) -> Unit,
+    onAccountAmountChanged: (String, TextFieldValue) -> Unit,
     onConfirm: () -> Unit
 ) {
     val strings = LocalStrings.current
@@ -1176,9 +1242,23 @@ fun AddCategoryBudgetDialog(
                 item {
                     BudgetItemsEditor(
                         items = uiState.newBudgetItems,
-                        budgetAmountText = uiState.newBudgetAmount.text,
+                        compareAmountText = uiState.newBudgetAmount.text,
+                        labels = budgetItemsEditorLabels(strings),
                         actions = itemsActions
                     )
+                }
+
+                item {
+                    if (uiState.transfers.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        BudgetAccountSelector(
+                            transfers = uiState.transfers,
+                            accounts = uiState.newBudgetAccounts,
+                            budgetAmountText = uiState.newBudgetAmount.text,
+                            onToggle = onAccountToggled,
+                            onAmountChanged = onAccountAmountChanged
+                        )
+                    }
                 }
 
                 item {
@@ -1243,6 +1323,8 @@ fun EditCategoryBudgetDialog(
     onAmountChanged: (TextFieldValue) -> Unit,
     onMemoChanged: (String) -> Unit,
     itemsActions: BudgetItemsEditorActions,
+    onAccountToggled: (String) -> Unit,
+    onAccountAmountChanged: (String, TextFieldValue) -> Unit,
     onConfirm: () -> Unit
 ) {
     val strings = LocalStrings.current
@@ -1369,9 +1451,24 @@ fun EditCategoryBudgetDialog(
                     Spacer(modifier = Modifier.height(16.dp))
                     BudgetItemsEditor(
                         items = uiState.editItems,
-                        budgetAmountText = uiState.editAmount.text,
+                        compareAmountText = uiState.editAmount.text,
+                        labels = budgetItemsEditorLabels(strings),
                         actions = itemsActions
                     )
+                }
+
+                // 사용 통장
+                item {
+                    if (uiState.transfers.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        BudgetAccountSelector(
+                            transfers = uiState.transfers,
+                            accounts = uiState.editAccounts,
+                            budgetAmountText = uiState.editAmount.text,
+                            onToggle = onAccountToggled,
+                            onAmountChanged = onAccountAmountChanged
+                        )
+                    }
                 }
 
                 // 메모
@@ -1425,12 +1522,34 @@ class BudgetItemsEditorActions(
 )
 
 /**
- * 세부 항목 편집기: 항목명·금액 행 목록 + 추가 버튼 + 합계/예산 비교
+ * 이름·금액 행 편집기의 문구 (세부 항목 / 이체 계획 공용)
+ */
+class ItemsEditorLabels(
+    val title: String,
+    val namePlaceholder: String,
+    val totalLabel: String,
+    val exceedText: (String) -> String,
+    val remainderText: (String) -> String,
+    val applyTotalLabel: String?  // null이면 "합계 적용" 버튼 숨김
+)
+
+fun budgetItemsEditorLabels(strings: com.woojin.paymanagement.strings.AppStrings) = ItemsEditorLabels(
+    title = strings.budgetItemsOptional,
+    namePlaceholder = strings.budgetItemName,
+    totalLabel = strings.budgetItemsTotal,
+    exceedText = strings::itemsExceedBudget,
+    remainderText = strings::itemsRemainder,
+    applyTotalLabel = strings.applyItemsTotal
+)
+
+/**
+ * 이름·금액 행 목록 + 추가 버튼 + 합계/기준 금액 비교 편집기
  */
 @Composable
 fun BudgetItemsEditor(
     items: List<BudgetItemDraft>,
-    budgetAmountText: String,
+    compareAmountText: String,
+    labels: ItemsEditorLabels,
     actions: BudgetItemsEditorActions
 ) {
     val strings = LocalStrings.current
@@ -1441,7 +1560,7 @@ fun BudgetItemsEditor(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = strings.budgetItemsOptional,
+            text = labels.title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -1457,7 +1576,7 @@ fun BudgetItemsEditor(
                     value = item.name,
                     onValueChange = { actions.onNameChanged(item.id, it) },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text(strings.budgetItemName) },
+                    placeholder = { Text(labels.namePlaceholder) },
                     singleLine = true,
                     colors = fieldColors
                 )
@@ -1489,7 +1608,7 @@ fun BudgetItemsEditor(
 
         if (items.isNotEmpty()) {
             val total = items.totalAmount
-            val budgetAmount = removeCommas(budgetAmountText).toDoubleOrNull() ?: 0.0
+            val budgetAmount = removeCommas(compareAmountText).toDoubleOrNull() ?: 0.0
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1497,7 +1616,7 @@ fun BudgetItemsEditor(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = strings.budgetItemsTotal,
+                    text = labels.totalLabel,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1517,8 +1636,8 @@ fun BudgetItemsEditor(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     val diffText = when {
-                        total > budgetAmount -> strings.itemsExceedBudget(Utils.formatAmount(total - budgetAmount))
-                        else -> strings.itemsRemainder(Utils.formatAmount(budgetAmount - total))
+                        total > budgetAmount -> labels.exceedText(Utils.formatAmount(total - budgetAmount))
+                        else -> labels.remainderText(Utils.formatAmount(budgetAmount - total))
                     }
                     Text(
                         text = diffText,
@@ -1526,8 +1645,10 @@ fun BudgetItemsEditor(
                         color = if (total > budgetAmount) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = actions.onApplyTotal) {
-                        Text(strings.applyItemsTotal)
+                    if (labels.applyTotalLabel != null) {
+                        TextButton(onClick = actions.onApplyTotal) {
+                            Text(labels.applyTotalLabel)
+                        }
                     }
                 }
             }
@@ -1591,6 +1712,419 @@ fun BudgetItemsSummary(items: List<BudgetItem>) {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+            }
+        }
+    }
+}
+
+/** 카드 표시용 통장 요약: 하나면 "ISA", 여럿이면 "ISA 400,000원 · 증권 200,000원" */
+private fun accountSummaryText(
+    summary: List<Pair<String, Double?>>,
+    strings: com.woojin.paymanagement.strings.AppStrings
+): String = summary.joinToString(" · ") { (name, amount) ->
+    if (amount == null) name else "$name ${strings.amountWithUnit(Utils.formatAmount(amount))}"
+}
+
+/**
+ * 예산 다이얼로그의 사용 통장 선택 (복수 선택, 다시 누르면 해제)
+ * 통장을 2개 이상 고르면 통장별 배분 금액 입력란과 예산 대비 합계를 보여준다
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun BudgetAccountSelector(
+    transfers: List<TransferItem>,
+    accounts: List<AccountDraft>,
+    budgetAmountText: String,
+    onToggle: (String) -> Unit,
+    onAmountChanged: (String, TextFieldValue) -> Unit
+) {
+    val strings = LocalStrings.current
+    val selectedIds = accounts.map { it.transferItemId }.toSet()
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = strings.budgetAccountOptional,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            transfers.forEach { transfer ->
+                FilterChip(
+                    selected = transfer.id in selectedIds,
+                    onClick = { onToggle(transfer.id) },
+                    label = { Text(transfer.accountName) }
+                )
+            }
+        }
+
+        if (accounts.size >= 2) {
+            Spacer(modifier = Modifier.height(8.dp))
+            // 이체 계획 순서대로 표시
+            transfers.filter { it.id in selectedIds }.forEach { transfer ->
+                val draft = accounts.first { it.transferItemId == transfer.id }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = transfer.accountName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = draft.amount,
+                        onValueChange = { onAmountChanged(transfer.id, it) },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("0") },
+                        suffix = { Text(strings.currencySymbol) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            val total = accounts.sumOf { it.amountValue }
+            val budgetAmount = removeCommas(budgetAmountText).toDoubleOrNull() ?: 0.0
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = strings.accountSplitTotal,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = strings.amountWithUnit(Utils.formatAmount(total)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            if (budgetAmount > 0 && total != budgetAmount) {
+                Text(
+                    text = if (total > budgetAmount) {
+                        strings.accountSplitExceeds(Utils.formatAmount(total - budgetAmount))
+                    } else {
+                        strings.accountSplitUnassigned(Utils.formatAmount(budgetAmount - total))
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (total > budgetAmount) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 사용 현황 탭: 보고 있는 급여 기간의 이체 완료 체크 카드
+ */
+@Composable
+fun TransferCheckCard(
+    transfers: List<TransferItem>,
+    checkedIds: Set<String>,
+    onToggle: (String) -> Unit
+) {
+    val strings = LocalStrings.current
+    val doneCount = transfers.count { it.id in checkedIds }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+                        )
+                    )
+                )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "💳 ${strings.transferCheck}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = strings.transferCheckProgress(doneCount, transfers.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (doneCount == transfers.size) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                transfers.forEach { transfer ->
+                    val checked = transfer.id in checkedIds
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onToggle(transfer.id) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = checked,
+                            onCheckedChange = { onToggle(transfer.id) }
+                        )
+                        Text(
+                            text = transfer.accountName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = strings.amountWithUnit(Utils.formatAmount(transfer.amount)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 급여 카드 하단: 이체 계획 한 줄 요약. 계획이 없으면 설정 안내
+ */
+@Composable
+fun TransferPlanSummaryRow(
+    transfers: List<TransferItem>,
+    salary: Double,
+    onClick: () -> Unit
+) {
+    val strings = LocalStrings.current
+    Spacer(modifier = Modifier.height(12.dp))
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(top = 12.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (transfers.isEmpty()) {
+            Text(
+                text = strings.setupTransferPlan,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            val total = transfers.sumOf { it.amount }
+            val leftover = salary - total
+            Text(
+                text = strings.transferPlanShort,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.weight(1f)) {
+                Text(
+                    text = strings.transferPlanSummary(transfers.size, Utils.formatAmount(total)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (salary > 0 && leftover != 0.0) {
+                    Text(
+                        text = if (leftover < 0) {
+                            strings.transferExceedsSalary(Utils.formatAmount(-leftover))
+                        } else {
+                            strings.leftoverAfterTransfer(Utils.formatAmount(leftover))
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (leftover < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "▸",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * 월급날 이체 계획 바텀시트: 보기 모드(통장별 이체액 + 연결 예산 비교) / 편집 모드
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TransferPlanSheet(
+    uiState: BudgetSettingsUiState,
+    onDismiss: () -> Unit,
+    onStartEditing: () -> Unit,
+    onCancelEditing: () -> Unit,
+    editorActions: BudgetItemsEditorActions,
+    onSave: () -> Unit
+) {
+    val strings = LocalStrings.current
+    val salary = removeCommas(uiState.monthlySalary.text).toDoubleOrNull() ?: 0.0
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            if (uiState.isTransferPlanEditing) {
+                BudgetItemsEditor(
+                    items = uiState.transferDrafts,
+                    compareAmountText = uiState.monthlySalary.text,
+                    labels = ItemsEditorLabels(
+                        title = strings.transferPlan,
+                        namePlaceholder = strings.accountName,
+                        totalLabel = strings.transferTotal,
+                        exceedText = strings::transferExceedsSalary,
+                        remainderText = strings::leftoverAfterTransfer,
+                        applyTotalLabel = null
+                    ),
+                    actions = editorActions
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onCancelEditing) {
+                        Text(strings.cancel)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = onSave, enabled = !uiState.isSaving) {
+                        Text(strings.save)
+                    }
+                }
+                return@Column
+            }
+
+            // ----- 보기 모드 -----
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = strings.transferPlan,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                TextButton(onClick = onStartEditing) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = strings.editTransferPlan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(strings.edit)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            uiState.transfers.forEach { transfer ->
+                val linkedBudget = uiState.categoryBudgets.sumOf { it.categoryBudget.amountForAccount(transfer.id) }
+                val diff = transfer.amount - linkedBudget
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = transfer.accountName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = strings.amountWithUnit(Utils.formatAmount(transfer.amount)),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (linkedBudget > 0) {
+                            val diffText = when {
+                                diff < 0 -> " · ${strings.shortageAmount(Utils.formatAmount(-diff))}"
+                                diff > 0 -> " · ${strings.itemsRemainder(Utils.formatAmount(diff))}"
+                                else -> ""
+                            }
+                            Text(
+                                text = strings.linkedBudgetAmount(Utils.formatAmount(linkedBudget)) + diffText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (diff < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+            val total = uiState.transfers.sumOf { it.amount }
+            val leftover = salary - total
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = strings.transferTotal,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = strings.amountWithUnit(Utils.formatAmount(total)),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (salary > 0 && leftover != 0.0) {
+                        Text(
+                            text = if (leftover < 0) {
+                                strings.transferExceedsSalary(Utils.formatAmount(-leftover))
+                            } else {
+                                strings.leftoverAfterTransfer(Utils.formatAmount(leftover))
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (leftover < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     }

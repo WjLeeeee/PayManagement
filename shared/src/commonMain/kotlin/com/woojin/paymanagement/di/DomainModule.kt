@@ -46,6 +46,9 @@ import com.woojin.paymanagement.domain.usecase.GetCategoryBudgetsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryBudgetUseCase
+import com.woojin.paymanagement.domain.usecase.UpdateTransferPlanUseCase
+import com.woojin.paymanagement.domain.usecase.GetTransferChecksUseCase
+import com.woojin.paymanagement.domain.usecase.SetTransferCheckedUseCase
 import com.woojin.paymanagement.domain.usecase.GetSpentAmountByCategoryUseCase
 import com.woojin.paymanagement.domain.usecase.PurchaseTipUseCase
 import com.woojin.paymanagement.domain.usecase.GetOldestTransactionDateUseCase
@@ -146,6 +149,9 @@ val domainModule = module {
     factoryOf(::SaveCategoryBudgetUseCase)
     factoryOf(::UpdateCategoryBudgetUseCase)
     factoryOf(::DeleteCategoryBudgetUseCase)
+    factoryOf(::UpdateTransferPlanUseCase)
+    factoryOf(::GetTransferChecksUseCase)
+    factoryOf(::SetTransferCheckedUseCase)
     factoryOf(::GetSpentAmountByCategoryUseCase)
     factoryOf(::GetOldestTransactionDateUseCase)
 
