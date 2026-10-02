@@ -27,7 +27,7 @@ android {
         applicationId = "com.woojin.paymanagement.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 83
+        versionCode = 84
         versionName = "6.1"
     }
 
