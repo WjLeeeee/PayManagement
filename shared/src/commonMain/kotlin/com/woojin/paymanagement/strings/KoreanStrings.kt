@@ -194,6 +194,11 @@ object KoreanStrings : AppStrings {
     override val editTransaction = "거래 수정"
     override val transactionDate = "거래 날짜"
     override val transactionAmount = "거래 금액"
+    override fun quickAmountLabel(amount: Long): String = when {
+        amount % 10_000L == 0L -> "+${amount / 10_000L}만"
+        amount % 1_000L == 0L -> "+${amount / 1_000L}천"
+        else -> "+$amount"
+    }
     override val transactionMemo = "메모"
     override val enterAmount = "금액을 입력하세요"
     override val enterMemo = "메모를 입력하세요"

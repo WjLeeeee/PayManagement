@@ -29,8 +29,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -49,6 +47,13 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.CustomPaymentMethod
 import com.woojin.paymanagement.data.GiftCard
@@ -65,62 +70,52 @@ fun TransactionTypeSelector(
 ) {
     val strings = LocalStrings.current
 
-    Column(modifier = modifier) {
-        Text(
-            text = strings.transactionType,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            TransactionType.values().forEach { type ->
-                Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .selectable(
-                            selected = (type == selectedType),
-                            onClick = { onTypeSelected(type) },
-                            role = Role.RadioButton
-                        ),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = (type == selectedType),
-                        onClick = null,
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+    // 세그먼트 컨트롤: 회색 트랙 위에 선택된 유형만 흰 버튼으로 떠 보이게 표시
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(4.dp)
+            .selectableGroup()
+    ) {
+        TransactionType.values().forEach { type ->
+            val isSelected = type == selectedType
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (isSelected) Modifier.shadow(1.dp, RoundedCornerShape(10.dp))
+                        else Modifier
                     )
-                    Text(
-                        text = when (type) {
-                            TransactionType.INCOME -> strings.income
-                            TransactionType.EXPENSE -> strings.expense
-                            TransactionType.SAVING -> strings.saving
-                            TransactionType.INVESTMENT -> strings.investment
-                        },
-                        modifier = Modifier.padding(start = 8.dp),
-                        color = when (type) {
-                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                            TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
-                            TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
-                        },
-                        fontWeight = FontWeight.Medium
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
+                    .selectable(
+                        selected = isSelected,
+                        onClick = { onTypeSelected(type) },
+                        role = Role.RadioButton
                     )
-                }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = when (type) {
+                        TransactionType.INCOME -> strings.income
+                        TransactionType.EXPENSE -> strings.expense
+                        TransactionType.SAVING -> strings.saving
+                        TransactionType.INVESTMENT -> strings.investment
+                    },
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) transactionTypeColor(type)
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun IncomeTypeSelector(
     selectedIncomeType: IncomeType,
@@ -139,46 +134,30 @@ fun IncomeTypeSelector(
     val strings = LocalStrings.current
 
     Column(modifier = modifier) {
-        Text(
-            text = strings.incomeType,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        SectionLabel(text = strings.incomeType)
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Column(modifier = Modifier.selectableGroup()) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             IncomeType.values().forEach { incomeType ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = (incomeType == selectedIncomeType),
-                            onClick = { onIncomeTypeSelected(incomeType) },
-                            role = Role.RadioButton
-                        )
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = (incomeType == selectedIncomeType),
-                        onClick = null,
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                    Text(
-                        text = when (incomeType) {
-                            IncomeType.CASH -> strings.cash
-                            IncomeType.BALANCE_CARD -> strings.balanceCard
-                            IncomeType.GIFT_CARD -> strings.giftCard
-                        },
-                        modifier = Modifier.padding(start = 8.dp),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                SelectablePillChip(
+                    label = when (incomeType) {
+                        IncomeType.CASH -> strings.cash
+                        IncomeType.BALANCE_CARD -> strings.balanceCard
+                        IncomeType.GIFT_CARD -> strings.giftCard
+                    },
+                    emoji = when (incomeType) {
+                        IncomeType.CASH -> "💵"
+                        IncomeType.BALANCE_CARD -> "🎫"
+                        IncomeType.GIFT_CARD -> "🎁"
+                    },
+                    selected = incomeType == selectedIncomeType,
+                    onClick = { onIncomeTypeSelected(incomeType) }
+                )
             }
         }
 
@@ -188,58 +167,20 @@ fun IncomeTypeSelector(
 
             // 기존 잔액권이 있을 때만 선택 옵션 표시
             if (availableBalanceCards.isNotEmpty()) {
-                Column(modifier = Modifier.selectableGroup()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = !isChargingExistingBalanceCard,
-                                onClick = { onChargingModeChanged(false) },
-                                role = Role.RadioButton
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = !isChargingExistingBalanceCard,
-                            onClick = null,
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        Text(
-                            text = strings.newBalanceCard,
-                            modifier = Modifier.padding(start = 8.dp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = isChargingExistingBalanceCard,
-                                onClick = { onChargingModeChanged(true) },
-                                role = Role.RadioButton
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = isChargingExistingBalanceCard,
-                            onClick = null,
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        Text(
-                            text = strings.chargeExistingBalanceCard,
-                            modifier = Modifier.padding(start = 8.dp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth().selectableGroup(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SelectablePillChip(
+                        label = strings.newBalanceCard,
+                        selected = !isChargingExistingBalanceCard,
+                        onClick = { onChargingModeChanged(false) }
+                    )
+                    SelectablePillChip(
+                        label = strings.chargeExistingBalanceCard,
+                        selected = isChargingExistingBalanceCard,
+                        onClick = { onChargingModeChanged(true) }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -322,6 +263,7 @@ fun IncomeTypeSelector(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PaymentMethodSelector(
     selectedPaymentMethod: PaymentMethod,
@@ -341,16 +283,15 @@ fun PaymentMethodSelector(
     val strings = LocalStrings.current
 
     Column(modifier = modifier) {
-        Text(
-            text = strings.paymentMethod,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        SectionLabel(text = strings.paymentMethod)
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Column(modifier = Modifier.selectableGroup()) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             PaymentMethod.values().forEach { paymentMethod ->
                 val isAvailable = when (paymentMethod) {
                     PaymentMethod.CASH -> true
@@ -360,36 +301,22 @@ fun PaymentMethodSelector(
                 }
 
                 if (isAvailable) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = (paymentMethod == selectedPaymentMethod),
-                                onClick = { onPaymentMethodSelected(paymentMethod) },
-                                role = Role.RadioButton
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (paymentMethod == selectedPaymentMethod),
-                            onClick = null,
-                            colors = RadioButtonDefaults.colors(
-                                selectedColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                        Text(
-                            text = when (paymentMethod) {
-                                PaymentMethod.CASH -> strings.cash
-                                PaymentMethod.CARD -> strings.card
-                                PaymentMethod.BALANCE_CARD -> strings.balanceCard
-                                PaymentMethod.GIFT_CARD -> strings.giftCard
-                            },
-                            modifier = Modifier.padding(start = 8.dp),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    SelectablePillChip(
+                        label = when (paymentMethod) {
+                            PaymentMethod.CASH -> strings.cash
+                            PaymentMethod.CARD -> strings.card
+                            PaymentMethod.BALANCE_CARD -> strings.balanceCard
+                            PaymentMethod.GIFT_CARD -> strings.giftCard
+                        },
+                        emoji = when (paymentMethod) {
+                            PaymentMethod.CASH -> "💵"
+                            PaymentMethod.CARD -> "💳"
+                            PaymentMethod.BALANCE_CARD -> "🎫"
+                            PaymentMethod.GIFT_CARD -> "🎁"
+                        },
+                        selected = paymentMethod == selectedPaymentMethod,
+                        onClick = { onPaymentMethodSelected(paymentMethod) }
+                    )
                 }
             }
         }
@@ -651,8 +578,8 @@ fun SettlementSection(
         ) {
             Text(
                 text = strings.dutchPaySettlement,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
@@ -661,9 +588,11 @@ fun SettlementSection(
                 onCheckedChange = onSettlementChange,
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
-                    checkedTrackColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    checkedTrackColor = com.woojin.paymanagement.theme.BrandColor.mint,
+                    checkedBorderColor = com.woojin.paymanagement.theme.BrandColor.mint,
                     uncheckedThumbColor = Color.White,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                    uncheckedBorderColor = Color.Transparent
                 )
             )
         }
@@ -683,9 +612,11 @@ fun SettlementSection(
                     suffix = { Text(strings.currencySymbol, color = MaterialTheme.colorScheme.onSurface) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
+                    shape = FilledInputShape,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        focusedBorderColor = com.woojin.paymanagement.theme.BrandColor.mint,
+                        focusedLabelColor = com.woojin.paymanagement.theme.BrandColor.mint,
+                        cursorColor = com.woojin.paymanagement.theme.BrandColor.mint
                     )
                 )
 
@@ -781,64 +712,85 @@ fun CategoryChipGrid(
         }
 
     Column(modifier = modifier) {
-        Text(
-            text = strings.category,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
+        SectionLabel(text = strings.category)
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        FlowRow(
+        // 한 줄에 5개씩 아이콘 타일 + 이름 형태로 표시
+        val columnCount = 5
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            categories.forEach { category ->
-                val isSelected = category == selectedCategory
-                val backgroundColor = when {
-                    isSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD)
-                    isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE)
-                    isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.lightBackground
-                    isSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.lightBackground
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                }
-                val borderColor = when {
-                    isSelected && transactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                    isSelected && transactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                    isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
-                    isSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
-                    else -> Color.Transparent
-                }
-                val textColor = when {
-                    isSelected -> Color.Black
-                    else -> MaterialTheme.colorScheme.onSurface
-                }
+            categories.chunked(columnCount).forEach { rowCategories ->
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    rowCategories.forEach { category ->
+                        val isSelected = category == selectedCategory
+                        // 선택 색상은 기존 규칙 유지: 거래 유형별 연한 배경 + 진한 테두리
+                        val backgroundColor = when {
+                            isSelected && transactionType == TransactionType.INCOME -> Color(0xFFE3F2FD)
+                            isSelected && transactionType == TransactionType.EXPENSE -> Color(0xFFFFEBEE)
+                            isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.lightBackground
+                            isSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.lightBackground
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        }
+                        val borderColor = when {
+                            isSelected && transactionType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                            isSelected && transactionType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                            isSelected && transactionType == TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+                            isSelected && transactionType == TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
+                            else -> Color.Transparent
+                        }
+                        val categoryEmoji = getCategoryEmoji(category, uiState)
 
-                Row(
-                    modifier = Modifier
-                        .border(
-                            width = if (isSelected) 2.dp else 0.dp,
-                            color = borderColor,
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                        .background(color = backgroundColor, shape = RoundedCornerShape(20.dp))
-                        .clickable { onCategorySelected(category) }
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val categoryEmoji = getCategoryEmoji(category, uiState)
-                    if (categoryEmoji.isNotBlank()) {
-                        Text(text = categoryEmoji, style = MaterialTheme.typography.bodyMedium)
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onCategorySelected(category) }
+                                .padding(vertical = 2.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .background(color = backgroundColor, shape = RoundedCornerShape(18.dp))
+                                    .border(
+                                        width = if (isSelected) 2.dp else 0.dp,
+                                        color = borderColor,
+                                        shape = RoundedCornerShape(18.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (categoryEmoji.isNotBlank()) {
+                                    Text(text = categoryEmoji, fontSize = 24.sp)
+                                } else {
+                                    // 이모지가 없는 카테고리는 첫 글자로 표시
+                                    Text(
+                                        text = category.take(1),
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = category,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) borderColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 2.dp)
+                            )
+                        }
                     }
-                    Text(
-                        text = category,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = textColor
-                    )
+                    // 마지막 줄의 빈 칸 채우기 (정렬 유지)
+                    repeat(columnCount - rowCategories.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }

@@ -235,6 +235,8 @@ object EnglishStrings : AppStrings {
     override val editTransaction = "Edit Transaction"
     override val transactionDate = "Date"
     override val transactionAmount = "Amount"
+    override fun quickAmountLabel(amount: Long): String =
+        if (amount % 1_000L == 0L) "+${amount / 1_000L}K" else "+$amount"
     override val transactionMemo = "Memo"
     override val enterAmount = "Enter amount"
     override val enterMemo = "Enter memo"

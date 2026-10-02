@@ -185,6 +185,7 @@ interface AppStrings {
     val editTransaction: String
     val transactionDate: String
     val transactionAmount: String
+    fun quickAmountLabel(amount: Long): String
     val transactionMemo: String
     val enterAmount: String
     val enterMemo: String
