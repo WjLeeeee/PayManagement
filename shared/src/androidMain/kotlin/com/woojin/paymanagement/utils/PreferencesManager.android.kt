@@ -101,6 +101,14 @@ actual class PreferencesManager(private val context: Context) {
         prefs.edit().putBoolean("permission_guide_shown", true).apply()
     }
 
+    actual fun isMoveTransactionHintSeen(): Boolean {
+        return prefs.getBoolean("move_transaction_hint_seen", false)
+    }
+
+    actual fun setMoveTransactionHintSeen() {
+        prefs.edit().putBoolean("move_transaction_hint_seen", true).apply()
+    }
+
     // 언어 설정
     actual fun getSystemLanguageCode(): String {
         val locale = java.util.Locale.getDefault().language

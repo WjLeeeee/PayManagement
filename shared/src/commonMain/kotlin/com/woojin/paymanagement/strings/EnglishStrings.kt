@@ -203,6 +203,7 @@ object EnglishStrings : AppStrings {
     override val showPayPeriod = "Show Pay Period"
     override val hidePayPeriod = "Hide Pay Period"
     override val viewDetails = "View Details"
+    override val moveTransactionHint = "Long-press a transaction to move it to another date"
     override val payPeriodStart = "Period Start"
     override val payPeriodEnd = "Period End"
     override fun payPeriodRange(startMonth: Int, startDay: Int, endMonth: Int, endDay: Int) =

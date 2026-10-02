@@ -1,14 +1,13 @@
 package com.woojin.paymanagement.presentation.calendar
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,8 +27,12 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -38,22 +40,14 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -75,10 +70,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
-import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
+import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialOverlay
 import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.theme.BrandColor
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.coroutines.delay
@@ -156,6 +152,8 @@ fun CalendarScreen(
     // EdgeToEdge 대응은 CalendarTutorialOverlay에서 처리됩니다
 
     var fabExpanded by remember { mutableStateOf(false) }
+    // 길게 눌러 날짜 이동 안내: 한 번 사용하기 전까지만 표시
+    var isMoveHintSeen by remember { mutableStateOf(preferencesManager.isMoveTransactionHintSeen()) }
     var showYearMonthPicker by remember { mutableStateOf(false) }
 
     // HorizontalPager 상태 (무한 스크롤을 위해 큰 pageCount 사용)
@@ -311,7 +309,12 @@ fun CalendarScreen(
                     tutorialViewModel = tutorialViewModel
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 달력과 상세 내역 사이 구분 띠 (화면 좌우 끝까지)
+                SectionBand()
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Daily Transaction Display
                 DailyTransactionCard(
@@ -331,7 +334,12 @@ fun CalendarScreen(
                     availableCategories = uiState.availableCategories,
                     onTransactionLongClick = { transaction ->
                         viewModel.startMoveMode(transaction)
+                        if (!isMoveHintSeen) {
+                            preferencesManager.setMoveTransactionHintSeen()
+                            isMoveHintSeen = true
+                        }
                     },
+                    showMoveHint = !isMoveHintSeen,
                     onCancelMoveMode = {
                         viewModel.cancelMoveMode()
                     },
@@ -588,237 +596,189 @@ private fun PayPeriodSummaryCard(
     val balance = income - expense
 
     val strings = LocalStrings.current
+    val onCard = Color.White
 
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onStatisticsClick() }
             .onGloballyPositioned { coordinates ->
                 val bounds = coordinates.boundsInWindow()
                 tutorialViewModel?.updateTargetBounds(
                     "pay_period_summary",
                     bounds
                 )
-            },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
+            }
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(BrandColor.mint, Color(0xFF47B49C))
                 )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
+            )
+            .clickable { onStatisticsClick() }
+            .padding(horizontal = 18.dp, vertical = 16.dp)
+    ) {
+        Column {
+            // 헤더: 제목 + 급여 기간 + 금액 숨김(자물쇠)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 헤더
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Text(
+                    text = "📊 ${strings.payPeriodSummary}",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = onCard
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(onCard.copy(alpha = 0.2f))
+                        .padding(horizontal = 9.dp, vertical = 3.dp)
                 ) {
                     Text(
-                        text = strings.payPeriodSummary,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = strings.payPeriodRange(
+                            payPeriod.startDate.monthNumber,
+                            payPeriod.startDate.dayOfMonth,
+                            payPeriod.endDate.monthNumber,
+                            payPeriod.endDate.dayOfMonth
+                        ),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = onCard,
+                        maxLines = 1
                     )
-
-                    androidx.compose.material3.IconButton(
-                        onClick = onToggleVisibility,
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = if (isMoneyVisible) strings.hideMoneyAmounts else strings.showMoneyAmounts,
-                            tint = if (isMoneyVisible) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f) else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 수입/지출/잔액 표시 (아이콘 추가)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Spacer(modifier = Modifier.weight(1f))
+                androidx.compose.material3.IconButton(
+                    onClick = onToggleVisibility,
+                    modifier = Modifier.size(24.dp)
                 ) {
-                    // 수입
-                    Column(horizontalAlignment = Alignment.Start) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💰",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = strings.income,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Text(
-                            text = "+${strings.amountWithUnit(Utils.formatAmount(income))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
-                        )
-                    }
-
-                    // 지출
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💸",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = strings.expense,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                        Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
-                        )
-                    }
-
-                    // 잔액
-                    Column(horizontalAlignment = Alignment.End) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💵",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = strings.balance,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        Text(
-                            text = "${
-                                when {
-                                    balance > 0 -> "+"
-                                    balance < 0 -> "-"
-                                    else -> ""
-                                }
-                            }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                balance > 0 -> MaterialTheme.colorScheme.primary
-                                balance < 0 -> MaterialTheme.colorScheme.error
-                                else -> MaterialTheme.colorScheme.onSurface
-                            },
-                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
-                        )
-                    }
-                }
-
-                // 저축 합계 (저축 거래가 있을 때만 표시)
-                if (saving > 0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        thickness = 0.5.dp
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = if (isMoneyVisible) strings.hideMoneyAmounts else strings.showMoneyAmounts,
+                        tint = if (isMoneyVisible) onCard.copy(alpha = 0.5f) else onCard,
+                        modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "🐷",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = strings.saving,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = com.woojin.paymanagement.theme.SavingColor.color
-                            )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 1줄: 수입 / 지출 / 잔액
+            Row(modifier = Modifier.fillMaxWidth()) {
+                SummaryValue(
+                    label = strings.income, emoji = null,
+                    value = "+${strings.amountWithUnit(Utils.formatAmount(income))}",
+                    align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
+                )
+                SummaryValue(
+                    label = strings.expense, emoji = null,
+                    value = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
+                    align = Alignment.CenterHorizontally, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
+                )
+                SummaryValue(
+                    label = strings.balance, emoji = null,
+                    value = "${
+                        when {
+                            balance > 0 -> "+"
+                            balance < 0 -> "-"
+                            else -> ""
                         }
-                        Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(saving))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = com.woojin.paymanagement.theme.SavingColor.color,
-                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                    }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}",
+                    align = Alignment.End, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
+                )
+            }
+
+            // 2줄: 저축 / 투자 (해당 거래가 있을 때만 표시 - 기존 조건 유지)
+            val hasSaving = saving > 0
+            val hasInvestment = investment != 0.0
+            if (hasSaving || hasInvestment) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(onCard.copy(alpha = 0.25f))
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    if (hasSaving) {
+                        SummaryValue(
+                            label = strings.saving, emoji = "🐷",
+                            value = "-${strings.amountWithUnit(Utils.formatAmount(saving))}",
+                            align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
                         )
                     }
-                }
-
-                // 투자 합계 (투자 거래가 있을 때만 표시)
-                if (investment != 0.0) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        thickness = 0.5.dp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💹",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = strings.investment,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = com.woojin.paymanagement.theme.InvestmentColor.color
-                            )
-                        }
-                        Text(
-                            text = "${if (investment > 0) "+" else "-"}${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(investment)))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = com.woojin.paymanagement.theme.InvestmentColor.color,
-                            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                    if (hasInvestment) {
+                        SummaryValue(
+                            label = strings.investment, emoji = "💹",
+                            value = "${if (investment > 0) "+" else "-"}${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(investment)))}",
+                            // 저축이 있으면 위 '지출' 칸과 같은 가운데 열, 없으면 첫 칸
+                            align = if (hasSaving) Alignment.CenterHorizontally else Alignment.Start,
+                            isMoneyVisible = isMoneyVisible,
+                            modifier = Modifier.weight(1f)
                         )
+                    }
+                    // 남는 칸을 비워서 위 3칸과 열을 맞춤
+                    repeat(3 - (if (hasSaving) 1 else 0) - (if (hasInvestment) 1 else 0)) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
         }
     }
+}
+
+/** 급여 기간 요약 카드의 라벨 + 금액 한 칸 (금액 숨김 시 블러 - 기존 동작 유지) */
+@Composable
+private fun SummaryValue(
+    label: String,
+    emoji: String?,
+    value: String,
+    align: Alignment.Horizontal,
+    isMoneyVisible: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, horizontalAlignment = align) {
+        Text(
+            text = if (emoji != null) "$emoji $label" else label,
+            fontSize = 12.sp,
+            color = Color.White.copy(alpha = 0.85f)
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = value,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            maxLines = 1,
+            modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+        )
+    }
+}
+
+/**
+ * 화면 좌우 끝까지 이어지는 회색 구분 띠.
+ * 부모 Column의 좌우 패딩(16dp)을 무시하고 전체 폭으로 그림.
+ */
+@Composable
+private fun SectionBand(horizontalBleed: androidx.compose.ui.unit.Dp = 16.dp) {
+    Box(
+        modifier = Modifier
+            .layout { measurable, constraints ->
+                val extra = horizontalBleed.roundToPx() * 2
+                val width = constraints.maxWidth + extra
+                val placeable = measurable.measure(
+                    constraints.copy(minWidth = width, maxWidth = width)
+                )
+                layout(constraints.maxWidth, placeable.height) {
+                    placeable.place(-extra / 2, 0)
+                }
+            }
+            .height(8.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    )
 }
 
 @Composable
@@ -1047,6 +1007,7 @@ private fun DailyTransactionCard(
     transactionToMove: Transaction? = null,
     availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
     onTransactionLongClick: (Transaction) -> Unit = {},
+    showMoveHint: Boolean = false,
     onCancelMoveMode: () -> Unit = {},
     onClick: (LocalDate?) -> Unit = {},
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
@@ -1056,117 +1017,146 @@ private fun DailyTransactionCard(
         transactions.filter { it.date == date }
     } ?: emptyList()
 
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 0.dp, max = 160.dp)
-            .clickable { onClick(selectedDate) }
             .onGloballyPositioned { coordinates ->
                 val bounds = coordinates.boundsInWindow()
                 tutorialViewModel?.updateTargetBounds(
                     "transaction_card",
                     bounds
                 )
-            },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
+            }
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick(selectedDate) }
+            .padding(vertical = 4.dp)
     ) {
-        Box(
+        // 헤더 또는 이동 모드 메시지
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
-                )
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                // 헤더 또는 이동 모드 메시지
-                Row(
+            if (isMoveMode) {
+                Text(
+                    text = "📍 ${strings.selectDateToMove}",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BrandColor.mint,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = strings.cancel,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                        .clickable { onCancelMoveMode() }
+                        .padding(4.dp)
+                )
+            } else if (selectedDate != null) {
+                val weekday = when (selectedDate.dayOfWeek) {
+                    kotlinx.datetime.DayOfWeek.MONDAY -> strings.monday
+                    kotlinx.datetime.DayOfWeek.TUESDAY -> strings.tuesday
+                    kotlinx.datetime.DayOfWeek.WEDNESDAY -> strings.wednesday
+                    kotlinx.datetime.DayOfWeek.THURSDAY -> strings.thursday
+                    kotlinx.datetime.DayOfWeek.FRIDAY -> strings.friday
+                    kotlinx.datetime.DayOfWeek.SATURDAY -> strings.saturday
+                    else -> strings.sunday
+                }
+                val holidayName = holidayNames[selectedDate]
+                Row(
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isMoveMode) {
+                    Text(
+                        text = "${strings.shortDate(selectedDate.monthNumber, selectedDate.dayOfMonth)} (${strings.weekdayShort(weekday)})",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (holidayName != null) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "📍 ${strings.selectDateToMove}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.weight(1f)
+                            text = holidayName,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.error
                         )
+                    }
+                    if (dayTransactions.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = strings.cancel,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .clickable { onCancelMoveMode() }
-                                .padding(4.dp)
-                        )
-                    } else {
-                        Text(
-                            text = if (selectedDate != null) {
-                                val count = dayTransactions.size
-                                val holidayName = holidayNames[selectedDate]
-                                val baseText = strings.dateTransactionHeader(selectedDate.monthNumber, selectedDate.dayOfMonth)
-                                val holidayText = if (holidayName != null) " ($holidayName)" else ""
-                                val countText = if (count > 0) " (${strings.transactionCount(count)})" else ""
-                                "📝 $baseText$holidayText$countText"
-                            } else {
-                                "📝 ${strings.selectDateToViewMemo}"
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = strings.transactionCount(dayTransactions.size),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (dayTransactions.isNotEmpty()) {
-                    // LazyColumn으로 스크롤 가능한 거래 목록 생성
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(dayTransactions) { transaction ->
-                            TransactionItem(
-                                transaction = transaction,
-                                isSelected = isMoveMode && transaction.id == transactionToMove?.id,
-                                onLongClick = { onTransactionLongClick(transaction) },
-                                availableCategories = availableCategories,
-                                showMineIndicator = isSharedMode && myTransactionIds != null && transaction.id in myTransactionIds
-                            )
-                        }
-                    }
-                } else if (selectedDate != null) {
+                // 날짜 상세 화면으로 이동할 수 있다는 표시 (영역 전체 클릭 동작은 기존과 동일)
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = strings.noTransactionsOnDate,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = strings.viewDetails,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandColor.mint
                     )
-                } else {
-                    Text(
-                        text = strings.tapCalendarToViewMemo,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = BrandColor.mint,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            } else {
+                Text(
+                    text = strings.selectDateToViewMemo,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        if (dayTransactions.isNotEmpty()) {
+            // 스크롤 가능한 거래 목록 (높이 제한 + 내부 스크롤은 기존 방식 유지)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 220.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                items(dayTransactions) { transaction ->
+                    TransactionItem(
+                        transaction = transaction,
+                        isSelected = isMoveMode && transaction.id == transactionToMove?.id,
+                        onLongClick = { onTransactionLongClick(transaction) },
+                        availableCategories = availableCategories,
+                        showMineIndicator = isSharedMode && myTransactionIds != null && transaction.id in myTransactionIds
                     )
                 }
             }
+            // 길게 눌러 날짜 이동 안내 (처음 한 번 사용하기 전까지만)
+            if (showMoveHint && !isMoveMode) {
+                Text(
+                    text = "💡 ${strings.moveTransactionHint}",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 6.dp)
+                )
+            }
+        } else {
+            Text(
+                text = if (selectedDate != null) strings.noTransactionsOnDate else strings.tapCalendarToViewMemo,
+                fontSize = 13.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+            )
         }
     }
 }
@@ -1180,148 +1170,135 @@ private fun TransactionItem(
     availableCategories: List<com.woojin.paymanagement.data.Category> = emptyList(),
     showMineIndicator: Boolean = false
 ) {
+    val strings = LocalStrings.current
+    val typeColor = when (transaction.type) {
+        TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
+        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
+    }
+
+    // 결제 수단 텍스트 (기존 규칙 그대로)
+    val paymentMethodText = when (transaction.type) {
+        TransactionType.INCOME -> {
+            when (transaction.incomeType) {
+                com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
+                com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
+                com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
+                null -> strings.cash
+            }
+        }
+        TransactionType.EXPENSE -> {
+            when (transaction.paymentMethod) {
+                com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
+                com.woojin.paymanagement.data.PaymentMethod.CARD -> transaction.cardName ?: strings.card
+                com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
+                com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
+                null -> strings.cash
+            }
+        }
+        TransactionType.SAVING -> ""
+        TransactionType.INVESTMENT -> ""
+    }.trim()
+    // 두 번째 줄: 사용처 · 결제수단
+    val subText = listOf(transaction.merchant.orEmpty().trim(), paymentMethodText)
+        .filter { it.isNotBlank() }
+        .joinToString(" · ")
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
             .combinedClickable(
                 onClick = {},
                 onLongClick = onLongClick
             )
-            .then(
-                if (isSelected) {
-                    Modifier
-                        .background(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .padding(8.dp)
-                } else {
-                    Modifier
-                }
-            ),
-        verticalAlignment = Alignment.Top
+            .background(
+                if (isSelected) BrandColor.mint.copy(alpha = 0.12f) else Color.Transparent
+            )
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        // 거래 유형 표시
+        // 카테고리 아이콘 타일 (거래 유형 색으로 은은하게)
+        val categoryEmoji = getCategoryEmoji(transaction.category, availableCategories)
         Box(
             modifier = Modifier
-                .size(8.dp)
-                .offset(y = 8.dp)
-                .clip(CircleShape)
-                .background(
-                    when (transaction.type) {
-                        TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
-                        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
-                    }
+                .size(40.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(typeColor.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (categoryEmoji.isNotBlank()) {
+                Text(text = categoryEmoji, fontSize = 19.sp)
+            } else {
+                Text(
+                    text = transaction.category.take(1),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = typeColor
                 )
-                .align(Alignment.Top)
-        )
+            }
+        }
 
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            val strings = LocalStrings.current
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val categoryEmoji = getCategoryEmoji(transaction.category, availableCategories)
-                    if (categoryEmoji.isNotBlank()) {
+                Text(
+                    text = formatCategoryDisplay(transaction.category, transaction.subCategory),
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                if (showMineIndicator) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    ) {
                         Text(
-                            text = categoryEmoji,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                    Text(
-                        text = formatCategoryDisplay(transaction.category, transaction.subCategory),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    if (showMineIndicator) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                                .padding(horizontal = 4.dp, vertical = 1.dp)
-                        ) {
-                            Text(
-                                text = "나",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-
-                    // 결제 수단 표시 (카테고리 옆에 괄호로)
-                    val paymentMethodText = when (transaction.type) {
-                        TransactionType.INCOME -> {
-                            when (transaction.incomeType) {
-                                com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
-                                com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                                com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
-                                null -> strings.cash
-                            }
-                        }
-                        TransactionType.EXPENSE -> {
-                            when (transaction.paymentMethod) {
-                                com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
-                                com.woojin.paymanagement.data.PaymentMethod.CARD -> transaction.cardName ?: strings.card
-                                com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                                com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
-                                null -> strings.cash
-                            }
-                        }
-                        TransactionType.SAVING -> ""
-                        TransactionType.INVESTMENT -> ""
-                    }
-                    if (paymentMethodText.isNotBlank()) {
-                        Text(
-                            text = "($paymentMethodText)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "나",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
-
-                val investmentIncomeCategories = setOf("익절", "배당금")
+            }
+            if (subText.isNotBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "${when (transaction.type) {
-                        TransactionType.INCOME -> "+"
-                        TransactionType.EXPENSE -> "-"
-                        TransactionType.SAVING -> "-"
-                        TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
-                    }}${
-                        strings.amountWithUnit(Utils.formatAmount(
-                            transaction.displayAmount
-                        ))
-                    }",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = when (transaction.type) {
-                        TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                        TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
-                        TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
-                    },
-                    fontWeight = FontWeight.Bold
+                    text = subText,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = transaction.merchant ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-            )
         }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        val investmentIncomeCategories = setOf("익절", "배당금")
+        Text(
+            text = "${when (transaction.type) {
+                TransactionType.INCOME -> "+"
+                TransactionType.EXPENSE -> "-"
+                TransactionType.SAVING -> "-"
+                TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
+            }}${
+                strings.amountWithUnit(Utils.formatAmount(
+                    transaction.displayAmount
+                ))
+            }",
+            fontSize = 14.5.sp,
+            color = typeColor,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

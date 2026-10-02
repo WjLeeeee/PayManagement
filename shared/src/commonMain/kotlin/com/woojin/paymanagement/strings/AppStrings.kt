@@ -154,6 +154,7 @@ interface AppStrings {
     val showPayPeriod: String
     val hidePayPeriod: String
     val viewDetails: String
+    val moveTransactionHint: String
     val payPeriodStart: String
     val payPeriodEnd: String
     fun payPeriodRange(startMonth: Int, startDay: Int, endMonth: Int, endDay: Int): String

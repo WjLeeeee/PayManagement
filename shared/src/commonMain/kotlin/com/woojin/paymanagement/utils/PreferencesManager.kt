@@ -37,6 +37,10 @@ expect class PreferencesManager {
     fun isPermissionGuideShown(): Boolean
     fun setPermissionGuideShown()
 
+    // 거래 길게 눌러 날짜 이동 안내 (한 번 사용하면 숨김)
+    fun isMoveTransactionHintSeen(): Boolean
+    fun setMoveTransactionHintSeen()
+
     // 언어 설정
     fun getSystemLanguageCode(): String // 시스템 로케일에서 언어 코드 가져오기
     fun getLanguageCode(): String // "ko" or "en"

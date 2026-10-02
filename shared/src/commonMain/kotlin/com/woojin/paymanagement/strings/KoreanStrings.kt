@@ -162,6 +162,7 @@ object KoreanStrings : AppStrings {
     override val showPayPeriod = "급여 기간 표시"
     override val hidePayPeriod = "급여 기간 숨기기"
     override val viewDetails = "상세 보기"
+    override val moveTransactionHint = "거래를 길게 누르면 다른 날짜로 옮길 수 있어요"
     override val payPeriodStart = "급여 기간 시작"
     override val payPeriodEnd = "급여 기간 종료"
     override fun payPeriodRange(startMonth: Int, startDay: Int, endMonth: Int, endDay: Int) =

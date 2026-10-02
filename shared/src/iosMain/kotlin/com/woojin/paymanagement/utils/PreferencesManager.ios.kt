@@ -122,6 +122,15 @@ actual class PreferencesManager {
         userDefaults.setBool(true, forKey = "permission_guide_shown")
     }
 
+    actual fun isMoveTransactionHintSeen(): Boolean {
+        // 저장된 값이 없으면 false 반환
+        return userDefaults.boolForKey("move_transaction_hint_seen")
+    }
+
+    actual fun setMoveTransactionHintSeen() {
+        userDefaults.setBool(true, forKey = "move_transaction_hint_seen")
+    }
+
     // 언어 설정
     actual fun getSystemLanguageCode(): String {
         val locale = platform.Foundation.NSLocale.preferredLanguages.firstOrNull() as? String ?: "ko"
