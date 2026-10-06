@@ -66,9 +66,9 @@ actual fun PieChart(
                 setUsePercentValues(true)
 
                 setDrawHoleEnabled(true)
-                setHoleRadius(48f)
-                setTransparentCircleRadius(51f)
-                setTransparentCircleAlpha(60)
+                setHoleRadius(60f)
+                setTransparentCircleRadius(64f)
+                setTransparentCircleAlpha(40)
                 setHoleColor(android.graphics.Color.TRANSPARENT)
 
                 setDrawCenterText(true)
@@ -119,7 +119,7 @@ actual fun PieChart(
                 }
                 chart.setCenterText(spannable)
                 chart.setCenterTextColor(labelTextColor.toArgb())
-                chart.setCenterTextSize(13f)
+                chart.setCenterTextSize(15f)
             } else {
                 chart.centerText = ""
             }
