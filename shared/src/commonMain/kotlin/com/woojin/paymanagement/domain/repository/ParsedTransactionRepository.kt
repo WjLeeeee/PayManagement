@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.Flow
 interface ParsedTransactionRepository {
     fun getAllParsedTransactions(): Flow<List<ParsedTransaction>>
     fun getUnprocessedParsedTransactions(): Flow<List<ParsedTransaction>>
+    fun getProcessedParsedTransactions(): Flow<List<ParsedTransaction>>
+    suspend fun deleteProcessedBefore(before: Long)
     suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction): Boolean
     suspend fun markAsProcessed(id: String)
     suspend fun deleteParsedTransaction(id: String)

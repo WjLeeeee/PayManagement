@@ -19,7 +19,8 @@ CREATE TABLE ParsedTransactionEntity (
     date TEXT NOT NULL,
     rawNotification TEXT NOT NULL,
     isProcessed INTEGER NOT NULL DEFAULT 0,
-    createdAt INTEGER NOT NULL
+    createdAt INTEGER NOT NULL,
+    processedAt INTEGER
 );
 
 -- 파싱 실패한 알림을 저장하는 테이블
@@ -299,8 +300,19 @@ WHERE id = ?;
 
 updateParsedTransactionProcessed:
 UPDATE ParsedTransactionEntity
-SET isProcessed = 1
-WHERE id = ?;
+SET isProcessed = 1, processedAt = :processedAt
+WHERE id = :id;
+
+-- 기록 완료된 항목 (최근 처리 순)
+selectProcessedParsedTransactions:
+SELECT * FROM ParsedTransactionEntity
+WHERE isProcessed = 1
+ORDER BY processedAt DESC;
+
+-- 기록 완료 후 보관 기간이 지난 항목 삭제 (processedAt 없는 예전 데이터 포함)
+deleteProcessedParsedTransactionsBefore:
+DELETE FROM ParsedTransactionEntity
+WHERE isProcessed = 1 AND (processedAt IS NULL OR processedAt < :before);
 
 deleteParsedTransaction:
 DELETE FROM ParsedTransactionEntity

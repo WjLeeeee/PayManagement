@@ -791,6 +791,12 @@ object EnglishStrings : AppStrings {
     override val parsedTransactionDesc = "Transactions parsed from notifications. Tap an item to add it as a transaction."
     override fun errorWithMessage(message: String) = "Error: $message"
     override val cardNotificationAutoDisplay = "Card payment notifications will appear here automatically"
+    override val addToLedger = "Add to ledger"
+    override val pendingRecordTab = "Pending"
+    override val completedRecordTab = "Recorded"
+    override val completedRetentionHint = "Recorded payments are kept for 3 days, then removed automatically"
+    override val noCompletedRecords = "No payments recorded in the last 3 days"
+    override val recordedBadge = "Recorded"
     override val notificationOn = "🔔 Alerts"
     override val notificationOff = "🔕 Alerts"
 

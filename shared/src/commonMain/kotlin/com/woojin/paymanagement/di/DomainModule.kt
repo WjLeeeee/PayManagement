@@ -32,6 +32,8 @@ import com.woojin.paymanagement.domain.usecase.GetUnprocessedParsedTransactionsU
 import com.woojin.paymanagement.domain.usecase.InsertParsedTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.MarkParsedTransactionProcessedUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteParsedTransactionUseCase
+import com.woojin.paymanagement.domain.usecase.GetProcessedParsedTransactionsUseCase
+import com.woojin.paymanagement.domain.usecase.CleanupProcessedParsedTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.ExportDataUseCase
 import com.woojin.paymanagement.domain.usecase.ImportDataUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
@@ -129,6 +131,8 @@ val domainModule = module {
     factoryOf(::InsertParsedTransactionUseCase)
     factoryOf(::MarkParsedTransactionProcessedUseCase)
     factoryOf(::DeleteParsedTransactionUseCase)
+    factoryOf(::GetProcessedParsedTransactionsUseCase)
+    factoryOf(::CleanupProcessedParsedTransactionsUseCase)
 
     // Data Backup/Restore Use Cases
     factoryOf(::ExportDataUseCase)

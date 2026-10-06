@@ -39,7 +39,8 @@ actual class DatabaseDriverFactory {
                 date TEXT NOT NULL,
                 rawNotification TEXT NOT NULL,
                 isProcessed INTEGER NOT NULL DEFAULT 0,
-                createdAt INTEGER NOT NULL
+                createdAt INTEGER NOT NULL,
+                processedAt INTEGER
             )
             """.trimIndent(),
             0,
@@ -732,6 +733,18 @@ actual class DatabaseDriverFactory {
             driver.execute(
                 null,
                 "ALTER TABLE RecurringTransactionEntity ADD COLUMN includeWeekends INTEGER NOT NULL DEFAULT 1",
+                0,
+                null
+            )
+        } catch (e: Exception) {
+            // 이미 존재하면 무시
+        }
+
+        // ParsedTransactionEntity에 processedAt 컬럼 추가 (기록 완료 시각 - 완료 탭 3일 보관용)
+        try {
+            driver.execute(
+                null,
+                "ALTER TABLE ParsedTransactionEntity ADD COLUMN processedAt INTEGER",
                 0,
                 null
             )

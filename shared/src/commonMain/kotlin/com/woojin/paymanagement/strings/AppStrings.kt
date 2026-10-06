@@ -741,6 +741,12 @@ interface AppStrings {
     val parsedTransactionDesc: String
     fun errorWithMessage(message: String): String
     val cardNotificationAutoDisplay: String
+    val addToLedger: String
+    val pendingRecordTab: String
+    val completedRecordTab: String
+    val completedRetentionHint: String
+    val noCompletedRecords: String
+    val recordedBadge: String
     val notificationOn: String
     val notificationOff: String
 

@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
@@ -347,7 +348,23 @@ class DatabaseHelper(
     }
 
     suspend fun markParsedTransactionAsProcessed(id: String) {
-        queries.updateParsedTransactionProcessed(id)
+        queries.updateParsedTransactionProcessed(
+            processedAt = Clock.System.now().toEpochMilliseconds(),
+            id = id
+        )
+    }
+
+    fun getProcessedParsedTransactions(): Flow<List<ParsedTransaction>> {
+        return queries.selectProcessedParsedTransactions()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toParsedTransaction() }
+            }
+    }
+
+    suspend fun deleteProcessedParsedTransactionsBefore(before: Long) {
+        queries.deleteProcessedParsedTransactionsBefore(before)
     }
 
     suspend fun deleteParsedTransaction(id: String) {
@@ -662,7 +679,8 @@ class DatabaseHelper(
             date = LocalDate.parse(this.date),
             rawNotification = this.rawNotification,
             isProcessed = this.isProcessed == 1L,
-            createdAt = this.createdAt
+            createdAt = this.createdAt,
+            processedAt = this.processedAt
         )
     }
 

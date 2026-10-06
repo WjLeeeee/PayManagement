@@ -753,6 +753,12 @@ object KoreanStrings : AppStrings {
     override val parsedTransactionDesc = "알림에서 파싱된 거래 내역입니다. 항목을 클릭하여 거래를 추가하세요."
     override fun errorWithMessage(message: String) = "오류: $message"
     override val cardNotificationAutoDisplay = "카드 결제 알림이 오면 자동으로 표시됩니다"
+    override val addToLedger = "가계부에 추가"
+    override val pendingRecordTab = "기록 대기"
+    override val completedRecordTab = "기록 완료"
+    override val completedRetentionHint = "기록 완료된 결제는 3일 동안 보관된 뒤 자동으로 지워져요"
+    override val noCompletedRecords = "최근 3일 동안 기록한 결제가 없어요"
+    override val recordedBadge = "기록됨"
     override val notificationOn = "🔔 알림"
     override val notificationOff = "🔕 알림"
 
