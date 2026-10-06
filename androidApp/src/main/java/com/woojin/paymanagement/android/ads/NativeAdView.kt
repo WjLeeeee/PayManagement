@@ -4,8 +4,10 @@ import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdView as GoogleNativeAdView
@@ -20,6 +22,14 @@ fun NativeAdItem(
     nativeAd: NativeAd,
     modifier: Modifier = Modifier
 ) {
+    // 앱 테마(라이트/다크)에 맞춘 광고 색상
+    val colorScheme = MaterialTheme.colorScheme
+    val backgroundColor = colorScheme.surface.toArgb()
+    val headlineColor = colorScheme.onSurface.toArgb()
+    val labelColor = colorScheme.onSurface.copy(alpha = 0.6f).toArgb()
+    val bodyColor = colorScheme.onSurfaceVariant.toArgb()
+    val advertiserColor = colorScheme.onSurfaceVariant.copy(alpha = 0.6f).toArgb()
+
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -74,6 +84,13 @@ fun NativeAdItem(
             adView.setNativeAd(nativeAd)
 
             adView
+        },
+        update = { adView ->
+            adView.setBackgroundColor(backgroundColor)
+            adView.findViewById<TextView>(R.id.ad_label).setTextColor(labelColor)
+            adView.findViewById<TextView>(R.id.ad_headline).setTextColor(headlineColor)
+            adView.findViewById<TextView>(R.id.ad_body).setTextColor(bodyColor)
+            adView.findViewById<TextView>(R.id.ad_advertiser).setTextColor(advertiserColor)
         }
     )
 }
