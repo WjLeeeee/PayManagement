@@ -1,6 +1,20 @@
 package com.woojin.paymanagement.presentation.recurringtransaction
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import com.woojin.paymanagement.theme.BrandColor
+import com.woojin.paymanagement.theme.InvestmentColor
+import com.woojin.paymanagement.theme.SavingColor
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,15 +60,27 @@ fun RecurringTransactionScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(strings.recurringTransactionManagement) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, strings.goBack)
-                    }
-                },
-                windowInsets = WindowInsets(0.dp)
-            )
+            // 헤더: ← + 제목 (다른 화면과 동일)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = strings.goBack,
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Text(
+                    text = strings.recurringTransactionManagement,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     ) { padding ->
         if (uiState.isLoading) {
@@ -76,8 +102,8 @@ fun RecurringTransactionScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 // 자동 실행 토글 카드
                 item {
@@ -92,10 +118,10 @@ fun RecurringTransactionScreen(
                     item {
                         Text(
                             text = strings.todayItems,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = BrandColor.mint,
+                            modifier = Modifier.padding(start = 4.dp, top = 18.dp, bottom = 6.dp)
                         )
                     }
 
@@ -112,17 +138,17 @@ fun RecurringTransactionScreen(
                     }
 
                     item {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 8.dp),
-                            thickness = 2.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
+                        Column {
+                            Spacer(modifier = Modifier.height(14.dp))
+                            RecurringSectionBand()
+                        }
                     }
                 }
 
                 // 반복 거래 추가 버튼
                 item {
                     AddRecurringTransactionItem(
+                        count = otherTransactions.size,
                         onClick = { viewModel.showAddDialog() }
                     )
                 }
@@ -200,106 +226,126 @@ fun RecurringTransactionScreen(
     }
 }
 
+/**
+ * 화면 좌우 끝까지 이어지는 회색 구분 띠 (메인 화면과 동일)
+ */
+@Composable
+private fun RecurringSectionBand(horizontalBleed: Dp = 16.dp) {
+    Box(
+        modifier = Modifier
+            .layout { measurable, constraints ->
+                val extra = horizontalBleed.roundToPx() * 2
+                val width = constraints.maxWidth + extra
+                val placeable = measurable.measure(
+                    constraints.copy(minWidth = width, maxWidth = width)
+                )
+                layout(constraints.maxWidth, placeable.height) {
+                    placeable.place(-extra / 2, 0)
+                }
+            }
+            .height(8.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    )
+}
+
+@Composable
+private fun mintSwitchColors() = SwitchDefaults.colors(
+    checkedThumbColor = Color.White,
+    checkedTrackColor = BrandColor.mint,
+    checkedBorderColor = Color.Transparent,
+    uncheckedThumbColor = Color.White,
+    uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant,
+    uncheckedBorderColor = Color.Transparent
+)
+
 @Composable
 private fun AutoExecuteToggleCard(
     isEnabled: Boolean,
     onToggle: () -> Unit
 ) {
     val strings = LocalStrings.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isEnabled)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = strings.recurringAutoExecute,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isEnabled)
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    else
-                        MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = strings.recurringAutoExecuteDescription,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isEnabled)
-                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Switch(
-                checked = isEnabled,
-                onCheckedChange = { onToggle() }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = strings.recurringAutoExecute,
+                fontSize = 14.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = strings.recurringAutoExecuteDescription,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(
+            checked = isEnabled,
+            onCheckedChange = { onToggle() },
+            colors = mintSwitchColors()
+        )
     }
 }
 
+/**
+ * 목록 제목 "반복 거래 N" + 오른쪽 민트 "+ 반복 거래 추가"
+ */
 @Composable
 private fun AddRecurringTransactionItem(
+    count: Int,
     onClick: () -> Unit
 ) {
     val strings = LocalStrings.current
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 0.dp, top = 14.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        Text(
+            text = strings.recurringTransactions,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        if (count > 0) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "$count",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-                        )
-                    )
-                )
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = strings.add,
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = strings.addRecurringTransaction,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                tint = BrandColor.mint,
+                modifier = Modifier.size(17.dp)
+            )
+            Spacer(modifier = Modifier.width(3.dp))
+            Text(
+                text = strings.addRecurringTransaction,
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = BrandColor.mint
+            )
         }
     }
 }
@@ -316,183 +362,179 @@ private fun RecurringTransactionItem(
 ) {
     val strings = LocalStrings.current
     val categoryEmoji = categories.firstOrNull { it.name == transaction.category }?.emoji ?: "📝"
-    val containerColors = if (isHighlighted) {
-        listOf(
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
-            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-        )
-    } else {
-        listOf(
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-        )
+    val typeColor = when (transaction.type) {
+        TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+        TransactionType.SAVING -> SavingColor.color
+        TransactionType.INVESTMENT -> InvestmentColor.color
     }
 
-    Card(
+    // 제목: 기존 규칙 그대로 (저축이고 사용처가 비어 있으면 카테고리)
+    val title = if (transaction.type == TransactionType.SAVING && transaction.merchant.isBlank())
+        transaction.category
+    else
+        transaction.merchant
+
+    // 부가정보: 카테고리(제목과 같으면 생략) · 반복 주기 · 결제 수단
+    val subText = listOfNotNull(
+        transaction.category.takeIf { it != title },
+        getPatternText(transaction, strings),
+        getPaymentMethodDisplayName(transaction.paymentMethod, strings)
+    ).joinToString(" · ")
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (isHighlighted) BrandColor.mint.copy(alpha = 0.06f) else Color.Transparent)
             .then(
                 if (onClick != null) {
                     Modifier.clickable(onClick = onClick)
                 } else {
                     Modifier
                 }
-            ),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isHighlighted) 6.dp else 4.dp
-        )
+            )
+            .padding(start = 10.dp, end = 6.dp, top = 10.dp, bottom = 4.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(colors = containerColors)
-                )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
+            // 꺼진 항목은 흐리게 (스위치는 그대로)
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .weight(1f)
+                    .alpha(if (transaction.isActive) 1f else 0.45f),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // 첫 번째 줄: 카테고리 이모지, 이름, 토글, 편집, 삭제
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // 카테고리 아이콘 타일 (거래 유형 색으로 은은하게)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(typeColor.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        if (categoryEmoji.isNotBlank()) {
-                            Text(
-                                text = categoryEmoji,
-                                style = MaterialTheme.typography.headlineMedium
-                            )
-                        }
-
-                        Column {
-                            Text(
-                                text = if (transaction.type == TransactionType.SAVING && transaction.merchant.isBlank())
-                                    transaction.category
-                                else
-                                    transaction.merchant,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-
-                            Text(
-                                text = transaction.category,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // 활성화 토글
-                        Switch(
-                            checked = transaction.isActive,
-                            onCheckedChange = { onToggleActive() },
-                            modifier = Modifier.height(32.dp)
-                        )
-
-                        IconButton(onClick = onEdit) {
-                            Icon(
-                                Icons.Default.Edit,
-                                contentDescription = strings.edit,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        IconButton(onClick = onDelete) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = strings.delete,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
+                    Text(text = categoryEmoji, fontSize = 19.sp)
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                // 두 번째 줄: 금액과 반복 패턴
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 금액
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = when (transaction.type) {
-                            TransactionType.INCOME -> "+${strings.amountWithUnit(Utils.formatAmount(transaction.amount))}"
-                            TransactionType.EXPENSE -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
-                            TransactionType.SAVING -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
-                            TransactionType.INVESTMENT -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
-                        },
-                        style = MaterialTheme.typography.titleLarge,
+                        text = title,
+                        fontSize = 14.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = when (transaction.type) {
-                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                            TransactionType.SAVING -> com.woojin.paymanagement.theme.SavingColor.color
-                            TransactionType.INVESTMENT -> com.woojin.paymanagement.theme.InvestmentColor.color
-                        }
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-
-                    // 반복 패턴 표시
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Text(
-                            text = getPatternText(transaction, strings),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subText,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
-                // 결제 수단
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // 금액
                 Text(
-                    text = strings.paymentMethodDisplay(getPaymentMethodDisplayName(transaction.paymentMethod, strings)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = when (transaction.type) {
+                        TransactionType.INCOME -> "+${strings.amountWithUnit(Utils.formatAmount(transaction.amount))}"
+                        TransactionType.EXPENSE -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
+                        TransactionType.SAVING -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
+                        TransactionType.INVESTMENT -> strings.amountWithUnit(Utils.formatAmount(transaction.amount))
+                    },
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = typeColor
                 )
-
-                // 오늘 실행할 항목에 대한 안내
-                if (isHighlighted) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    ) {
-                        Text(
-                            text = strings.tapToAddTransaction,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // 활성화 토글
+            Switch(
+                checked = transaction.isActive,
+                onCheckedChange = { onToggleActive() },
+                colors = mintSwitchColors(),
+                modifier = Modifier.scale(0.85f)
+            )
         }
+
+        // 하단: (오늘 항목) 탭 안내 + 수정 / 삭제
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isHighlighted) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 52.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = strings.tapToAddTransaction,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BrandColor.mint
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = BrandColor.mint,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            ItemTextAction(
+                icon = Icons.Default.Edit,
+                label = strings.edit,
+                onClick = onEdit
+            )
+            ItemTextAction(
+                icon = Icons.Default.Delete,
+                label = strings.delete,
+                onClick = onDelete
+            )
+        }
+    }
+}
+
+@Composable
+private fun ItemTextAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(15.dp)
+        )
+        Spacer(modifier = Modifier.width(3.dp))
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

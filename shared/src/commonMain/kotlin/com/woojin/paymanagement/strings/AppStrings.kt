@@ -756,6 +756,10 @@ interface AppStrings {
     val recurringTransactionManagement: String
     val todayItems: String
     val noRegisteredRecurringTransactions: String
+    val recurringSectionWhat: String
+    val recurringSectionAmount: String
+    val recurringSectionWhen: String
+    val recurringSectionWhere: String
     val recurringAutoExecute: String
     val recurringAutoExecuteDescription: String
     fun paymentMethodDisplay(method: String): String

@@ -1,6 +1,29 @@
 package com.woojin.paymanagement.presentation.recurringtransaction
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
+import com.woojin.paymanagement.theme.BrandColor
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -90,627 +113,448 @@ fun RecurringTransactionDialog(
         }
     }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.9f),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    val typeColor = when (selectedType) {
+        TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+        TransactionType.SAVING -> SavingColor.color
+        TransactionType.INVESTMENT -> InvestmentColor.color
+    }
+    val typeLightColor = when (selectedType) {
+        TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
+        TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
+        TransactionType.SAVING -> SavingColor.lightBackground
+        TransactionType.INVESTMENT -> InvestmentColor.lightBackground
+    }
+
+    // 메모 섹션 펼침 상태 - 화면 안에서만 기억. 내용이 있으면 펼친 채로 시작
+    var memoExpanded by remember { mutableStateOf(memo.isNotBlank()) }
+
+    val canSave = removeComma(amount.text).toDoubleOrNull() != null &&
+                                removeComma(amount.text).toDoubleOrNull()!! > 0 &&
+                                selectedCategory.isNotEmpty() &&
+                                (selectedType != TransactionType.EXPENSE || merchant.isNotEmpty())
+
+    // 다이얼로그 구조는 유지, 화면 전체를 덮도록 표시
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .imePadding()
             ) {
-                // Header
-                Text(
-                    text = if (transaction == null) strings.addRecurringTransaction else strings.editRecurringTransaction,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Scrollable content
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                // 거래 타입 선택
-                Text(
-                    text = strings.transactionType,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
+                // 상단 바: 왼쪽 X(취소) + 제목
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FilterChip(
-                        onClick = { selectedType = TransactionType.INCOME },
-                        label = {
-                            Text(
-                                strings.income,
-                                color = if (selectedType == TransactionType.INCOME) Color.White else MaterialTheme.colorScheme.onSurface
-                            )
-                        },
-                        selected = selectedType == TransactionType.INCOME,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                            selectedLabelColor = Color.White
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = strings.cancel,
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
-                    )
-
-                    FilterChip(
-                        onClick = { selectedType = TransactionType.EXPENSE },
-                        label = {
-                            Text(
-                                strings.expense,
-                                color = if (selectedType == TransactionType.EXPENSE) Color.White else MaterialTheme.colorScheme.onSurface
-                            )
-                        },
-                        selected = selectedType == TransactionType.EXPENSE,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.error,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-
-                    FilterChip(
-                        onClick = { selectedType = TransactionType.SAVING },
-                        label = {
-                            Text(
-                                strings.saving,
-                                color = if (selectedType == TransactionType.SAVING) Color.White else MaterialTheme.colorScheme.onSurface
-                            )
-                        },
-                        selected = selectedType == TransactionType.SAVING,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = SavingColor.color,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-
-                    FilterChip(
-                        onClick = { selectedType = TransactionType.INVESTMENT },
-                        label = {
-                            Text(
-                                strings.investment,
-                                color = if (selectedType == TransactionType.INVESTMENT) Color.White else MaterialTheme.colorScheme.onSurface
-                            )
-                        },
-                        selected = selectedType == TransactionType.INVESTMENT,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = InvestmentColor.color,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-                }
-
-                HorizontalDivider()
-
-                // 카테고리 선택
-                Text(
-                    text = strings.category,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                // 카테고리 목록 (계산기 스타일)
-                if (filteredCategories.isNotEmpty()) {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        filteredCategories.forEach { category ->
-                            val isSelected = category.name == selectedCategory
-                            val backgroundColor = when {
-                                isSelected && selectedType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
-                                isSelected && selectedType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
-                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.lightBackground
-                                isSelected && selectedType == TransactionType.INVESTMENT -> InvestmentColor.lightBackground
-                                else -> MaterialTheme.colorScheme.surfaceVariant
-                            }
-                            val borderColor = when {
-                                isSelected && selectedType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                                isSelected && selectedType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.color
-                                isSelected && selectedType == TransactionType.INVESTMENT -> InvestmentColor.color
-                                else -> Color.Transparent
-                            }
-                            val textColor = when {
-                                isSelected -> Color.Black
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .border(
-                                        width = if (isSelected) 2.dp else 0.dp,
-                                        color = borderColor,
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .background(
-                                        color = backgroundColor,
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .clickable { selectedCategory = category.name }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                if (category.emoji.isNotBlank()) {
-                                    Text(
-                                        text = category.emoji,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                                Text(
-                                    text = category.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = textColor
-                                )
-                            }
-                        }
                     }
-                } else {
                     Text(
-                        text = strings.noCategoriesRegistered,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                HorizontalDivider()
-
-                // 금액 입력
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = { newValue ->
-                        // 콤마 제거 후 숫자만 남기기
-                        val digitsOnly = removeComma(newValue.text)
-
-                        if (digitsOnly.isEmpty() || digitsOnly.all { it.isDigit() }) {
-                            // 콤마 추가
-                            val formatted = formatNumberWithComma(digitsOnly)
-
-                            // 커서를 오른쪽 끝으로 이동
-                            amount = TextFieldValue(
-                                text = formatted,
-                                selection = TextRange(formatted.length)
-                            )
-                        }
-                    },
-                    label = { Text(strings.transactionAmount) },
-                    suffix = { Text(strings.currencySymbol) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = when (selectedType) {
-                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                            TransactionType.SAVING -> SavingColor.color
-                            TransactionType.INVESTMENT -> InvestmentColor.color
-                        },
-                        focusedLabelColor = when (selectedType) {
-                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                            TransactionType.SAVING -> SavingColor.color
-                            TransactionType.INVESTMENT -> InvestmentColor.color
-                        }
-                    )
-                )
-
-                // 사용처 입력 (지출일 때만 필수)
-                if (selectedType == TransactionType.EXPENSE) {
-                    OutlinedTextField(
-                        value = merchant,
-                        onValueChange = { merchant = it },
-                        label = { Text(strings.merchantLabel) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.error,
-                            focusedLabelColor = MaterialTheme.colorScheme.error
-                        )
-                    )
-                }
-
-                // 메모 입력 (선택)
-                OutlinedTextField(
-                    value = memo,
-                    onValueChange = { memo = it },
-                    label = { Text(strings.memoOptionalShort) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = when (selectedType) {
-                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                            TransactionType.SAVING -> SavingColor.color
-                            TransactionType.INVESTMENT -> InvestmentColor.color
-                        },
-                        focusedLabelColor = when (selectedType) {
-                            TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                            TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                            TransactionType.SAVING -> SavingColor.color
-                            TransactionType.INVESTMENT -> InvestmentColor.color
-                        }
-                    )
-                )
-
-                HorizontalDivider()
-
-                // 결제 수단 선택 (지출일 때만)
-                if (selectedType == TransactionType.EXPENSE) {
-                    Text(
-                        text = strings.paymentMethod,
-                        style = MaterialTheme.typography.titleMedium,
+                        text = if (transaction == null) strings.addRecurringTransaction else strings.editRecurringTransaction,
+                        fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                }
 
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        listOf(
-                            PaymentMethod.CASH to strings.cashCheckCard,
-                            PaymentMethod.CARD to strings.creditCard,
-                            PaymentMethod.BALANCE_CARD to strings.balanceCard,
-                            PaymentMethod.GIFT_CARD to strings.giftCard
-                        ).forEach { (method, label) ->
-                            val isSelected = selectedPaymentMethod == method
-                            val backgroundColor = when {
-                                isSelected -> Color(0xFFFFEBEE) // 연한 빨강
-                                else -> MaterialTheme.colorScheme.surfaceVariant
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 4.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // ① 어떤 거래인가요? (유형 + 카테고리)
+                    RecurringSectionCard(number = 1, title = strings.recurringSectionWhat) {
+                        // 거래 유형 세그먼트 (유형 색 유지)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(4.dp)
+                        ) {
+                            listOf(
+                                TransactionType.INCOME to strings.income,
+                                TransactionType.EXPENSE to strings.expense,
+                                TransactionType.SAVING to strings.saving,
+                                TransactionType.INVESTMENT to strings.investment
+                            ).forEach { (type, label) ->
+                                val isSelected = selectedType == type
+                                val color = when (type) {
+                                    TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                                    TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                                    TransactionType.SAVING -> SavingColor.color
+                                    TransactionType.INVESTMENT -> InvestmentColor.color
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
+                                        .clickable { selectedType = type }
+                                        .padding(vertical = 9.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontSize = 14.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
-                            val borderColor = when {
-                                isSelected -> MaterialTheme.colorScheme.error
-                                else -> Color.Transparent
-                            }
-                            val textColor = when {
-                                isSelected -> Color.Black
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                        }
 
-                            Row(
-                                modifier = Modifier
-                                    .border(
-                                        width = if (isSelected) 2.dp else 0.dp,
-                                        color = borderColor,
-                                        shape = RoundedCornerShape(20.dp)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // 카테고리 (선택 시 유형 색)
+                        if (filteredCategories.isNotEmpty()) {
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                filteredCategories.forEach { category ->
+                                    RecurringPillChip(
+                                        label = category.name,
+                                        emoji = category.emoji,
+                                        selected = category.name == selectedCategory,
+                                        selectedColor = typeColor,
+                                        selectedBackground = typeLightColor,
+                                        onClick = { selectedCategory = category.name }
                                     )
-                                    .background(
-                                        color = backgroundColor,
-                                        shape = RoundedCornerShape(20.dp)
+                                }
+                            }
+                        } else {
+                            Text(
+                                text = strings.noCategoriesRegistered,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // ② 얼마인가요?
+                    RecurringSectionCard(number = 2, title = strings.recurringSectionAmount) {
+                        BasicTextField(
+                            value = amount,
+                            onValueChange = { newValue ->
+                                // 콤마 제거 후 숫자만 남기기
+                                val digitsOnly = removeComma(newValue.text)
+
+                                if (digitsOnly.isEmpty() || digitsOnly.all { it.isDigit() }) {
+                                    // 콤마 추가
+                                    val formatted = formatNumberWithComma(digitsOnly)
+
+                                    // 커서를 오른쪽 끝으로 이동
+                                    amount = TextFieldValue(
+                                        text = formatted,
+                                        selection = TextRange(formatted.length)
                                     )
-                                    .clickable {
-                                        selectedPaymentMethod = method
-                                        if (method != PaymentMethod.CARD) selectedCardName = null
+                                }
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            cursorBrush = SolidColor(BrandColor.mint),
+                            modifier = Modifier.fillMaxWidth(),
+                            decorationBox = { innerTextField ->
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.weight(1f, fill = false)) {
+                                            if (amount.text.isEmpty()) {
+                                                Text(
+                                                    text = "0",
+                                                    fontSize = 28.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = MaterialTheme.colorScheme.outlineVariant
+                                                )
+                                            }
+                                            innerTextField()
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = strings.currencySymbol,
+                                            fontSize = 19.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
                                     }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(2.dp)
+                                            .background(BrandColor.mint)
+                                    )
+                                }
+                            }
+                        )
+                    }
+
+                    // ③ 언제 반복할까요?
+                    RecurringSectionCard(number = 3, title = strings.recurringSectionWhen) {
+                        // 반복 패턴 세그먼트
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(4.dp)
+                        ) {
+                            listOf(
+                                RecurringPattern.MONTHLY to strings.monthly,
+                                RecurringPattern.WEEKLY to strings.weekly,
+                                RecurringPattern.DAILY to strings.daily
+                            ).forEach { (pattern, label) ->
+                                val isSelected = selectedPattern == pattern
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
+                                        .clickable { selectedPattern = pattern }
+                                        .padding(vertical = 9.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontSize = 14.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) BrandColor.mint else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // 날짜 선택
+                        if (selectedPattern == RecurringPattern.DAILY) {
+                            RecurringSubLabel(strings.includeWeekendsOptionLabel)
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                listOf(
+                                    true to strings.includeWeekendsOption,
+                                    false to strings.excludeWeekendsOption
+                                ).forEach { (value, label) ->
+                                    RecurringPillChip(
+                                        label = label,
+                                        selected = includeWeekends == value,
+                                        onClick = { includeWeekends = value }
+                                    )
+                                }
+                            }
+                        } else if (selectedPattern == RecurringPattern.MONTHLY) {
+                            // 매달 몇 일? (- / +)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = textColor
+                                StepperButton(
+                                    text = "−",
+                                    enabled = dayOfMonth > 1,
+                                    onClick = { if (dayOfMonth > 1) dayOfMonth-- }
                                 )
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = strings.monthly,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = strings.dayOfMonth(dayOfMonth),
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = BrandColor.mint
+                                    )
+                                }
+                                StepperButton(
+                                    text = "+",
+                                    enabled = dayOfMonth < 31,
+                                    onClick = { if (dayOfMonth < 31) dayOfMonth++ }
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // 주말 처리 방식 (매달 패턴일 때만 표시)
+                            RecurringSubLabel(strings.weekendHandling)
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                listOf(
+                                    com.woojin.paymanagement.data.WeekendHandling.AS_IS to strings.applyAsIs,
+                                    com.woojin.paymanagement.data.WeekendHandling.PREVIOUS_WEEKDAY to strings.moveToPreviousWeekday,
+                                    com.woojin.paymanagement.data.WeekendHandling.NEXT_WEEKDAY to strings.moveToNextWeekday
+                                ).forEach { (handling, label) ->
+                                    RecurringPillChip(
+                                        label = label,
+                                        selected = selectedWeekendHandling == handling,
+                                        onClick = { selectedWeekendHandling = handling }
+                                    )
+                                }
+                            }
+                        } else {
+                            RecurringSubLabel(strings.whichDayOfWeek)
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                            ) {
+                                listOf(
+                                    1 to strings.monday,
+                                    2 to strings.tuesday,
+                                    3 to strings.wednesday,
+                                    4 to strings.thursday,
+                                    5 to strings.friday,
+                                    6 to strings.saturday,
+                                    7 to strings.sunday
+                                ).forEach { (value, label) ->
+                                    RecurringPillChip(
+                                        label = label,
+                                        selected = dayOfWeek == value,
+                                        onClick = { dayOfWeek = value }
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // 카드 선택 시 커스텀 카드 드롭다운
-                    if (selectedPaymentMethod == PaymentMethod.CARD && customPaymentMethods.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        var cardDropdownExpanded by remember { mutableStateOf(false) }
-
-                        ExposedDropdownMenuBox(
-                            expanded = cardDropdownExpanded,
-                            onExpandedChange = { cardDropdownExpanded = !cardDropdownExpanded }
-                        ) {
+                    // ④ 어디서 결제하나요? (지출일 때만: 사용처 필수 + 결제 수단)
+                    if (selectedType == TransactionType.EXPENSE) {
+                        RecurringSectionCard(number = 4, title = strings.recurringSectionWhere) {
                             OutlinedTextField(
-                                value = selectedCardName ?: customPaymentMethods.firstOrNull()?.name ?: "",
-                                onValueChange = { },
-                                readOnly = true,
-                                label = { Text(strings.selectCard) },
-                                trailingIcon = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = cardDropdownExpanded)
-                                },
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth(),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                value = merchant,
+                                onValueChange = { merchant = it },
+                                placeholder = { Text(strings.merchantLabel) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = recurringFieldColors()
                             )
 
-                            ExposedDropdownMenu(
-                                expanded = cardDropdownExpanded,
-                                onDismissRequest = { cardDropdownExpanded = false },
-                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
-                                customPaymentMethods.forEach { method ->
-                                    DropdownMenuItem(
-                                        text = { Text(method.name, color = MaterialTheme.colorScheme.onSurface) },
+                                listOf(
+                                    PaymentMethod.CASH to strings.cashCheckCard,
+                                    PaymentMethod.CARD to strings.creditCard,
+                                    PaymentMethod.BALANCE_CARD to strings.balanceCard,
+                                    PaymentMethod.GIFT_CARD to strings.giftCard
+                                ).forEach { (method, label) ->
+                                    RecurringPillChip(
+                                        label = label,
+                                        selected = selectedPaymentMethod == method,
                                         onClick = {
-                                            selectedCardName = method.name
-                                            cardDropdownExpanded = false
+                                            selectedPaymentMethod = method
+                                            if (method != PaymentMethod.CARD) selectedCardName = null
                                         }
                                     )
                                 }
                             }
+
+                            // 카드 선택 시 커스텀 카드 드롭다운
+                            if (selectedPaymentMethod == PaymentMethod.CARD && customPaymentMethods.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                var cardDropdownExpanded by remember { mutableStateOf(false) }
+
+                                ExposedDropdownMenuBox(
+                                    expanded = cardDropdownExpanded,
+                                    onExpandedChange = { cardDropdownExpanded = !cardDropdownExpanded }
+                                ) {
+                                    OutlinedTextField(
+                                        value = selectedCardName ?: customPaymentMethods.firstOrNull()?.name ?: "",
+                                        onValueChange = { },
+                                        readOnly = true,
+                                        label = { Text(strings.selectCard) },
+                                        trailingIcon = {
+                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = cardDropdownExpanded)
+                                        },
+                                        modifier = Modifier
+                                            .menuAnchor()
+                                            .fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = recurringFieldColors()
+                                    )
+
+                                    ExposedDropdownMenu(
+                                        expanded = cardDropdownExpanded,
+                                        onDismissRequest = { cardDropdownExpanded = false },
+                                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                                    ) {
+                                        customPaymentMethods.forEach { method ->
+                                            DropdownMenuItem(
+                                                text = { Text(method.name, color = MaterialTheme.colorScheme.onSurface) },
+                                                onClick = {
+                                                    selectedCardName = method.name
+                                                    cardDropdownExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    HorizontalDivider()
+                    // 메모 (선택, 접기)
+                    RecurringSectionCard(
+                        number = if (selectedType == TransactionType.EXPENSE) 5 else 4,
+                        title = strings.memo,
+                        optional = true,
+                        expanded = memoExpanded,
+                        onToggle = { memoExpanded = !memoExpanded },
+                        summary = memo.ifBlank { strings.noMemo }
+                    ) {
+                        OutlinedTextField(
+                            value = memo,
+                            onValueChange = { memo = it },
+                            placeholder = { Text(strings.enterMemo) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = recurringFieldColors()
+                        )
+                    }
                 }
 
-                // 반복 패턴 선택
-                Text(
-                    text = strings.recurringPatternLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        onClick = { selectedPattern = RecurringPattern.MONTHLY },
-                        label = { Text(strings.monthly) },
-                        selected = selectedPattern == RecurringPattern.MONTHLY,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = if (selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-
-                    FilterChip(
-                        onClick = { selectedPattern = RecurringPattern.WEEKLY },
-                        label = { Text(strings.weekly) },
-                        selected = selectedPattern == RecurringPattern.WEEKLY,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = if (selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-
-                    FilterChip(
-                        onClick = { selectedPattern = RecurringPattern.DAILY },
-                        label = { Text(strings.daily) },
-                        selected = selectedPattern == RecurringPattern.DAILY,
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = if (selectedType == TransactionType.INCOME) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            selectedLabelColor = Color.White
-                        )
-                    )
-                }
-
-                // 날짜 선택
-                if (selectedPattern == RecurringPattern.DAILY) {
-                    Text(
-                        text = strings.includeWeekendsOptionLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        listOf(
-                            true to strings.includeWeekendsOption,
-                            false to strings.excludeWeekendsOption
-                        ).forEach { (value, label) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { includeWeekends = value },
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                androidx.compose.material3.RadioButton(
-                                    selected = includeWeekends == value,
-                                    onClick = { includeWeekends = value },
-                                    modifier = Modifier.size(40.dp),
-                                    colors = androidx.compose.material3.RadioButtonDefaults.colors(
-                                        selectedColor = if (selectedType == TransactionType.INCOME)
-                                            MaterialTheme.colorScheme.primary
-                                        else
-                                            MaterialTheme.colorScheme.error
-                                    )
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                } else if (selectedPattern == RecurringPattern.MONTHLY) {
-                    Text(
-                        text = strings.whichDayOfMonth,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = { if (dayOfMonth > 1) dayOfMonth-- },
-                            enabled = dayOfMonth > 1
-                        ) {
-                            Text("-", style = MaterialTheme.typography.titleLarge)
-                        }
-
-                        Text(
-                            text = strings.dayOfMonth(dayOfMonth),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-
-                        IconButton(
-                            onClick = { if (dayOfMonth < 31) dayOfMonth++ },
-                            enabled = dayOfMonth < 31
-                        ) {
-                            Text("+", style = MaterialTheme.typography.titleLarge)
-                        }
-                    }
-
-                    // 주말 처리 방식 (매달 패턴일 때만 표시)
-                    Text(
-                        text = strings.weekendHandling,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        listOf(
-                            com.woojin.paymanagement.data.WeekendHandling.AS_IS to strings.applyAsIs,
-                            com.woojin.paymanagement.data.WeekendHandling.PREVIOUS_WEEKDAY to strings.moveToPreviousWeekday,
-                            com.woojin.paymanagement.data.WeekendHandling.NEXT_WEEKDAY to strings.moveToNextWeekday
-                        ).forEach { (handling, label) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { selectedWeekendHandling = handling },
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                androidx.compose.material3.RadioButton(
-                                    selected = selectedWeekendHandling == handling,
-                                    onClick = { selectedWeekendHandling = handling },
-                                    modifier = Modifier.size(40.dp),
-                                    colors = androidx.compose.material3.RadioButtonDefaults.colors(
-                                        selectedColor = if (selectedType == TransactionType.INCOME)
-                                            MaterialTheme.colorScheme.primary
-                                        else
-                                            MaterialTheme.colorScheme.error
-                                    )
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-
-                    HorizontalDivider()
-                } else {
-                    Text(
-                        text = strings.whichDayOfWeek,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        listOf(
-                            1 to strings.monday,
-                            2 to strings.tuesday,
-                            3 to strings.wednesday,
-                            4 to strings.thursday,
-                            5 to strings.friday,
-                            6 to strings.saturday,
-                            7 to strings.sunday
-                        ).forEach { (value, label) ->
-                            val isSelected = dayOfWeek == value
-                            val backgroundColor = when {
-                                isSelected && selectedType == TransactionType.INCOME -> Color(0xFFE3F2FD) // 연한 파랑
-                                isSelected && selectedType == TransactionType.EXPENSE -> Color(0xFFFFEBEE) // 연한 빨강
-                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.lightBackground
-                                isSelected && selectedType == TransactionType.INVESTMENT -> InvestmentColor.lightBackground
-                                else -> MaterialTheme.colorScheme.surfaceVariant
-                            }
-                            val borderColor = when {
-                                isSelected && selectedType == TransactionType.INCOME -> MaterialTheme.colorScheme.primary
-                                isSelected && selectedType == TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
-                                isSelected && selectedType == TransactionType.SAVING -> SavingColor.color
-                                isSelected && selectedType == TransactionType.INVESTMENT -> InvestmentColor.color
-                                else -> Color.Transparent
-                            }
-                            val textColor = when {
-                                isSelected -> Color.Black
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-
-                            Row(
-                                modifier = Modifier
-                                    .border(
-                                        width = if (isSelected) 2.dp else 0.dp,
-                                        color = borderColor,
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .background(
-                                        color = backgroundColor,
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .clickable { dayOfWeek = value }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = textColor
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(strings.cancel)
-                    }
-
-                    Button(
-                        onClick = {
+                // 하단 저장 버튼
+                Button(
+                    onClick = {
                             // 콤마 제거 후 Double로 변환
                             val amountValue = removeComma(amount.text).toDoubleOrNull() ?: 0.0
                             val isMerchantValid = selectedType != TransactionType.EXPENSE || merchant.isNotEmpty()
@@ -737,17 +581,228 @@ fun RecurringTransactionDialog(
                                 )
                                 onSave(newTransaction)
                             }
-                        },
-                        enabled = removeComma(amount.text).toDoubleOrNull() != null &&
-                                removeComma(amount.text).toDoubleOrNull()!! > 0 &&
-                                selectedCategory.isNotEmpty() &&
-                                (selectedType != TransactionType.EXPENSE || merchant.isNotEmpty()),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(if (transaction == null) strings.add else strings.edit)
-                    }
+                    },
+                    enabled = canSave,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BrandColor.mint,
+                        contentColor = Color.White,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Text(
+                        text = if (transaction == null) strings.add else strings.edit,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
     }
 }
+
+private const val RecurringAnimMs = 280
+
+/**
+ * 번호가 붙은 섹션 카드 (예산 카테고리 추가와 같은 방식)
+ * - 필수(optional = false): 번호 민트, 항상 펼침
+ * - 선택(optional = true): 번호 회색, 헤더를 눌러 접기/펼치기, 접혀 있을 때 요약 표시
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun RecurringSectionCard(
+    number: Int,
+    title: String,
+    optional: Boolean = false,
+    expanded: Boolean = true,
+    onToggle: () -> Unit = {},
+    summary: String? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(RecurringAnimMs),
+        label = "recurringSectionArrow"
+    )
+
+    // 선택 섹션을 펼치면 펼쳐지는 만큼 같이 스크롤해서 카드 전체가 보이게 함
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    var isFirstComposition by remember { mutableStateOf(true) }
+    LaunchedEffect(expanded) {
+        if (isFirstComposition) {
+            isFirstComposition = false
+            return@LaunchedEffect
+        }
+        if (optional && expanded) {
+            val steps = 6
+            repeat(steps) {
+                delay((RecurringAnimMs / steps).toLong())
+                bringIntoViewRequester.bringIntoView()
+            }
+            delay(40)
+            bringIntoViewRequester.bringIntoView()
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f), RoundedCornerShape(18.dp))
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (optional) Modifier.clip(RoundedCornerShape(10.dp)).clickable(onClick = onToggle) else Modifier),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (optional) MaterialTheme.colorScheme.surfaceVariant else BrandColor.mint),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$number",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (optional) MaterialTheme.colorScheme.onSurfaceVariant else Color.White
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            if (optional) {
+                // 접혀 있을 때만 요약 표시
+                if (!expanded && summary != null) {
+                    Text(
+                        text = summary,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .widthIn(max = 140.dp)
+                            .padding(start = 8.dp)
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(start = 2.dp)
+                        .rotate(arrowRotation)
+                )
+            }
+        }
+        AnimatedVisibility(
+            visible = !optional || expanded,
+            enter = expandVertically(tween(RecurringAnimMs), expandFrom = Alignment.Top) + fadeIn(tween(RecurringAnimMs)),
+            exit = shrinkVertically(tween(RecurringAnimMs), shrinkTowards = Alignment.Top) + fadeOut(tween(RecurringAnimMs / 2))
+        ) {
+            Column(modifier = Modifier.padding(top = 14.dp), content = content)
+        }
+    }
+}
+
+/** 알약 모양 선택 칩 - 기본은 민트, 카테고리는 유형 색 */
+@Composable
+private fun RecurringPillChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    emoji: String? = null,
+    selectedColor: Color = BrandColor.mint,
+    selectedBackground: Color = BrandColor.mint.copy(alpha = 0.12f)
+) {
+    val shape = RoundedCornerShape(50)
+    Row(
+        modifier = Modifier
+            .clip(shape)
+            .background(if (selected) selectedBackground else MaterialTheme.colorScheme.surfaceVariant)
+            .border(
+                width = if (selected) 1.5.dp else 0.dp,
+                color = if (selected) selectedColor else Color.Transparent,
+                shape = shape
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        if (!emoji.isNullOrBlank()) {
+            Text(text = emoji, fontSize = 14.sp)
+        }
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = when {
+                !selected -> MaterialTheme.colorScheme.onSurfaceVariant
+                selectedColor == BrandColor.mint -> BrandColor.mint
+                else -> Color.Black
+            }
+        )
+    }
+}
+
+@Composable
+private fun RecurringSubLabel(text: String) {
+    Text(
+        text = text,
+        fontSize = 12.5.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+}
+
+@Composable
+private fun StepperButton(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(42.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (enabled) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        )
+    }
+}
+
+/** 테두리 없는 회색 채움형 입력창 (포커스 시 민트 테두리) */
+@Composable
+private fun recurringFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+    focusedBorderColor = BrandColor.mint,
+    unfocusedBorderColor = Color.Transparent,
+    focusedLabelColor = BrandColor.mint,
+    cursorColor = BrandColor.mint
+)
