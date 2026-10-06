@@ -776,6 +776,16 @@ object EnglishStrings : AppStrings {
     override val increasedArrow = "Increased ↑"
     override val savingsArrow = "Savings ↓"
     override val same = "Same"
+    override val comparedToPreviousPeriod = "Compared to last period"
+    override val spentLess = "less spent"
+    override val spentMore = "more spent"
+    override val savedMore = "more saved"
+    override val savedLess = "less saved"
+    override val investedMore = "more invested"
+    override val investedLess = "less invested"
+    override val sameAsPreviousPeriod = "Same as last period"
+    override val earnedMore = "more earned"
+    override val earnedLess = "less earned"
 
     // ===== Parsed Transactions (additional) =====
     override val parsedTransactionDesc = "Transactions parsed from notifications. Tap an item to add it as a transaction."

@@ -738,6 +738,16 @@ object KoreanStrings : AppStrings {
     override val increasedArrow = "증가 ↑"
     override val savingsArrow = "절약 ↓"
     override val same = "동일"
+    override val comparedToPreviousPeriod = "지난 기간보다"
+    override val spentLess = "덜 썼어요"
+    override val spentMore = "더 썼어요"
+    override val savedMore = "더 모았어요"
+    override val savedLess = "덜 모았어요"
+    override val investedMore = "더 투자했어요"
+    override val investedLess = "덜 투자했어요"
+    override val sameAsPreviousPeriod = "지난 기간과 같아요"
+    override val earnedMore = "더 벌었어요"
+    override val earnedLess = "덜 벌었어요"
 
     // ===== Parsed Transactions (additional) =====
     override val parsedTransactionDesc = "알림에서 파싱된 거래 내역입니다. 항목을 클릭하여 거래를 추가하세요."

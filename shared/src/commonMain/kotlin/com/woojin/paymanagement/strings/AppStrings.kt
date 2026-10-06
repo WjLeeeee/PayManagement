@@ -726,6 +726,16 @@ interface AppStrings {
     val increasedArrow: String
     val savingsArrow: String
     val same: String
+    val comparedToPreviousPeriod: String
+    val spentLess: String
+    val spentMore: String
+    val savedMore: String
+    val savedLess: String
+    val investedMore: String
+    val investedLess: String
+    val sameAsPreviousPeriod: String
+    val earnedMore: String
+    val earnedLess: String
 
     // ===== Parsed Transactions (additional) =====
     val parsedTransactionDesc: String
