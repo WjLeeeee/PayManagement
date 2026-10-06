@@ -19,7 +19,8 @@ CREATE TABLE ParsedTransactionEntity (
     date TEXT NOT NULL,
     rawNotification TEXT NOT NULL,
     isProcessed INTEGER NOT NULL DEFAULT 0,
-    createdAt INTEGER NOT NULL
+    createdAt INTEGER NOT NULL,
+    processedAt INTEGER
 );
 
 -- 파싱 실패한 알림을 저장하는 테이블
@@ -75,6 +76,7 @@ CREATE TABLE BudgetPlanEntity (
     effectiveFromDate TEXT NOT NULL,  -- 이 날짜부터 적용
     monthlySalary REAL NOT NULL,       -- 고정 급여
     createdAt TEXT NOT NULL,
+    transfers TEXT,  -- 월급날 이체 계획 JSON 배열 문자열
     UNIQUE(effectiveFromDate)
 );
 
@@ -86,7 +88,16 @@ CREATE TABLE CategoryBudgetEntity (
     categoryEmoji TEXT NOT NULL,
     allocatedAmount REAL NOT NULL,
     memo TEXT,  -- 카테고리 예산에 대한 메모
+    items TEXT,  -- 세부 항목 JSON 배열 문자열 (예: [{"id":"..","name":"월세","amount":500000.0}])
+    transferItemId TEXT,  -- 사용 통장 id JSON 배열 문자열 (BudgetPlanEntity.transfers 항목 id, 복수 가능)
     FOREIGN KEY (budgetPlanId) REFERENCES BudgetPlanEntity(id) ON DELETE CASCADE
+);
+
+-- 급여 기간별 이체 완료 체크
+CREATE TABLE TransferCheckEntity (
+    periodStartDate TEXT NOT NULL,
+    transferItemId TEXT NOT NULL,
+    PRIMARY KEY (periodStartDate, transferItemId)
 );
 
 CREATE TABLE RecurringTransactionEntity (
@@ -289,8 +300,19 @@ WHERE id = ?;
 
 updateParsedTransactionProcessed:
 UPDATE ParsedTransactionEntity
-SET isProcessed = 1
-WHERE id = ?;
+SET isProcessed = 1, processedAt = :processedAt
+WHERE id = :id;
+
+-- 기록 완료된 항목 (최근 처리 순)
+selectProcessedParsedTransactions:
+SELECT * FROM ParsedTransactionEntity
+WHERE isProcessed = 1
+ORDER BY processedAt DESC;
+
+-- 기록 완료 후 보관 기간이 지난 항목 삭제 (processedAt 없는 예전 데이터 포함)
+deleteProcessedParsedTransactionsBefore:
+DELETE FROM ParsedTransactionEntity
+WHERE isProcessed = 1 AND (processedAt IS NULL OR processedAt < :before);
 
 deleteParsedTransaction:
 DELETE FROM ParsedTransactionEntity
@@ -352,8 +374,13 @@ DELETE FROM CategoryEntity;
 
 -- BudgetPlan 관련 쿼리들
 insertBudgetPlan:
-INSERT INTO BudgetPlanEntity(id, effectiveFromDate, monthlySalary, createdAt)
-VALUES (?, ?, ?, ?);
+INSERT INTO BudgetPlanEntity(id, effectiveFromDate, monthlySalary, createdAt, transfers)
+VALUES (?, ?, ?, ?, ?);
+
+updateBudgetPlanTransfers:
+UPDATE BudgetPlanEntity
+SET transfers = ?
+WHERE id = ?;
 
 selectBudgetPlanByDate:
 SELECT * FROM BudgetPlanEntity
@@ -374,8 +401,8 @@ DELETE FROM BudgetPlanEntity;
 
 -- CategoryBudget 관련 쿼리들
 insertCategoryBudget:
-INSERT INTO CategoryBudgetEntity(id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO CategoryBudgetEntity(id, budgetPlanId, categoryIds, categoryName, categoryEmoji, allocatedAmount, memo, items, transferItemId)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectCategoryBudgetsByPlanId:
 SELECT * FROM CategoryBudgetEntity
@@ -384,13 +411,32 @@ ORDER BY categoryName ASC;
 
 updateCategoryBudget:
 UPDATE CategoryBudgetEntity
-SET allocatedAmount = ?, memo = ?
+SET allocatedAmount = ?, memo = ?, items = ?, transferItemId = ?
 WHERE id = ?;
 
 updateCategoryBudgetFull:
 UPDATE CategoryBudgetEntity
-SET categoryIds = ?, categoryName = ?, categoryEmoji = ?, allocatedAmount = ?, memo = ?
+SET categoryIds = ?, categoryName = ?, categoryEmoji = ?, allocatedAmount = ?, memo = ?, items = ?, transferItemId = ?
 WHERE id = ?;
+
+-- TransferCheck 관련 쿼리들
+selectTransferChecksByPeriod:
+SELECT * FROM TransferCheckEntity
+WHERE periodStartDate = ?;
+
+selectAllTransferChecks:
+SELECT * FROM TransferCheckEntity;
+
+insertTransferCheck:
+INSERT OR IGNORE INTO TransferCheckEntity(periodStartDate, transferItemId)
+VALUES (?, ?);
+
+deleteTransferCheck:
+DELETE FROM TransferCheckEntity
+WHERE periodStartDate = ? AND transferItemId = ?;
+
+deleteAllTransferChecks:
+DELETE FROM TransferCheckEntity;
 
 deleteCategoryBudget:
 DELETE FROM CategoryBudgetEntity

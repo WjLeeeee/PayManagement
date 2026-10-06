@@ -17,6 +17,14 @@ class ParsedTransactionRepositoryImpl(
         return databaseHelper.getUnprocessedParsedTransactions()
     }
 
+    override fun getProcessedParsedTransactions(): Flow<List<ParsedTransaction>> {
+        return databaseHelper.getProcessedParsedTransactions()
+    }
+
+    override suspend fun deleteProcessedBefore(before: Long) {
+        databaseHelper.deleteProcessedParsedTransactionsBefore(before)
+    }
+
     override suspend fun insertParsedTransaction(parsedTransaction: ParsedTransaction): Boolean {
         return databaseHelper.insertParsedTransaction(parsedTransaction)
     }

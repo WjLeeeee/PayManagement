@@ -6,7 +6,11 @@ import com.woojin.paymanagement.data.GiftCardBackup
 import com.woojin.paymanagement.data.TransactionBackup
 import com.woojin.paymanagement.data.CategoryBackup
 import com.woojin.paymanagement.data.BudgetPlanBackup
+import com.woojin.paymanagement.data.BudgetAccountAllocationBackup
+import com.woojin.paymanagement.data.BudgetItemBackup
 import com.woojin.paymanagement.data.CategoryBudgetBackup
+import com.woojin.paymanagement.data.TransferCheckBackup
+import com.woojin.paymanagement.data.TransferItemBackup
 import com.woojin.paymanagement.data.RecurringTransactionBackup
 import com.woojin.paymanagement.data.CustomPaymentMethodBackup
 import com.woojin.paymanagement.database.DatabaseHelper
@@ -61,6 +65,11 @@ class ExportDataUseCase(
                 }
             } else emptyList()
 
+            // 이체 완료 체크 수집
+            val transferChecks = if (type == BackupType.ALL || type == BackupType.BUDGET) {
+                databaseHelper.getAllTransferChecks()
+            } else emptyList()
+
             // 반복거래 수집
             val recurringTransactions = if (type == BackupType.ALL) {
                 databaseHelper.getAllRecurringTransactions().first()
@@ -84,7 +93,10 @@ class ExportDataUseCase(
                 budgetPlans = budgetPlans.map { it.toBackup() },
                 categoryBudgets = allCategoryBudgets.map { it.toBackup() },
                 recurringTransactions = recurringTransactions.map { it.toBackup() },
-                customPaymentMethods = customPaymentMethods.map { it.toBackup() }
+                customPaymentMethods = customPaymentMethods.map { it.toBackup() },
+                transferChecks = transferChecks.map {
+                    TransferCheckBackup(periodStartDate = it.periodStartDate.toString(), transferItemId = it.transferItemId)
+                }
             )
 
             // JSON 변환
@@ -147,7 +159,8 @@ class ExportDataUseCase(
         id = id,
         effectiveFromDate = effectiveFromDate.toString(),
         monthlySalary = monthlySalary,
-        createdAt = createdAt.toString()
+        createdAt = createdAt.toString(),
+        transfers = transfers.map { TransferItemBackup(id = it.id, accountName = it.accountName, amount = it.amount) }
     )
 
     private fun com.woojin.paymanagement.data.CategoryBudget.toBackup() = CategoryBudgetBackup(
@@ -157,7 +170,9 @@ class ExportDataUseCase(
         categoryName = categoryName,
         categoryEmoji = categoryEmoji,
         allocatedAmount = allocatedAmount,
-        memo = memo
+        memo = memo,
+        items = items.map { BudgetItemBackup(id = it.id, name = it.name, amount = it.amount) },
+        accountAllocations = accountAllocations.map { BudgetAccountAllocationBackup(transferItemId = it.transferItemId, amount = it.amount) }
     )
 
     private fun com.woojin.paymanagement.data.RecurringTransaction.toBackup() = RecurringTransactionBackup(

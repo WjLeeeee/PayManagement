@@ -8,9 +8,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benasher44.uuid.uuid4
+import com.woojin.paymanagement.data.BudgetAccountAllocation
+import com.woojin.paymanagement.data.BudgetItem
 import com.woojin.paymanagement.data.BudgetPlan
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.CategoryBudget
+import com.woojin.paymanagement.data.TransferItem
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
 import com.woojin.paymanagement.domain.usecase.DeleteCategoryBudgetUseCase
@@ -23,6 +26,9 @@ import com.woojin.paymanagement.domain.usecase.DeleteBudgetPlanUseCase
 import com.woojin.paymanagement.domain.usecase.SaveCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateCategoryBudgetUseCase
 import com.woojin.paymanagement.domain.usecase.GetOldestTransactionDateUseCase
+import com.woojin.paymanagement.domain.usecase.UpdateTransferPlanUseCase
+import com.woojin.paymanagement.domain.usecase.GetTransferChecksUseCase
+import com.woojin.paymanagement.domain.usecase.SetTransferCheckedUseCase
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import com.woojin.paymanagement.utils.formatWithCommas
 import com.woojin.paymanagement.utils.removeCommas
@@ -47,6 +53,9 @@ class BudgetSettingsViewModel(
     private val getSpentAmountByCategoryUseCase: GetSpentAmountByCategoryUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val getOldestTransactionDateUseCase: GetOldestTransactionDateUseCase,
+    private val updateTransferPlanUseCase: UpdateTransferPlanUseCase,
+    private val getTransferChecksUseCase: GetTransferChecksUseCase,
+    private val setTransferCheckedUseCase: SetTransferCheckedUseCase,
     private val payPeriodCalculator: PayPeriodCalculator
 ) : ViewModel() {
 
@@ -55,6 +64,7 @@ class BudgetSettingsViewModel(
 
     private var budgetJob: Job? = null
     private var salaryUpdateJob: Job? = null  // 급여 자동 저장용
+    private var transferCheckJob: Job? = null  // 이체 완료 체크 관찰용
 
     init {
         loadInitialData()
@@ -132,6 +142,7 @@ class BudgetSettingsViewModel(
                                 selection = TextRange(formattedSalary.length)
                             )
                         )
+                        uiState = uiState.copy(budgetPlanId = budgetPlan.id, transfers = budgetPlan.transfers)
                         loadCategoryBudgetsForTemplate(budgetPlan.id)
                     } else {
                         // 예산 템플릿이 없으면 빈 상태
@@ -141,6 +152,8 @@ class BudgetSettingsViewModel(
                             totalAllocated = 0.0,
                             unallocated = 0.0,
                             totalSpent = 0.0,
+                            budgetPlanId = null,
+                            transfers = emptyList(),
                             isLoading = false
                         )
                     }
@@ -159,6 +172,7 @@ class BudgetSettingsViewModel(
     // 사용 현황 탭에서 특정 기간의 지출 현황 로드
     private fun loadBudgetDataForPeriod(payPeriod: com.woojin.paymanagement.utils.PayPeriod) {
         budgetJob?.cancel()
+        observeTransferChecks(payPeriod.startDate)
 
         budgetJob = viewModelScope.launch {
             try {
@@ -176,6 +190,7 @@ class BudgetSettingsViewModel(
                         )
 
                         // 현재 템플릿으로 해당 기간의 지출 현황 계산
+                        uiState = uiState.copy(budgetPlanId = budgetPlan.id, transfers = budgetPlan.transfers)
                         loadCategoryBudgetsForPeriod(budgetPlan, payPeriod)
                     } else {
                         // 예산 템플릿이 없으면 빈 상태
@@ -185,6 +200,8 @@ class BudgetSettingsViewModel(
                             totalAllocated = 0.0,
                             unallocated = 0.0,
                             totalSpent = 0.0,
+                            budgetPlanId = null,
+                            transfers = emptyList(),
                             isLoading = false
                         )
                     }
@@ -403,12 +420,13 @@ class BudgetSettingsViewModel(
                         deleteBudgetPlanUseCase(existingPlan.id)
                     }
 
-                    // 새 예산 템플릿 생성
+                    // 새 예산 템플릿 생성 (이체 계획은 id 그대로 복사해 예산 연결·체크 기록 유지)
                     val newBudgetPlan = BudgetPlan(
                         id = uuid4().toString(),
                         effectiveFromDate = today,
                         monthlySalary = salaryAmount,
-                        createdAt = today
+                        createdAt = today,
+                        transfers = existingPlan.transfers
                     )
                     saveBudgetPlanUseCase(newBudgetPlan)
 
@@ -421,7 +439,9 @@ class BudgetSettingsViewModel(
                             categoryName = budget.categoryName,
                             categoryEmoji = budget.categoryEmoji,
                             allocatedAmount = budget.allocatedAmount,
-                            memo = budget.memo
+                            memo = budget.memo,
+                            items = budget.items,
+                            accountAllocations = budget.accountAllocations
                         )
                         saveCategoryBudgetUseCase(newBudget)
                     }
@@ -464,7 +484,9 @@ class BudgetSettingsViewModel(
                 availableCategories = availableCategories,
                 selectedCategories = emptySet(),
                 groupName = "",
-                newBudgetAmount = TextFieldValue("")
+                newBudgetAmount = TextFieldValue(""),
+                newBudgetItems = emptyList(),
+                newBudgetAccounts = emptyList()
             )
         }
     }
@@ -475,7 +497,9 @@ class BudgetSettingsViewModel(
             selectedCategories = emptySet(),
             groupName = "",
             newBudgetAmount = TextFieldValue(""),
-            newBudgetMemo = ""
+            newBudgetMemo = "",
+            newBudgetItems = emptyList(),
+            newBudgetAccounts = emptyList()
         )
     }
 
@@ -550,6 +574,7 @@ class BudgetSettingsViewModel(
 
                 // 카테고리 예산 추가
                 val memo = uiState.newBudgetMemo.ifBlank { null }
+                val items = uiState.newBudgetItems.toBudgetItems()
                 val categoryBudget = if (selectedCategories.size == 1) {
                     // 단일 카테고리
                     val category = selectedCategories.first()
@@ -560,7 +585,9 @@ class BudgetSettingsViewModel(
                         categoryName = category.name,
                         categoryEmoji = category.emoji,
                         allocatedAmount = amount,
-                        memo = memo
+                        memo = memo,
+                        items = items,
+                        accountAllocations = uiState.newBudgetAccounts.toAllocations()
                     )
                 } else {
                     // 카테고리 그룹
@@ -575,7 +602,9 @@ class BudgetSettingsViewModel(
                         categoryName = groupName,
                         categoryEmoji = "📦",  // 그룹은 항상 📦 이모지 사용
                         allocatedAmount = amount,
-                        memo = memo
+                        memo = memo,
+                        items = items,
+                        accountAllocations = uiState.newBudgetAccounts.toAllocations()
                     )
                 }
 
@@ -622,6 +651,8 @@ class BudgetSettingsViewModel(
                     selection = TextRange(formattedAmount.length)
                 ),
                 editMemo = budget.categoryBudget.memo ?: "",
+                editItems = budget.categoryBudget.items.map { it.toDraft() },
+                editAccounts = budget.categoryBudget.accountAllocations.map { it.toDraft() },
                 editAvailableCategories = editAvailableCategories,
                 editSelectedCategories = editSelectedCategories,
                 editGroupName = if (budget.categoryBudget.isGroup) budget.categoryBudget.categoryName else ""
@@ -635,6 +666,8 @@ class BudgetSettingsViewModel(
             editingBudget = null,
             editAmount = TextFieldValue(""),
             editMemo = "",
+            editItems = emptyList(),
+            editAccounts = emptyList(),
             editAvailableCategories = emptyList(),
             editSelectedCategories = emptySet(),
             editGroupName = ""
@@ -704,7 +737,9 @@ class BudgetSettingsViewModel(
                     memo = memo,
                     categoryIds = categoryIds,
                     categoryName = categoryName,
-                    categoryEmoji = categoryEmoji
+                    categoryEmoji = categoryEmoji,
+                    items = uiState.editItems.toBudgetItems(),
+                    accountAllocations = uiState.editAccounts.toAllocations()
                 )
                 hideEditDialog()
             } catch (e: CancellationException) {
@@ -735,6 +770,261 @@ class BudgetSettingsViewModel(
 
     fun updateNewBudgetMemo(newMemo: String) {
         uiState = uiState.copy(newBudgetMemo = newMemo)
+    }
+
+    // ===== 세부 항목 (예산 추가 다이얼로그) =====
+
+    fun addNewBudgetItem() {
+        uiState = uiState.copy(newBudgetItems = uiState.newBudgetItems + BudgetItemDraft(id = uuid4().toString()))
+    }
+
+    fun updateNewBudgetItemName(itemId: String, name: String) {
+        uiState = uiState.copy(newBudgetItems = uiState.newBudgetItems.updateItem(itemId) { it.copy(name = name) })
+    }
+
+    fun updateNewBudgetItemAmount(itemId: String, newValue: TextFieldValue) {
+        val formatted = formatAmountInput(newValue) ?: return
+        uiState = uiState.copy(newBudgetItems = uiState.newBudgetItems.updateItem(itemId) { it.copy(amount = formatted) })
+    }
+
+    fun removeNewBudgetItem(itemId: String) {
+        uiState = uiState.copy(newBudgetItems = uiState.newBudgetItems.filterNot { it.id == itemId })
+    }
+
+    // 항목 합계를 배분 금액으로 적용
+    fun applyNewBudgetItemsTotal() {
+        val total = uiState.newBudgetItems.totalAmount
+        if (total <= 0) return
+        updateNewBudgetAmount(TextFieldValue(total.toLong().toString()))
+    }
+
+    // ===== 세부 항목 (예산 수정 다이얼로그) =====
+
+    fun addEditItem() {
+        uiState = uiState.copy(editItems = uiState.editItems + BudgetItemDraft(id = uuid4().toString()))
+    }
+
+    fun updateEditItemName(itemId: String, name: String) {
+        uiState = uiState.copy(editItems = uiState.editItems.updateItem(itemId) { it.copy(name = name) })
+    }
+
+    fun updateEditItemAmount(itemId: String, newValue: TextFieldValue) {
+        val formatted = formatAmountInput(newValue) ?: return
+        uiState = uiState.copy(editItems = uiState.editItems.updateItem(itemId) { it.copy(amount = formatted) })
+    }
+
+    fun removeEditItem(itemId: String) {
+        uiState = uiState.copy(editItems = uiState.editItems.filterNot { it.id == itemId })
+    }
+
+    fun applyEditItemsTotal() {
+        val total = uiState.editItems.totalAmount
+        if (total <= 0) return
+        updateEditAmount(TextFieldValue(total.toLong().toString()))
+    }
+
+    // ===== 사용 통장 선택 (예산 다이얼로그) =====
+
+    // 복수 선택, 같은 통장을 다시 누르면 해제
+    fun toggleNewBudgetAccount(transferItemId: String) {
+        uiState = uiState.copy(newBudgetAccounts = uiState.newBudgetAccounts.toggled(transferItemId))
+    }
+
+    fun updateNewBudgetAccountAmount(transferItemId: String, newValue: TextFieldValue) {
+        val formatted = formatAmountInput(newValue) ?: return
+        uiState = uiState.copy(newBudgetAccounts = uiState.newBudgetAccounts.withAmount(transferItemId, formatted))
+    }
+
+    fun toggleEditAccount(transferItemId: String) {
+        uiState = uiState.copy(editAccounts = uiState.editAccounts.toggled(transferItemId))
+    }
+
+    fun updateEditAccountAmount(transferItemId: String, newValue: TextFieldValue) {
+        val formatted = formatAmountInput(newValue) ?: return
+        uiState = uiState.copy(editAccounts = uiState.editAccounts.withAmount(transferItemId, formatted))
+    }
+
+    private fun List<AccountDraft>.toggled(id: String): List<AccountDraft> =
+        if (any { it.transferItemId == id }) filterNot { it.transferItemId == id } else this + AccountDraft(transferItemId = id)
+
+    private fun List<AccountDraft>.withAmount(id: String, amount: TextFieldValue): List<AccountDraft> =
+        map { if (it.transferItemId == id) it.copy(amount = amount) else it }
+
+    // 통장이 하나면 금액 없이 예산 전액, 여럿이면 입력한 금액(비어 있으면 null)
+    private fun List<AccountDraft>.toAllocations(): List<BudgetAccountAllocation> =
+        if (size == 1) {
+            listOf(BudgetAccountAllocation(transferItemId = first().transferItemId))
+        } else {
+            map { BudgetAccountAllocation(transferItemId = it.transferItemId, amount = it.amountValue.takeIf { v -> v > 0 }) }
+        }
+
+    private fun BudgetAccountAllocation.toDraft(): AccountDraft {
+        val formatted = amount?.let { formatWithCommas(it.toLong()) } ?: ""
+        return AccountDraft(
+            transferItemId = transferItemId,
+            amount = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+        )
+    }
+
+    // ===== 월급날 이체 계획 =====
+
+    // 계획이 없으면 바로 편집 모드로 연다
+    fun showTransferPlanSheet() {
+        if (uiState.transfers.isEmpty()) {
+            startTransferPlanEditing()
+            return
+        }
+        uiState = uiState.copy(showTransferPlanSheet = true, isTransferPlanEditing = false)
+    }
+
+    fun hideTransferPlanSheet() {
+        uiState = uiState.copy(showTransferPlanSheet = false, isTransferPlanEditing = false, transferDrafts = emptyList())
+    }
+
+    fun startTransferPlanEditing() {
+        if (getSalaryAmount() <= 0) {
+            uiState = uiState.copy(error = "먼저 월 급여를 입력해주세요")
+            return
+        }
+        uiState = uiState.copy(
+            showTransferPlanSheet = true,
+            isTransferPlanEditing = true,
+            transferDrafts = uiState.transfers.map { it.toDraft() }
+        )
+    }
+
+    // 계획이 없는 상태에서 취소하면 보여줄 게 없으므로 시트를 닫는다
+    fun cancelTransferPlanEditing() {
+        if (uiState.transfers.isEmpty()) {
+            hideTransferPlanSheet()
+        } else {
+            uiState = uiState.copy(isTransferPlanEditing = false, transferDrafts = emptyList())
+        }
+    }
+
+    fun addTransferDraft() {
+        uiState = uiState.copy(transferDrafts = uiState.transferDrafts + BudgetItemDraft(id = uuid4().toString()))
+    }
+
+    fun updateTransferDraftName(itemId: String, name: String) {
+        uiState = uiState.copy(transferDrafts = uiState.transferDrafts.updateItem(itemId) { it.copy(name = name) })
+    }
+
+    fun updateTransferDraftAmount(itemId: String, newValue: TextFieldValue) {
+        val formatted = formatAmountInput(newValue) ?: return
+        uiState = uiState.copy(transferDrafts = uiState.transferDrafts.updateItem(itemId) { it.copy(amount = formatted) })
+    }
+
+    fun removeTransferDraft(itemId: String) {
+        uiState = uiState.copy(transferDrafts = uiState.transferDrafts.filterNot { it.id == itemId })
+    }
+
+    fun saveTransferPlan() {
+        val newTransfers = uiState.transferDrafts
+            .filter { it.name.isNotBlank() && it.amountValue > 0 }
+            .map { TransferItem(id = it.id, accountName = it.name.trim(), amount = it.amountValue) }
+
+        viewModelScope.launch {
+            try {
+                uiState = uiState.copy(isSaving = true)
+
+                // 템플릿이 없으면 생성 (급여는 다이얼로그 진입 시 확인됨)
+                val planId = uiState.budgetPlanId ?: run {
+                    val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                    val newPlan = BudgetPlan(
+                        id = uuid4().toString(),
+                        effectiveFromDate = today,
+                        monthlySalary = getSalaryAmount(),
+                        createdAt = today
+                    )
+                    saveBudgetPlanUseCase(newPlan)
+                    newPlan.id
+                }
+
+                updateTransferPlanUseCase(
+                    budgetPlanId = planId,
+                    transfers = newTransfers,
+                    previousTransfers = uiState.transfers
+                )
+                // 저장 후 보기 모드로 전환, 계획을 모두 지웠으면 시트 닫기
+                if (newTransfers.isEmpty()) {
+                    hideTransferPlanSheet()
+                } else {
+                    uiState = uiState.copy(isTransferPlanEditing = false, transferDrafts = emptyList())
+                }
+
+                // 템플릿 Flow 수집이 카테고리 예산 수집에 막혀 플랜 변경을 받지 못하므로 명시적으로 재로드
+                val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                loadBudgetTemplate(today)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+            } finally {
+                uiState = uiState.copy(isSaving = false)
+            }
+        }
+    }
+
+    // ===== 이체 완료 체크 (사용 현황 탭) =====
+
+    private fun observeTransferChecks(periodStartDate: LocalDate) {
+        transferCheckJob?.cancel()
+        transferCheckJob = viewModelScope.launch {
+            getTransferChecksUseCase(periodStartDate).collect { checked ->
+                uiState = uiState.copy(transferChecks = checked)
+            }
+        }
+    }
+
+    fun toggleTransferCheck(transferItemId: String) {
+        val period = uiState.viewingPeriod ?: return
+        val checked = transferItemId !in uiState.transferChecks
+        viewModelScope.launch {
+            try {
+                setTransferCheckedUseCase(period.startDate, transferItemId, checked)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                uiState = uiState.copy(error = e.message)
+            }
+        }
+    }
+
+    private fun TransferItem.toDraft(): BudgetItemDraft {
+        val formatted = formatWithCommas(amount.toLong())
+        return BudgetItemDraft(
+            id = id,
+            name = accountName,
+            amount = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+        )
+    }
+
+    // 숫자만 허용하고 쉼표 포맷. 숫자가 아닌 입력이면 null (기존 값 유지)
+    private fun formatAmountInput(newValue: TextFieldValue): TextFieldValue? {
+        val digitsOnly = removeCommas(newValue.text)
+        if (digitsOnly.isNotEmpty() && !digitsOnly.matches(Regex("^\\d+$"))) return null
+        val formatted = if (digitsOnly.isEmpty()) "" else formatWithCommas(digitsOnly.toLongOrNull() ?: 0L)
+        return TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+    }
+
+    private fun List<BudgetItemDraft>.updateItem(
+        itemId: String,
+        transform: (BudgetItemDraft) -> BudgetItemDraft
+    ): List<BudgetItemDraft> = map { if (it.id == itemId) transform(it) else it }
+
+    // 이름이 비었거나 금액이 0 이하인 행은 저장하지 않음
+    private fun List<BudgetItemDraft>.toBudgetItems(): List<BudgetItem> =
+        filter { it.name.isNotBlank() && it.amountValue > 0 }
+            .map { BudgetItem(id = it.id, name = it.name.trim(), amount = it.amountValue) }
+
+    private fun BudgetItem.toDraft(): BudgetItemDraft {
+        val formatted = formatWithCommas(amount.toLong())
+        return BudgetItemDraft(
+            id = id,
+            name = name,
+            amount = TextFieldValue(text = formatted, selection = TextRange(formatted.length))
+        )
     }
 
     fun clearError() {

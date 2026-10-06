@@ -15,5 +15,6 @@ data class ParsedTransaction(
     val date: LocalDate,         // 승인일시 (년도 + 월/일)
     val rawNotification: String, // 원본 알림 텍스트 (디버깅용)
     val isProcessed: Boolean = false, // 거래 추가 화면으로 넘어갔는지 여부
-    val createdAt: Long = Clock.System.now().toEpochMilliseconds() // 알림 수신 시간
+    val createdAt: Long = Clock.System.now().toEpochMilliseconds(), // 알림 수신 시간
+    val processedAt: Long? = null // 가계부에 기록 완료된 시간 (완료 탭 보관 기간 계산용)
 )

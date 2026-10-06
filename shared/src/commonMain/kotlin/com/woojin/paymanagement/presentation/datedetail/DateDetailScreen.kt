@@ -104,34 +104,37 @@ fun DateDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(horizontal = 16.dp)
     ) {
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Header with back button
         DateDetailHeader(
             selectedDate = selectedDate,
             onBack = onBack
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Daily Summary Card
+        // 일일 요약 (당일 지출 강조 + 칩)
         DailySummaryCard(
             summary = uiState.dailySummary
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(18.dp))
+        DateDetailSectionBand()
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Transactions list header
         TransactionListHeader(
-            transactionCount = dayTransactions.size,
-            onAddTransaction = onAddTransaction
+            transactionCount = dayTransactions.size
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         LazyColumn(
             state = lazyListState,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp),
             modifier = Modifier.weight(1f)
         ) {
@@ -205,6 +208,11 @@ fun DateDetailScreen(
                 }
             }
         }
+
+        // 하단 고정 거래 추가 버튼
+        Spacer(modifier = Modifier.height(8.dp))
+        AddTransactionBottomButton(onClick = onAddTransaction)
+        Spacer(modifier = Modifier.height(12.dp))
     }
 
     val strings = LocalStrings.current

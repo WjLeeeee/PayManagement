@@ -68,6 +68,21 @@ pipeline {
             }
         }
 
+        stage('Commit Version Code') {
+            steps {
+                echo 'Pushing version code bump...'
+                withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                    sh '''
+                        git config user.email "jenkins@local"
+                        git config user.name "Jenkins CI"
+                        git add androidApp/build.gradle.kts
+                        git commit -m "Chore: bump versionCode to ${NEW_VERSION_CODE}" || echo "No changes to commit"
+                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/WjLeeeee/PayManagement.git HEAD:develop
+                    '''
+                }
+            }
+        }
+
         stage('Deploy to Play Store') {
             steps {
                 echo 'Deploying to Play Store Internal Track...'
@@ -82,17 +97,6 @@ pipeline {
             echo 'AAB uploaded to Play Store Internal Track (COMPLETED)'
 
             script {
-                // Git에 versionCode 변경사항 커밋
-                withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-                    sh '''
-                        git config user.email "jenkins@local"
-                        git config user.name "Jenkins CI"
-                        git add androidApp/build.gradle.kts
-                        git commit -m "Chore: bump versionCode to ${NEW_VERSION_CODE}" || echo "No changes to commit"
-                        git push https://${GIT_USER}:${GIT_TOKEN}@github.com/WjLeeeee/PayManagement.git HEAD:develop
-                    '''
-                }
-
                 withCredentials([string(credentialsId: 'discord-webhook', variable: 'WEBHOOK_URL')]) {
                     def message = """
 {

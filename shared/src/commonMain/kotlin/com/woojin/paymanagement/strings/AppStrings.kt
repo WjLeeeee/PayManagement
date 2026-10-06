@@ -154,6 +154,7 @@ interface AppStrings {
     val showPayPeriod: String
     val hidePayPeriod: String
     val viewDetails: String
+    val moveTransactionHint: String
     val payPeriodStart: String
     val payPeriodEnd: String
     fun payPeriodRange(startMonth: Int, startDay: Int, endMonth: Int, endDay: Int): String
@@ -185,6 +186,7 @@ interface AppStrings {
     val editTransaction: String
     val transactionDate: String
     val transactionAmount: String
+    fun quickAmountLabel(amount: Long): String
     val transactionMemo: String
     val enterAmount: String
     val enterMemo: String
@@ -607,6 +609,32 @@ interface AppStrings {
     val groupNameInput: String
     val groupNameLabel: String
     val memoOptional: String
+    val budgetItemsOptional: String
+    val budgetItems: String
+    val addBudgetItem: String
+    val budgetItemName: String
+    val budgetItemsTotal: String
+    val applyItemsTotal: String
+    fun itemsExceedBudget(amount: String): String
+    fun itemsRemainder(amount: String): String
+    // 월급날 이체 계획
+    val transferPlan: String
+    val transferPlanShort: String
+    val setupTransferPlan: String
+    fun transferPlanSummary(count: Int, total: String): String
+    val editTransferPlan: String
+    val accountName: String
+    val transferTotal: String
+    fun transferExceedsSalary(amount: String): String
+    fun leftoverAfterTransfer(amount: String): String
+    fun linkedBudgetAmount(amount: String): String
+    fun shortageAmount(amount: String): String
+    val budgetAccountOptional: String
+    val accountSplitTotal: String
+    fun accountSplitExceeds(amount: String): String
+    fun accountSplitUnassigned(amount: String): String
+    val transferCheck: String
+    fun transferCheckProgress(done: Int, total: Int): String
     val noCategoriesAvailable: String
     val includedCategories: String
     val categorySpending: String
@@ -698,11 +726,27 @@ interface AppStrings {
     val increasedArrow: String
     val savingsArrow: String
     val same: String
+    val comparedToPreviousPeriod: String
+    val spentLess: String
+    val spentMore: String
+    val savedMore: String
+    val savedLess: String
+    val investedMore: String
+    val investedLess: String
+    val sameAsPreviousPeriod: String
+    val earnedMore: String
+    val earnedLess: String
 
     // ===== Parsed Transactions (additional) =====
     val parsedTransactionDesc: String
     fun errorWithMessage(message: String): String
     val cardNotificationAutoDisplay: String
+    val addToLedger: String
+    val pendingRecordTab: String
+    val completedRecordTab: String
+    val completedRetentionHint: String
+    val noCompletedRecords: String
+    val recordedBadge: String
     val notificationOn: String
     val notificationOff: String
 
@@ -728,6 +772,10 @@ interface AppStrings {
     val recurringTransactionManagement: String
     val todayItems: String
     val noRegisteredRecurringTransactions: String
+    val recurringSectionWhat: String
+    val recurringSectionAmount: String
+    val recurringSectionWhen: String
+    val recurringSectionWhere: String
     val recurringAutoExecute: String
     val recurringAutoExecuteDescription: String
     fun paymentMethodDisplay(method: String): String

@@ -142,6 +142,26 @@ class MonthlyComparisonViewModel(
                 0f
             }
 
+            // 수입 비교 계산
+            val incomeComparisons = calculateCategoryComparisons(
+                currentPeriodTransactions = currentPeriodTransactions.filter { it.type == TransactionType.INCOME },
+                previousPeriodTransactions = previousPeriodTransactions.filter { it.type == TransactionType.INCOME }
+            )
+            val totalCurrentIncome = currentPeriodTransactions
+                .filter { it.type == TransactionType.INCOME }
+                .sumOf { it.displayAmount }
+            val totalPreviousIncome = previousPeriodTransactions
+                .filter { it.type == TransactionType.INCOME }
+                .sumOf { it.displayAmount }
+            val totalIncomeDiff = totalCurrentIncome - totalPreviousIncome
+            val totalIncomeDiffPercentage = if (totalPreviousIncome > 0) {
+                ((totalIncomeDiff / totalPreviousIncome) * 100).toFloat()
+            } else if (totalCurrentIncome > 0) {
+                100f
+            } else {
+                0f
+            }
+
             // 투자 비교 계산
             val investmentComparisons = calculateCategoryComparisons(
                 currentPeriodTransactions = currentPeriodTransactions.filter { it.type == TransactionType.INVESTMENT },
@@ -183,6 +203,11 @@ class MonthlyComparisonViewModel(
                 totalPreviousSaving = totalPreviousSaving,
                 totalSavingDifference = totalSavingDiff,
                 totalSavingDifferencePercentage = totalSavingDiffPercentage,
+                incomeCategoryComparisons = incomeComparisons,
+                totalCurrentIncome = totalCurrentIncome,
+                totalPreviousIncome = totalPreviousIncome,
+                totalIncomeDifference = totalIncomeDiff,
+                totalIncomeDifferencePercentage = totalIncomeDiffPercentage,
                 investmentCategoryComparisons = investmentComparisons,
                 totalCurrentInvestment = totalCurrentInvestment,
                 totalPreviousInvestment = totalPreviousInvestment,

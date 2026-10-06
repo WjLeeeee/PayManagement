@@ -12,6 +12,10 @@ import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.data.FailedNotification
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.BudgetPlan
+import com.woojin.paymanagement.data.BudgetAccountAllocation
+import com.woojin.paymanagement.data.BudgetItem
+import com.woojin.paymanagement.data.TransferCheck
+import com.woojin.paymanagement.data.TransferItem
 import com.woojin.paymanagement.data.CategoryBudget
 import com.woojin.paymanagement.data.RecurringTransaction
 import com.woojin.paymanagement.data.RecurringPattern
@@ -20,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
@@ -343,7 +348,23 @@ class DatabaseHelper(
     }
 
     suspend fun markParsedTransactionAsProcessed(id: String) {
-        queries.updateParsedTransactionProcessed(id)
+        queries.updateParsedTransactionProcessed(
+            processedAt = Clock.System.now().toEpochMilliseconds(),
+            id = id
+        )
+    }
+
+    fun getProcessedParsedTransactions(): Flow<List<ParsedTransaction>> {
+        return queries.selectProcessedParsedTransactions()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities ->
+                entities.map { it.toParsedTransaction() }
+            }
+    }
+
+    suspend fun deleteProcessedParsedTransactionsBefore(before: Long) {
+        queries.deleteProcessedParsedTransactionsBefore(before)
     }
 
     suspend fun deleteParsedTransaction(id: String) {
@@ -448,8 +469,18 @@ class DatabaseHelper(
             id = budgetPlan.id,
             effectiveFromDate = budgetPlan.effectiveFromDate.toString(),
             monthlySalary = budgetPlan.monthlySalary,
-            createdAt = budgetPlan.createdAt.toString()
+            createdAt = budgetPlan.createdAt.toString(),
+            transfers = encodeTransfers(budgetPlan.transfers)
         )
+    }
+
+    suspend fun updateBudgetPlanTransfers(id: String, transfers: List<TransferItem>) {
+        queries.updateBudgetPlanTransfers(encodeTransfers(transfers), id)
+    }
+
+    // 이체 계획이 없으면 NULL로 저장
+    private fun encodeTransfers(transfers: List<TransferItem>): String? {
+        return if (transfers.isEmpty()) null else json.encodeToString(transfers)
     }
 
     suspend fun deleteBudgetPlan(id: String) {
@@ -478,12 +509,20 @@ class DatabaseHelper(
             categoryName = categoryBudget.categoryName,
             categoryEmoji = categoryBudget.categoryEmoji,
             allocatedAmount = categoryBudget.allocatedAmount,
-            memo = categoryBudget.memo
+            memo = categoryBudget.memo,
+            items = encodeBudgetItems(categoryBudget.items),
+            transferItemId = encodeAccountAllocations(categoryBudget.accountAllocations)
         )
     }
 
-    suspend fun updateCategoryBudget(id: String, allocatedAmount: Double, memo: String? = null) {
-        queries.updateCategoryBudget(allocatedAmount, memo, id)
+    suspend fun updateCategoryBudget(
+        id: String,
+        allocatedAmount: Double,
+        memo: String? = null,
+        items: List<BudgetItem> = emptyList(),
+        accountAllocations: List<BudgetAccountAllocation> = emptyList()
+    ) {
+        queries.updateCategoryBudget(allocatedAmount, memo, encodeBudgetItems(items), encodeAccountAllocations(accountAllocations), id)
     }
 
     suspend fun updateCategoryBudgetFull(
@@ -492,7 +531,9 @@ class DatabaseHelper(
         categoryName: String,
         categoryEmoji: String,
         allocatedAmount: Double,
-        memo: String? = null
+        memo: String? = null,
+        items: List<BudgetItem> = emptyList(),
+        accountAllocations: List<BudgetAccountAllocation> = emptyList()
     ) {
         queries.updateCategoryBudgetFull(
             categoryIds = json.encodeToString(categoryIds),
@@ -500,8 +541,63 @@ class DatabaseHelper(
             categoryEmoji = categoryEmoji,
             allocatedAmount = allocatedAmount,
             memo = memo,
+            items = encodeBudgetItems(items),
+            transferItemId = encodeAccountAllocations(accountAllocations),
             id = id
         )
+    }
+
+    // 사용 통장이 없으면 NULL로 저장
+    private fun encodeAccountAllocations(allocations: List<BudgetAccountAllocation>): String? {
+        return if (allocations.isEmpty()) null else json.encodeToString(allocations)
+    }
+
+    // 하위 호환: 통장 id 배열 또는 단일 id 문자열이 저장된 경우도 읽어들임
+    private fun decodeAccountAllocations(raw: String?): List<BudgetAccountAllocation> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return try {
+            json.decodeFromString<List<BudgetAccountAllocation>>(raw)
+        } catch (e: Exception) {
+            try {
+                json.decodeFromString<List<String>>(raw).map { BudgetAccountAllocation(transferItemId = it) }
+            } catch (e: Exception) {
+                listOf(BudgetAccountAllocation(transferItemId = raw))
+            }
+        }
+    }
+
+    // TransferCheck 관련 메서드들
+    fun getTransferChecksByPeriod(periodStartDate: LocalDate): Flow<Set<String>> {
+        return queries.selectTransferChecksByPeriod(periodStartDate.toString())
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+            .map { entities -> entities.map { it.transferItemId }.toSet() }
+    }
+
+    suspend fun getAllTransferChecks(): List<TransferCheck> {
+        return queries.selectAllTransferChecks().executeAsList().map {
+            TransferCheck(
+                periodStartDate = LocalDate.parse(it.periodStartDate),
+                transferItemId = it.transferItemId
+            )
+        }
+    }
+
+    suspend fun setTransferChecked(periodStartDate: LocalDate, transferItemId: String, checked: Boolean) {
+        if (checked) {
+            queries.insertTransferCheck(periodStartDate.toString(), transferItemId)
+        } else {
+            queries.deleteTransferCheck(periodStartDate.toString(), transferItemId)
+        }
+    }
+
+    suspend fun deleteAllTransferChecks() {
+        queries.deleteAllTransferChecks()
+    }
+
+    // 세부 항목이 없으면 NULL로 저장
+    private fun encodeBudgetItems(items: List<BudgetItem>): String? {
+        return if (items.isEmpty()) null else json.encodeToString(items)
     }
 
     suspend fun deleteCategoryBudget(id: String) {
@@ -524,6 +620,7 @@ class DatabaseHelper(
         // 외래 키 관계를 고려한 순서로 삭제
         queries.deleteAllCategoryBudgets()  // 예산 관련 먼저 삭제
         queries.deleteAllBudgetPlans()
+        queries.deleteAllTransferChecks()
         queries.deleteAllTransactions()
         queries.deleteAllBalanceCards()
         queries.deleteAllGiftCards()
@@ -582,7 +679,8 @@ class DatabaseHelper(
             date = LocalDate.parse(this.date),
             rawNotification = this.rawNotification,
             isProcessed = this.isProcessed == 1L,
-            createdAt = this.createdAt
+            createdAt = this.createdAt,
+            processedAt = this.processedAt
         )
     }
 
@@ -603,7 +701,14 @@ class DatabaseHelper(
             id = this.id,
             effectiveFromDate = LocalDate.parse(this.effectiveFromDate),
             monthlySalary = this.monthlySalary,
-            createdAt = LocalDate.parse(this.createdAt)
+            createdAt = LocalDate.parse(this.createdAt),
+            transfers = this.transfers?.let { raw ->
+                try {
+                    json.decodeFromString<List<TransferItem>>(raw)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            } ?: emptyList()
         )
     }
 
@@ -622,7 +727,15 @@ class DatabaseHelper(
             categoryName = this.categoryName,
             categoryEmoji = this.categoryEmoji,
             allocatedAmount = this.allocatedAmount,
-            memo = this.memo
+            memo = this.memo,
+            items = this.items?.let { raw ->
+                try {
+                    json.decodeFromString<List<BudgetItem>>(raw)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+            } ?: emptyList(),
+            accountAllocations = decodeAccountAllocations(this.transferItemId)
         )
     }
 

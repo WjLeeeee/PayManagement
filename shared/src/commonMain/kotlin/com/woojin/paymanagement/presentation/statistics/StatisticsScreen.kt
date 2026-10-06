@@ -1,6 +1,24 @@
 package com.woojin.paymanagement.presentation.statistics
 
 import androidx.compose.foundation.background
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Dp
+import com.woojin.paymanagement.presentation.addtransaction.SelectablePillChip
+import com.woojin.paymanagement.theme.BrandColor
+import com.woojin.paymanagement.theme.InvestmentColor
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,9 +120,11 @@ fun StatisticsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Header with back button
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -120,15 +140,15 @@ fun StatisticsScreen(
 
             Text(
                 text = strings.statistics,
-                style = MaterialTheme.typography.headlineMedium,
+                fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
-        
+        Spacer(modifier = Modifier.height(4.dp))
+
         // Period Navigation
         uiState.currentPayPeriod?.let { currentPayPeriod ->
             PayPeriodNavigationCard(
@@ -139,7 +159,7 @@ fun StatisticsScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         // Summary Card
         statisticsData.chartData?.let { chartData ->
@@ -148,8 +168,6 @@ fun StatisticsScreen(
                 totalExpense = chartData.totalExpense
             )
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
 
         // Investment Summary Card
         // 전체 transactions에서 투자 관련 카테고리 데이터 계산
@@ -171,9 +189,11 @@ fun StatisticsScreen(
                 profitAmount = profitAmount,
                 dividendAmount = dividendAmount
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
+
+        Spacer(modifier = Modifier.height(22.dp))
+        StatSectionBand()
+        Spacer(modifier = Modifier.height(20.dp))
 
         // 카테고리별 탭 분기
         val hasIncome = statisticsData.chartData?.incomeItems?.isNotEmpty() == true
@@ -201,7 +221,7 @@ fun StatisticsScreen(
                 onTabSelected = { selectedTab = it }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
             when (selectedTab) {
                 StatTab.INCOME -> statisticsData.chartData?.let { chartData ->
@@ -270,7 +290,7 @@ fun StatisticsScreen(
                         transactionType = TransactionType.INCOME
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
                 }
             }
 
@@ -285,7 +305,7 @@ fun StatisticsScreen(
                         transactionType = TransactionType.EXPENSE
                     )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
                 }
             }
 
@@ -327,16 +347,19 @@ fun StatisticsScreen(
             if (paymentSummary.cashIncome > 0 || paymentSummary.cashExpense > 0 || paymentSummary.cardExpense > 0 ||
                 paymentSummary.balanceCards.isNotEmpty() || paymentSummary.giftCards.isNotEmpty()) {
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(22.dp))
+                StatSectionBand()
+                Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
                     text = strings.paymentMethodAnalysis,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 PaymentMethodSection(paymentSummary = paymentSummary)
             }
@@ -356,6 +379,30 @@ fun StatisticsScreen(
     }
 }
 
+private const val StatAnimMs = 280
+
+/**
+ * 화면 좌우 끝까지 이어지는 회색 구분 띠 (메인 화면과 동일)
+ */
+@Composable
+private fun StatSectionBand(horizontalBleed: Dp = 16.dp) {
+    Box(
+        modifier = Modifier
+            .layout { measurable, constraints ->
+                val extra = horizontalBleed.roundToPx() * 2
+                val width = constraints.maxWidth + extra
+                val placeable = measurable.measure(
+                    constraints.copy(minWidth = width, maxWidth = width)
+                )
+                layout(constraints.maxWidth, placeable.height) {
+                    placeable.place(-extra / 2, 0)
+                }
+            }
+            .height(8.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    )
+}
+
 @Composable
 private fun PayPeriodNavigationCard(
     currentPayPeriod: PayPeriod,
@@ -363,63 +410,43 @@ private fun PayPeriodNavigationCard(
     onNextPeriod: () -> Unit,
     navigationEnabled: Boolean = true
 ) {
-    Card(
+    val arrowTint = if (navigationEnabled) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
-                )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(onClick = onPreviousPeriod, enabled = navigationEnabled) {
-                    Text(
-                        "◀",
-                        fontSize = 24.sp,
-                        color = if (navigationEnabled) MaterialTheme.colorScheme.onSurface
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
-                }
+        IconButton(onClick = onPreviousPeriod, enabled = navigationEnabled) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = null,
+                tint = arrowTint
+            )
+        }
 
-                Text(
-                    text = currentPayPeriod.displayText,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
+        Text(
+            text = currentPayPeriod.displayText,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.ExtraBold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f, fill = false)
+        )
 
-                TextButton(onClick = onNextPeriod, enabled = navigationEnabled) {
-                    Text(
-                        "▶",
-                        fontSize = 24.sp,
-                        color = if (navigationEnabled) MaterialTheme.colorScheme.onSurface
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
-                }
-            }
+        IconButton(onClick = onNextPeriod, enabled = navigationEnabled) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = arrowTint
+            )
         }
     }
 }
 
+/**
+ * 급여 기간 요약: 수입 | 지출 | 잔액 한 줄
+ */
 @Composable
 private fun SummaryCard(
     totalIncome: Double,
@@ -427,150 +454,81 @@ private fun SummaryCard(
 ) {
     val strings = LocalStrings.current
     val balance = totalIncome - totalExpense
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
-                )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "📊 ${strings.payPeriodSummary}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // 수입
-                    Column(
-                        horizontalAlignment = Alignment.Start,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💰",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = strings.income,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Text(
-                            text = "+${strings.amountWithUnit(Utils.formatAmount(totalIncome))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    // 지출
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💸",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = strings.expense,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(totalExpense))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    // 잔액
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "💵",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = strings.balance,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        Text(
-                            text = "${
-                                when {
-                                    balance > 0 -> "+"
-                                    balance < 0 -> "-"
-                                    else -> ""
-                                }
-                            }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                balance > 0 -> MaterialTheme.colorScheme.primary
-                                balance < 0 -> MaterialTheme.colorScheme.error
-                                else -> MaterialTheme.colorScheme.onSurface
-                            },
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        }
+        SummaryValue(
+            label = strings.income,
+            value = "+${strings.amountWithUnit(Utils.formatAmount(totalIncome))}",
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f)
+        )
+        SummaryDivider()
+        SummaryValue(
+            label = strings.expense,
+            value = "-${strings.amountWithUnit(Utils.formatAmount(totalExpense))}",
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.weight(1f).padding(start = 12.dp)
+        )
+        SummaryDivider()
+        SummaryValue(
+            label = strings.balance,
+            value = when {
+                balance > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(balance))}"
+                balance < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}"
+                else -> strings.amountWithUnit(Utils.formatAmount(balance))
+            },
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f).padding(start = 12.dp)
+        )
     }
 }
 
+@Composable
+private fun SummaryValue(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = value,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun SummaryDivider() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .fillMaxHeight()
+            .padding(vertical = 4.dp)
+            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+    )
+}
+
+/**
+ * 투자 활동: 값이 있는 항목은 색 칩, 0인 항목은 회색 칩 하나로 묶음
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun InvestmentSummaryCard(
     investmentAmount: Double,
@@ -579,167 +537,79 @@ private fun InvestmentSummaryCard(
     dividendAmount: Double
 ) {
     val strings = LocalStrings.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    val zeroLabels = mutableListOf<String>()
+
+    Spacer(modifier = Modifier.height(14.dp))
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Box(
+        Text(
+            text = strings.investment,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
-                )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "📈 ${strings.investmentActivitySummary}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                .align(Alignment.CenterVertically)
+                .padding(end = 2.dp)
+        )
 
-                Spacer(modifier = Modifier.height(12.dp))
+        if (investmentAmount > 0) {
+            StatChip(
+                text = "${strings.investment} ${strings.amountWithUnit(Utils.formatAmount(investmentAmount))}",
+                color = InvestmentColor.color
+            )
+        } else zeroLabels += strings.investment
 
-                // 2×2 그리드로 표시
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        // 투자
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "💹 ${strings.investment}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = strings.amountWithUnit(Utils.formatAmount(investmentAmount)),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+        if (lossCutAmount > 0) {
+            StatChip(
+                text = "${strings.stopLoss} -${strings.amountWithUnit(Utils.formatAmount(lossCutAmount))}",
+                color = MaterialTheme.colorScheme.error
+            )
+        } else zeroLabels += strings.stopLoss
 
-                        // 손절
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "📉 ${strings.stopLoss}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "-${strings.amountWithUnit(Utils.formatAmount(lossCutAmount))}",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
+        if (profitAmount > 0) {
+            StatChip(
+                text = "${strings.profitTaking} +${strings.amountWithUnit(Utils.formatAmount(profitAmount))}",
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else zeroLabels += strings.profitTaking
 
-                    Spacer(modifier = Modifier.height(8.dp))
+        if (dividendAmount > 0) {
+            StatChip(
+                text = "${strings.dividend} +${strings.amountWithUnit(Utils.formatAmount(dividendAmount))}",
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else zeroLabels += strings.dividend
 
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        // 익절
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "📈 ${strings.profitTaking}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "+${strings.amountWithUnit(Utils.formatAmount(profitAmount))}",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-
-                        // 배당금
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "💰 ${strings.dividend}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "+${strings.amountWithUnit(Utils.formatAmount(dividendAmount))}",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-            }
+        if (zeroLabels.isNotEmpty()) {
+            StatChip(
+                text = zeroLabels.joinToString(" · ") { "$it 0" },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                background = MaterialTheme.colorScheme.surfaceVariant
+            )
         }
     }
 }
 
 @Composable
-private fun SummaryItem(
-    label: String,
-    amount: Double,
-    color: Color
+private fun StatChip(
+    text: String,
+    color: Color,
+    background: Color = color.copy(alpha = 0.1f)
 ) {
-    val strings = LocalStrings.current
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(background)
+            .padding(horizontal = 10.dp, vertical = 5.dp)
     ) {
         Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = when {
-                label == strings.balance && amount > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(amount))}"
-                label == strings.balance && amount < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(amount)))}"
-                label == strings.balance -> strings.amountWithUnit(Utils.formatAmount(amount))
-                amount > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(amount))}"
-                amount < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(amount))}"
-                else -> strings.amountWithUnit(Utils.formatAmount(amount))
-
-            },
-            style = MaterialTheme.typography.titleMedium,
+            text = text,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = color
         )
@@ -795,109 +665,110 @@ private fun ChartSection(
     }
 
     Column {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+        // 제목 + 합계
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = strings.amountWithUnit(Utils.formatAmount(total)),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        PieChart(
+            items = processedItems,
+            chartSize = 120.dp,
+            showLegend = false,
+            labelTextColor = MaterialTheme.colorScheme.onSurface,
+            valueLineColor = MaterialTheme.colorScheme.onSurface,
+            selectedCategory = selectedCategory,
+            onItemSelected = { category ->
+                selectedCategory = category
+            }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Card(
+        // Legend: 주요 항목 + 기타(소항목들)
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                PieChart(
-                    items = processedItems,
-                    chartSize = 120.dp,
-                    showLegend = false,
-                    labelTextColor = MaterialTheme.colorScheme.onSurface,
-                    valueLineColor = MaterialTheme.colorScheme.onSurface,
-                    selectedCategory = selectedCategory,
-                    onItemSelected = { category ->
-                        selectedCategory = category
+            // 주요 항목들 표시
+            mainItems.forEach { item ->
+                val categoryTransactions = transactions.filter {
+                    if (filterByType) {
+                        it.category == item.category && it.type == transactionType
+                    } else {
+                        it.category == item.category
                     }
+                }.sortedBy { it.date }
+
+                ChartLegendItem(
+                    item = item,
+                    isSubItem = false,
+                    isSelected = selectedCategory == item.category,
+                    availableCategories = availableCategories,
+                    onClick = { selectedCategory = if (selectedCategory == item.category) null else item.category },
+                    transactions = categoryTransactions,
+                    transactionType = transactionType
+                )
+            }
+
+            // 기타 항목이 있으면 표시
+            if (smallItems.isNotEmpty()) {
+                // "기타" 헤더
+                val etcTotal = smallItems.sumOf { it.amount.toDouble() }
+                val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
+
+                ChartLegendItem(
+                    item = com.woojin.paymanagement.data.ChartItem(
+                        category = strings.other,
+                        amount = etcTotal,
+                        percentage = etcPercentage,
+                        color = etcColor
+                    ),
+                    isSubItem = false,
+                    isSelected = selectedCategory == strings.other,
+                    availableCategories = availableCategories,
+                    onClick = { selectedCategory = if (selectedCategory == strings.other) null else strings.other },
+                    transactions = emptyList(),
+                    transactionType = transactionType
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Legend: 주요 항목 + 기타(소항목들)
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // 주요 항목들 표시
-                    mainItems.forEach { item ->
-                        val categoryTransactions = transactions.filter {
-                            if (filterByType) {
-                                it.category == item.category && it.type == transactionType
-                            } else {
-                                it.category == item.category
-                            }
-                        }.sortedBy { it.date }
-
-                        ChartLegendItem(
-                            item = item,
-                            isSubItem = false,
-                            isSelected = selectedCategory == item.category,
-                            availableCategories = availableCategories,
-                            onClick = { selectedCategory = if (selectedCategory == item.category) null else item.category },
-                            transactions = categoryTransactions,
-                            transactionType = transactionType
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    // 기타 항목이 있으면 표시
-                    if (smallItems.isNotEmpty()) {
-                        // "기타" 헤더
-                        val etcTotal = smallItems.sumOf { it.amount.toDouble() }
-                        val etcPercentage = smallItems.sumOf { it.percentage.toDouble() }.toFloat()
-
-                        ChartLegendItem(
-                            item = com.woojin.paymanagement.data.ChartItem(
-                                category = strings.other,
-                                amount = etcTotal,
-                                percentage = etcPercentage,
-                                color = etcColor
-                            ),
-                            isSubItem = false,
-                            isSelected = selectedCategory == strings.other,
-                            availableCategories = availableCategories,
-                            onClick = { selectedCategory = if (selectedCategory == strings.other) null else strings.other },
-                            transactions = emptyList(),
-                            transactionType = transactionType
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // 기타 내부 항목들 (들여쓰기)
-                        smallItems.forEach { item ->
-                            val categoryTransactions = transactions.filter {
-                                if (filterByType) {
-                                    it.category == item.category && it.type == transactionType
-                                } else {
-                                    it.category == item.category
-                                }
-                            }.sortedBy { it.date }
-
-                            ChartLegendItem(
-                                item = item,
-                                isSubItem = true,
-                                isSelected = selectedCategory == item.category,
-                                availableCategories = availableCategories,
-                                onClick = { selectedCategory = if (selectedCategory == item.category) null else item.category },
-                                transactions = categoryTransactions,
-                                transactionType = transactionType
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
+                // 기타 내부 항목들 (들여쓰기)
+                smallItems.forEach { item ->
+                    val categoryTransactions = transactions.filter {
+                        if (filterByType) {
+                            it.category == item.category && it.type == transactionType
+                        } else {
+                            it.category == item.category
                         }
-                    }
+                    }.sortedBy { it.date }
+
+                    ChartLegendItem(
+                        item = item,
+                        isSubItem = true,
+                        isSelected = selectedCategory == item.category,
+                        availableCategories = availableCategories,
+                        onClick = { selectedCategory = if (selectedCategory == item.category) null else item.category },
+                        transactions = categoryTransactions,
+                        transactionType = transactionType
+                    )
                 }
             }
         }
@@ -915,161 +786,189 @@ private fun ChartLegendItem(
     transactionType: TransactionType
 ) {
     val strings = LocalStrings.current
+    val rowBackground by animateColorAsState(
+        targetValue = if (isSelected) item.color.copy(alpha = 0.08f) else Color.Transparent,
+        animationSpec = tween(StatAnimMs)
+    )
+    val categoryEmoji = getCategoryEmoji(item.category, availableCategories)
+    val percentText = "${(item.percentage * 10).toInt() / 10.0}%"
+
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = if (isSubItem) 50.dp else 0.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(rowBackground)
+            .clickable { onClick() }
+            .padding(
+                horizontal = 10.dp,
+                vertical = if (isSubItem) 6.dp else 10.dp
+            )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = if (isSubItem) 24.dp else 0.dp)
-                .clickable { onClick() }
-                .background(
-                    color = if (isSelected) item.color.copy(alpha = 0.15f) else Color.Transparent,
-                    shape = RoundedCornerShape(8.dp)
+        if (isSubItem) {
+            // 소항목: 점 + 이름 · 금액 + 비율 (한 줄)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(item.color)
                 )
-                .padding(vertical = if (isSelected) 8.dp else 0.dp, horizontal = if (isSelected) 8.dp else 0.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
-        ) {
-            if (isSubItem) {
-                // 서브 아이템은 "ㄴ" 표시
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "ㄴ",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = buildString {
+                        if (categoryEmoji.isNotBlank()) append("$categoryEmoji ")
+                        append(item.category)
+                    },
+                    fontSize = 13.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                Text(
+                    text = " · ${strings.amountWithUnit(Utils.formatAmount(item.amount))}",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = percentText,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.width(8.dp))
             }
-
-            Box(
-                modifier = Modifier
-                    .size(if (isSelected) 20.dp else 16.dp)
-                    .clip(CircleShape)
-                    .background(item.color)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 아이콘 타일 (항목 색으로 은은하게)
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(item.color.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    val categoryEmoji = getCategoryEmoji(item.category, availableCategories)
                     if (categoryEmoji.isNotBlank()) {
+                        Text(text = categoryEmoji, fontSize = 18.sp)
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(item.color)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = categoryEmoji,
-                            style = MaterialTheme.typography.bodyMedium
+                            text = item.category,
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = percentText,
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Text(
-                        text = item.category,
-                        style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                        fontWeight = if (isSelected) FontWeight.Bold else if (isSubItem) FontWeight.Normal else FontWeight.Medium,
-                        color = if (isSubItem) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        text = strings.amountWithUnit(Utils.formatAmount(item.amount)),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(7.dp))
+                    // 비율 막대 (기존 percentage 값을 그대로 표시)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth((item.percentage / 100f).coerceIn(0.015f, 1f))
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(50))
+                                .background(item.color)
+                        )
+                    }
                 }
-                Text(
-                    text = strings.amountWithUnit(Utils.formatAmount(item.amount)),
-                    style = if (isSelected) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
 
-            Text(
-                text = "${(item.percentage * 10).toInt() / 10.0}%",
-                style = if (isSelected) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isSelected) FontWeight.ExtraBold else if (isSubItem) FontWeight.Normal else FontWeight.Bold,
-                color = if (isSubItem) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-            )
-        }
-
         // 거래 내역 확장 표시
-        androidx.compose.animation.AnimatedVisibility(
-            visible = isSelected && transactions.isNotEmpty()
+        AnimatedVisibility(
+            visible = isSelected && transactions.isNotEmpty(),
+            enter = expandVertically(tween(StatAnimMs)) + fadeIn(tween(StatAnimMs)),
+            exit = shrinkVertically(tween(StatAnimMs)) + fadeOut(tween(StatAnimMs))
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = if (isSubItem) 48.dp else 24.dp, top = 8.dp, end = 8.dp, bottom = 4.dp)
-                    .background(
-                        color = item.color.copy(alpha = 0.08f),
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(12.dp)
+                    .padding(start = if (isSubItem) 18.dp else 50.dp, top = 10.dp)
+                    .clip(RoundedCornerShape(11.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 transactions.forEach { transaction ->
                     val dateText = "${transaction.date.monthNumber}/${transaction.date.dayOfMonth.toString().padStart(2, '0')}"
-                    val amountText = Utils.formatAmount(transaction.displayAmount)
+                    val amountText = strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))
 
                     // 실제 거래 타입에 따라 표시 (transactionType 파라미터가 아닌 transaction.type 사용)
-                    when (transaction.type) {
-                        TransactionType.INCOME -> {
-                            // 수입: 날짜 + 메모 (있으면) + 금액
-                            val displayText = if (transaction.memo.isNotBlank()) {
-                                "• $dateText - ${transaction.memo} (${strings.amountWithUnit(amountText)})"
-                            } else {
-                                "• $dateText (${strings.amountWithUnit(amountText)})"
-                            }
-                            Text(
-                                text = displayText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                    val description = when (transaction.type) {
+                        // 지출: 사용처 + 메모 (있으면)
                         TransactionType.EXPENSE -> {
-                            // 지출: 날짜 + 사용처 + 메모 (있으면) + 금액
                             val merchant = transaction.merchant ?: ""
-                            val displayText = if (transaction.memo.isNotBlank()) {
-                                "• $dateText - $merchant (${transaction.memo}) (${strings.amountWithUnit(amountText)})"
-                            } else {
-                                "• $dateText - $merchant (${strings.amountWithUnit(amountText)})"
-                            }
-                            Text(
-                                text = displayText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            if (transaction.memo.isNotBlank()) "$merchant (${transaction.memo})" else merchant
                         }
-                        TransactionType.SAVING -> {
-                            // 저축: 날짜 + 메모 (있으면) + 금액
-                            val displayText = if (transaction.memo.isNotBlank()) {
-                                "• $dateText - ${transaction.memo} (${strings.amountWithUnit(amountText)})"
-                            } else {
-                                "• $dateText (${strings.amountWithUnit(amountText)})"
-                            }
-                            Text(
-                                text = displayText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        TransactionType.INVESTMENT -> {
-                            // 투자: 날짜 + 메모 (있으면) + 금액
-                            val displayText = if (transaction.memo.isNotBlank()) {
-                                "• $dateText - ${transaction.memo} (${strings.amountWithUnit(amountText)})"
-                            } else {
-                                "• $dateText (${strings.amountWithUnit(amountText)})"
-                            }
-                            Text(
-                                text = displayText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        // 수입/저축/투자: 메모 (있으면)
+                        else -> transaction.memo
                     }
 
-                    if (transaction != transactions.last()) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = dateText,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.width(44.dp)
+                        )
+                        Text(
+                            text = description,
+                            fontSize = 12.5.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = amountText,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
             }
@@ -1089,7 +988,7 @@ private fun PaymentMethodSection(
                 expense = paymentSummary.cashExpense
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
         }
 
         // Card Summary
@@ -1101,7 +1000,7 @@ private fun PaymentMethodSection(
                 cardBreakdowns = paymentSummary.cardBreakdowns
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
         }
 
         // 기타 (잔액권 + 상품권) Summary
@@ -1119,100 +1018,136 @@ private fun PaymentMethodSection(
     }
 }
 
+/**
+ * 결제 수단 헤더: 이모지 타일 + 이름 (+ 오른쪽 금액)
+ */
+@Composable
+private fun PaymentHeader(
+    emoji: String,
+    name: String,
+    tint: Color,
+    trailing: String? = null,
+    trailingColor: Color = MaterialTheme.colorScheme.onSurface
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(tint.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = emoji, fontSize = 18.sp)
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = name,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        if (trailing != null) {
+            Text(
+                text = trailing,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = trailingColor
+            )
+        }
+    }
+}
+
+/**
+ * 회색 상자 안의 "라벨 — 값" 줄 목록 (줄 사이 얇은 구분선)
+ */
+@Composable
+private fun PaymentRowsBox(
+    rows: List<Triple<String, String, Color>>,
+    boldLastRow: Boolean = false
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+            .padding(horizontal = 14.dp, vertical = 2.dp)
+    ) {
+        rows.forEachIndexed { index, (label, value, color) ->
+            val isBold = boldLastRow && index == rows.lastIndex
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 13.sp,
+                    fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isBold) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = value,
+                    fontSize = 13.5.sp,
+                    fontWeight = if (isBold) FontWeight.ExtraBold else FontWeight.Bold,
+                    color = color
+                )
+            }
+            if (index != rows.lastIndex) {
+                androidx.compose.material3.HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    thickness = 0.5.dp
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun CashSummaryCard(
     income: Double,
     expense: Double
 ) {
     val strings = LocalStrings.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
+    val balance = income - expense
+    Column(modifier = Modifier.fillMaxWidth()) {
+        PaymentHeader(emoji = "💰", name = strings.cash, tint = BrandColor.mint)
+        PaymentRowsBox(
+            rows = listOf(
+                Triple(
+                    strings.income,
+                    "+${strings.amountWithUnit(Utils.formatAmount(income))}",
+                    MaterialTheme.colorScheme.primary
+                ),
+                Triple(
+                    strings.expense,
+                    "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
+                    MaterialTheme.colorScheme.error
+                ),
+                Triple(
+                    strings.differenceAmount,
+                    when {
+                        balance > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(balance))}"
+                        balance < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}"
+                        else -> strings.amountWithUnit(Utils.formatAmount(balance))
+                    },
+                    when {
+                        balance > 0 -> MaterialTheme.colorScheme.primary
+                        balance < 0 -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
                 )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "💰 ${strings.cash}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = strings.income,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "+${strings.amountWithUnit(Utils.formatAmount(income))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = strings.expense,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = strings.differenceAmount,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        val balance = income - expense
-                        Text(
-                            text = when {
-                                balance > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(balance))}"
-                                balance < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}"
-                                else -> strings.amountWithUnit(Utils.formatAmount(balance))
-                            },
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = when {
-                                balance > 0 -> MaterialTheme.colorScheme.primary
-                                balance < 0 -> MaterialTheme.colorScheme.error
-                                else -> MaterialTheme.colorScheme.onSurface
-                            }
-                        )
-                    }
-                }
-            }
-        }
+            ),
+            boldLastRow = true
+        )
     }
 }
 
@@ -1224,321 +1159,60 @@ private fun CardSummaryCard(
     cardBreakdowns: List<CardBreakdown> = emptyList()
 ) {
     val strings = LocalStrings.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // 지출 - 항상 표시 (헤더 오른쪽)
+        PaymentHeader(
+            emoji = "💳",
+            name = strings.card,
+            tint = Color(0xFFF9A825),
+            trailing = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
+            trailingColor = MaterialTheme.colorScheme.error
+        )
+
+        // 실제 사용 / 정산수입 (더치페이 시만 표시)
+        val dutchRows = buildList {
+            if (actualExpense != expense) {
+                add(
+                    Triple(
+                        strings.actualUsage,
+                        "-${strings.amountWithUnit(Utils.formatAmount(actualExpense))}",
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "💳 ${strings.card}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // 지출 - 항상 표시
-                    Column {
-                        Text(
-                            text = strings.expense,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    // 실제 사용 (더치페이 시만 표시, 아니면 빈 공간)
-                    Column {
-                        if (actualExpense != expense) {
-                            Text(
-                                text = strings.actualUsage,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "-${strings.amountWithUnit(Utils.formatAmount(actualExpense))}",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            // 빈 공간으로 레이아웃 유지
-                            Text(
-                                text = "",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "",
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                        }
-                    }
-
-                    // 정산수입 (더치페이 시만 표시, 아니면 빈 공간)
-                    Column {
-                        if (settlementIncome > 0) {
-                            Text(
-                                text = strings.settlementIncome,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "+${strings.amountWithUnit(Utils.formatAmount(settlementIncome))}",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        } else {
-                            // 빈 공간으로 레이아웃 유지
-                            Text(
-                                text = "",
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                            Text(
-                                text = "",
-                                style = MaterialTheme.typography.titleSmall
-                            )
-                        }
-                    }
-                }
-
-                // 카드별 내역 (2개 이상의 카드가 사용된 경우만 표시)
-                if (cardBreakdowns.size > 1 || (cardBreakdowns.size == 1 && cardBreakdowns.first().cardName != null)) {
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = strings.cardBreakdown,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            if (settlementIncome > 0) {
+                add(
+                    Triple(
+                        strings.settlementIncome,
+                        "+${strings.amountWithUnit(Utils.formatAmount(settlementIncome))}",
+                        MaterialTheme.colorScheme.primary
                     )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    cardBreakdowns.forEach { breakdown ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 2.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = breakdown.cardName ?: strings.unspecifiedCard,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "-${strings.amountWithUnit(Utils.formatAmount(breakdown.expense))}",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
+                )
             }
         }
-    }
-}
-
-@Composable
-private fun BalanceCardSummaryCard(
-    balanceCard: BalanceCardSummary
-) {
-    val strings = LocalStrings.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
-                )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "🎫 ${balanceCard.name}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = strings.charge,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "+${strings.amountWithUnit(Utils.formatAmount(balanceCard.income))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = strings.usage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(balanceCard.expense))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = strings.balance,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = strings.amountWithUnit(Utils.formatAmount(balanceCard.currentBalance)),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-            }
+        if (dutchRows.isNotEmpty()) {
+            PaymentRowsBox(rows = dutchRows)
         }
-    }
-}
 
-@Composable
-private fun GiftCardSummaryCard(
-    giftCard: GiftCardSummary
-) {
-    val strings = LocalStrings.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
+        // 카드별 내역 (2개 이상의 카드가 사용된 경우만 표시)
+        if (cardBreakdowns.size > 1 || (cardBreakdowns.size == 1 && cardBreakdowns.first().cardName != null)) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = strings.cardBreakdown,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+            PaymentRowsBox(
+                rows = cardBreakdowns.map { breakdown ->
+                    Triple(
+                        breakdown.cardName ?: strings.unspecifiedCard,
+                        "-${strings.amountWithUnit(Utils.formatAmount(breakdown.expense))}",
+                        MaterialTheme.colorScheme.onSurface
                     )
-                )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "🎁 ${giftCard.name}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = strings.purchase,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "+${strings.amountWithUnit(Utils.formatAmount(giftCard.income))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = strings.usage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(giftCard.expense))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = strings.balance,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = strings.amountWithUnit(Utils.formatAmount(giftCard.currentBalance)),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
                 }
-            }
+            )
         }
     }
 }
@@ -1553,38 +1227,22 @@ private fun StatTabBar(
 ) {
     val strings = LocalStrings.current
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         tabs.forEach { tab ->
-            val isSelected = tab == selectedTab
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.surfaceVariant
-                    )
-                    .clickable { onTabSelected(tab) }
-                    .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = when (tab) {
-                        StatTab.INCOME -> strings.income
-                        StatTab.EXPENSE -> strings.expense
-                        StatTab.SAVING -> strings.saving
-                        StatTab.INVESTMENT -> strings.investment
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            SelectablePillChip(
+                label = when (tab) {
+                    StatTab.INCOME -> strings.income
+                    StatTab.EXPENSE -> strings.expense
+                    StatTab.SAVING -> strings.saving
+                    StatTab.INVESTMENT -> strings.investment
+                },
+                selected = tab == selectedTab,
+                onClick = { onTabSelected(tab) }
+            )
         }
     }
 }
@@ -1595,70 +1253,21 @@ private fun OtherPaymentSummaryCard(
     expense: Double
 ) {
     val strings = LocalStrings.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f),
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        PaymentHeader(emoji = "📦", name = strings.other, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        PaymentRowsBox(
+            rows = listOf(
+                Triple(
+                    strings.income,
+                    "+${strings.amountWithUnit(Utils.formatAmount(income))}",
+                    MaterialTheme.colorScheme.primary
+                ),
+                Triple(
+                    strings.expense,
+                    "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
+                    MaterialTheme.colorScheme.error
                 )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "📦 ${strings.other}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = strings.income,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "+${strings.amountWithUnit(Utils.formatAmount(income))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = strings.expense,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            }
-        }
+            )
+        )
     }
 }

@@ -128,6 +128,7 @@ fun App(
     calendarNativeAdContent: @Composable (() -> Unit)? = null,
     exitDialogBannerContent: @Composable (() -> Unit)? = null,
     comparisonNativeAdContent: @Composable (() -> Unit)? = null,
+    budgetNativeAdContent: @Composable (() -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null,
     onRequestReview: () -> Unit = {}
 ) {
@@ -183,6 +184,7 @@ fun App(
                 calendarNativeAdContent = calendarNativeAdContent,
                 exitDialogBannerContent = exitDialogBannerContent,
                 comparisonNativeAdContent = comparisonNativeAdContent,
+                budgetNativeAdContent = budgetNativeAdContent,
                 permissionGuideImage = permissionGuideImage
             )
             }
@@ -257,6 +259,7 @@ fun PayManagementApp(
     calendarNativeAdContent: @Composable (() -> Unit)? = null,
     exitDialogBannerContent: @Composable (() -> Unit)? = null,
     comparisonNativeAdContent: @Composable (() -> Unit)? = null,
+    budgetNativeAdContent: @Composable (() -> Unit)? = null,
     permissionGuideImage: @Composable (() -> Unit)? = null
 ) {
     // DI로 의존성 주입받기
@@ -2186,7 +2189,8 @@ fun PayManagementApp(
                 onNavigateBack = { navigateBack() },
                 onNavigateToCategoryManagement = {
                     navigateTo(Screen.CategoryManagement)
-                }
+                },
+                nativeAdContent = budgetNativeAdContent
             )
         }
 
@@ -2294,7 +2298,10 @@ fun PayManagementApp(
 
         currentPayPeriod?.let { period ->
             CalculatorDialog(
-                transactions = transactions,
+                transactions = if (SharedModeManager.isSharedMode)
+                    SharedModeManager.cachedSharedTransactions.map { it.transaction }
+                else
+                    transactions,
                 onDismiss = { showCalculatorDialog = false },
                 initialPayPeriod = period,
                 allCategories = categories

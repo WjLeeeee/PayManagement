@@ -55,6 +55,7 @@ class ImportDataUseCase(
                 if (hasBudget) {
                     databaseHelper.deleteAllCategoryBudgets()
                     databaseHelper.deleteAllBudgetPlans()
+                    databaseHelper.deleteAllTransferChecks()
                 }
                 if (hasTransactions) databaseHelper.deleteAllTransactions()
                 if (hasRecurringTransactions) databaseHelper.deleteAllRecurringTransactions()
@@ -134,6 +135,19 @@ class ImportDataUseCase(
                         successCount++
                     } catch (e: Exception) {
                         failureCount++
+                    }
+                }
+
+                // 이체 완료 체크 복원 (INSERT OR IGNORE라 중복은 무시됨)
+                backupData.transferChecks.forEach { backup ->
+                    try {
+                        databaseHelper.setTransferChecked(
+                            periodStartDate = LocalDate.parse(backup.periodStartDate),
+                            transferItemId = backup.transferItemId,
+                            checked = true
+                        )
+                    } catch (e: Exception) {
+                        // 체크 기록은 보조 데이터라 실패해도 카운트에 반영하지 않음
                     }
                 }
             }
@@ -264,7 +278,8 @@ class ImportDataUseCase(
             id = id,
             effectiveFromDate = effectiveDate,
             monthlySalary = monthlySalary,  // v3 데이터의 경우 0.0
-            createdAt = LocalDate.parse(createdAt)
+            createdAt = LocalDate.parse(createdAt),
+            transfers = transfers.map { TransferItem(id = it.id, accountName = it.accountName, amount = it.amount) }
         )
     }
 
@@ -275,7 +290,9 @@ class ImportDataUseCase(
         categoryName = categoryName,
         categoryEmoji = categoryEmoji,
         allocatedAmount = allocatedAmount,
-        memo = memo
+        memo = memo,
+        items = items.map { BudgetItem(id = it.id, name = it.name, amount = it.amount) },
+        accountAllocations = accountAllocations.map { BudgetAccountAllocation(transferItemId = it.transferItemId, amount = it.amount) }
     )
 
     private fun CustomPaymentMethodBackup.toCustomPaymentMethod() = CustomPaymentMethod(
