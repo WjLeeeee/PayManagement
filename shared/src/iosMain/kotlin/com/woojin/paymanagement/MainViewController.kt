@@ -24,7 +24,7 @@ fun MainViewController() = ComposeUIViewController {
         onContactSupport = {
             emailHelper.sendSupportEmail(
                 email = "dldnwls0115@naver.com",
-                subject = "편한 가계부-월급 기반 관리 시스템",
+                subject = "월급 가계부",
                 appVersion = "${appInfo.getVersionName()}(${appInfo.getVersionCode()})",
                 osVersion = UIDevice.currentDevice.systemVersion,
                 deviceModel = UIDevice.currentDevice.model
