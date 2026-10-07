@@ -115,6 +115,18 @@ interface AppStrings {
     val payBeforeWeekday: String
     val payAfterWeekday: String
     val setupComplete: String
+    // 월급날 설정 (리뉴얼)
+    val myPayday: String
+    val paydayHeroPrefix: String
+    fun paydayHeroDay(day: Int): String
+    fun currentPeriodChip(startMonth: Int, startDay: Int, endMonth: Int, endDay: Int): String
+    fun nextPaydayChip(month: Int, day: Int, weekday: String): String
+    val paydayOverlapTitle: String
+    val beforeWeekdayShort: String
+    val afterWeekdayShort: String
+    fun dateWithWeekday(month: Int, day: Int, weekday: String): String
+    fun paidOnPrefix(from: String?): String
+    val paidOnSuffix: String
     val selectPayday: String
     val paydayChange: String
     val currentPayday: String
