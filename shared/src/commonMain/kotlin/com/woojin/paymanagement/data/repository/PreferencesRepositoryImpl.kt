@@ -45,4 +45,10 @@ class PreferencesRepositoryImpl(
     override fun setIsSharedMode(enabled: Boolean) {
         preferencesManager.setIsSharedMode(enabled)
     }
+
+    override fun getHolidaysRefreshedAt(): Long = preferencesManager.getHolidaysRefreshedAt()
+
+    override fun setHolidaysRefreshedAt(time: Long) {
+        preferencesManager.setHolidaysRefreshedAt(time)
+    }
 }

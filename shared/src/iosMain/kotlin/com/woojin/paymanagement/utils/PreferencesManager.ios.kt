@@ -131,6 +131,15 @@ actual class PreferencesManager {
         userDefaults.setBool(true, forKey = "move_transaction_hint_seen")
     }
 
+    actual fun getHolidaysRefreshedAt(): Long {
+        val stringValue = userDefaults.stringForKey("holidays_refreshed_at")
+        return stringValue?.toLongOrNull() ?: 0L
+    }
+
+    actual fun setHolidaysRefreshedAt(time: Long) {
+        userDefaults.setObject(time.toString(), forKey = "holidays_refreshed_at")
+    }
+
     // 언어 설정
     actual fun getSystemLanguageCode(): String {
         val locale = platform.Foundation.NSLocale.preferredLanguages.firstOrNull() as? String ?: "ko"

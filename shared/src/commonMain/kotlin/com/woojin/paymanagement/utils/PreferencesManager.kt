@@ -41,6 +41,10 @@ expect class PreferencesManager {
     fun isMoveTransactionHintSeen(): Boolean
     fun setMoveTransactionHintSeen()
 
+    // 공휴일 데이터를 마지막으로 다시 받은 시각 (밀리초, 임시공휴일 반영용 주기적 갱신)
+    fun getHolidaysRefreshedAt(): Long
+    fun setHolidaysRefreshedAt(time: Long)
+
     // 언어 설정
     fun getSystemLanguageCode(): String // 시스템 로케일에서 언어 코드 가져오기
     fun getLanguageCode(): String // "ko" or "en"

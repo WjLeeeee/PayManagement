@@ -109,6 +109,14 @@ actual class PreferencesManager(private val context: Context) {
         prefs.edit().putBoolean("move_transaction_hint_seen", true).apply()
     }
 
+    actual fun getHolidaysRefreshedAt(): Long {
+        return prefs.getLong("holidays_refreshed_at", 0L)
+    }
+
+    actual fun setHolidaysRefreshedAt(time: Long) {
+        prefs.edit().putLong("holidays_refreshed_at", time).apply()
+    }
+
     // 언어 설정
     actual fun getSystemLanguageCode(): String {
         val locale = java.util.Locale.getDefault().language
