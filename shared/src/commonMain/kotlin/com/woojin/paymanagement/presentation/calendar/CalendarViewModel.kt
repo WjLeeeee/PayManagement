@@ -22,9 +22,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.Month
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
@@ -225,38 +227,43 @@ class CalendarViewModel(
     }
 
     /**
-     * 특정 년/월의 급여일로 이동
-     * 예: 2025년 12월 선택 시 → 12월 25일~1월 24일 급여 기간
+     * 날짜가 바뀌었으면(자정 경과, 다음 날 앱 복귀) 오늘 표시를 갱신.
+     * 어제가 속한 기간을 보고 있었는데 오늘이 다음 기간이면 오늘이 속한 기간으로 이동.
+     * 다른 기간을 보고 있었다면 그대로 둠
      */
-    fun navigateToYearMonth(year: Int, month: Int) {
+    fun onDayChanged() {
+        val newToday = todayDate()
+        if (newToday == uiState.today) return
         coroutineScope.launch {
-            val targetPayPeriod = stateMutex.withLock {
-                // 선택한 년/월의 실제 급여일 계산 (주말 조정 포함)
-                val targetPayday = payPeriodCalculator.calculateActualPayday(
-                    year = year,
-                    month = Month(month),
-                    payday = payday,
-                    adjustment = adjustment
-                )
+            val movedPeriod = stateMutex.withLock {
+                val oldToday = uiState.today
+                if (newToday == oldToday) return@launch
+                val period = uiState.currentPayPeriod
+                val selected = uiState.selectedDate
+                uiState = uiState.copy(today = newToday)
+                if (period == null) return@launch
 
-                // 해당 급여일을 기준으로 급여 기간 계산
-                // getCurrentPayPeriod는 전달된 날짜가 급여일이면 그날부터 다음 급여일까지의 기간을 반환
-                val targetPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
-                    payday = payday,
-                    adjustment = adjustment,
-                    currentDate = targetPayday
-                )
-
-                // 급여일을 선택 날짜로 설정
-                applyStateLocked(payPeriod = targetPayPeriod, selectedDate = targetPayday)
-                targetPayPeriod
+                if (oldToday.isIn(period) && !newToday.isIn(period)) {
+                    // 오늘부터 새 급여 기간 → 오늘이 속한 기간으로 이동하고 오늘 선택
+                    val newPeriod = payPeriodCalculator.getCurrentPayPeriod(payday, adjustment, currentDate = newToday)
+                    checkAndLoadHolidays(newPeriod.endDate)
+                    applyStateLocked(payPeriod = newPeriod, selectedDate = newToday)
+                    newPeriod
+                } else {
+                    // 같은 기간이면 어제(=오늘이던 날)를 선택 중일 때만 오늘로 옮김
+                    if (selected == oldToday && newToday.isIn(period)) {
+                        applyStateLocked(selectedDate = newToday)
+                    }
+                    null
+                }
             }
-            if (uiState.isSharedMode) {
-                startObservingSharedTransactions(targetPayPeriod.startDate, targetPayPeriod.endDate)
+            if (movedPeriod != null && uiState.isSharedMode) {
+                startObservingSharedTransactions(movedPeriod.startDate, movedPeriod.endDate)
             }
         }
     }
 
+    private fun todayDate(): LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
     fun refreshSharedRoomState() {
         if (sharedRoomRepository == null) return
