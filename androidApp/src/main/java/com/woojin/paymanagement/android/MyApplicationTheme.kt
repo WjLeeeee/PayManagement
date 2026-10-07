@@ -28,6 +28,11 @@ fun MyApplicationTheme(
             error = Color(0xFFEF5350), // 지출 색상 (밝은 빨간색)
             background = Color(0xFF121212),
             surface = Color(0xFF1E1E1E),
+            // 다이얼로그·메뉴·바텀시트 배경 (Material 기본 보라 톤 대신 surface와 통일)
+            surfaceContainerLowest = Color(0xFF1E1E1E),
+            surfaceContainerLow = Color(0xFF1E1E1E),
+            surfaceContainer = Color(0xFF1E1E1E),
+            surfaceContainerHigh = Color(0xFF1E1E1E),
             surfaceVariant = Color(0xFF2C2C2C),
             onSurface = Color.White,
             onSurfaceVariant = Color(0xFFB0B0B0),
@@ -44,6 +49,11 @@ fun MyApplicationTheme(
             error = Color(0xFFF44336), // 지출 색상 (빨간색)
             background = Color.White,
             surface = Color.White,
+            // 다이얼로그·메뉴·바텀시트 배경 (Material 기본 보라 톤 대신 surface와 통일)
+            surfaceContainerLowest = Color.White,
+            surfaceContainerLow = Color.White,
+            surfaceContainer = Color.White,
+            surfaceContainerHigh = Color.White,
             surfaceVariant = Color(0xFFF5F5F5),
             onSurface = Color.Black,
             onSurfaceVariant = Color(0xFF666666),
