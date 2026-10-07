@@ -9,7 +9,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -57,6 +59,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.SwitchDefaults
+import com.woojin.paymanagement.theme.BrandColor
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.database.DatabaseDriverFactory
 import com.woojin.paymanagement.database.DatabaseHelper
@@ -654,9 +660,7 @@ fun PayManagementApp(
                             }
                         }
 
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp)
-                        )
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         Column(
                             modifier = Modifier
@@ -675,13 +679,14 @@ fun PayManagementApp(
                                     ) {
                                         Text(
                                             text = strings.paydayChange,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                         Text(
-                                            text = strings.paydayDisplay(preferencesManager.getPayday()),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.primary
+                                            text = strings.paydayHeroPrefix + strings.paydayHeroDay(preferencesManager.getPayday()),
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = BrandColor.mint
                                         )
                                     }
                                 },
@@ -692,13 +697,8 @@ fun PayManagementApp(
                                         drawerState.close()
                                     }
                                 },
-                                icon = {
-                                    Text(
-                                        text = "📅",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(38.dp)
+                                icon = { DrawerIconTile("📅") },
+                                modifier = Modifier.height(52.dp)
                             )
 
                             // 확장 가능한 메뉴 관리
@@ -736,8 +736,8 @@ fun PayManagementApp(
                                     ) {
                                         Text(
                                             text = strings.pushNotifications,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                         Icon(
                                             imageVector = if (expandedMenu == ExpandableMenu.NOTIFICATION)
@@ -753,13 +753,8 @@ fun PayManagementApp(
                                 onClick = {
                                     expandedMenu = if (expandedMenu == ExpandableMenu.NOTIFICATION) null else ExpandableMenu.NOTIFICATION
                                 },
-                                icon = {
-                                    Text(
-                                        text = "🔔",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(38.dp)
+                                icon = { DrawerIconTile("🔔") },
+                                modifier = Modifier.height(52.dp)
                             )
 
                             // 확장된 알림 설정 항목들 (애니메이션 적용)
@@ -771,7 +766,10 @@ fun PayManagementApp(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                        .padding(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 8.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
                                 ) {
                                     // 카드 알림 감지
                                     Row(
@@ -798,6 +796,7 @@ fun PayManagementApp(
                                         }
                                         Switch(
                                             checked = hasListenerPermission,
+                                            colors = drawerSwitchColors(),
                                             onCheckedChange = {
                                                 notificationPermissionChecker.openListenerSettings()
                                             }
@@ -843,6 +842,7 @@ fun PayManagementApp(
                                         }
                                         Switch(
                                             checked = hasPostPermission,
+                                            colors = drawerSwitchColors(),
                                             onCheckedChange = { isChecked ->
                                                 if (isChecked) {
                                                     // OFF → ON: 권한 요청
@@ -872,8 +872,8 @@ fun PayManagementApp(
                                     ) {
                                         Text(
                                             text = strings.dataManagement,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                         Icon(
                                             imageVector = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT)
@@ -889,13 +889,8 @@ fun PayManagementApp(
                                 onClick = {
                                     expandedMenu = if (expandedMenu == ExpandableMenu.DATA_MANAGEMENT) null else ExpandableMenu.DATA_MANAGEMENT
                                 },
-                                icon = {
-                                    Text(
-                                        text = "💾",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(38.dp)
+                                icon = { DrawerIconTile("💾") },
+                                modifier = Modifier.height(52.dp)
                             )
 
                             // 확장된 데이터 관리 항목들 (애니메이션 적용)
@@ -907,7 +902,10 @@ fun PayManagementApp(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                        .padding(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 8.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
                                 ) {
                                     // 데이터 내보내기
                                     val exportDataUseCase = koinInject<com.woojin.paymanagement.domain.usecase.ExportDataUseCase>()
@@ -1113,8 +1111,8 @@ fun PayManagementApp(
                                     ) {
                                         Text(
                                             text = strings.transactionTools,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                         Icon(
                                             imageVector = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS)
@@ -1130,13 +1128,8 @@ fun PayManagementApp(
                                 onClick = {
                                     expandedMenu = if (expandedMenu == ExpandableMenu.TRANSACTION_TOOLS) null else ExpandableMenu.TRANSACTION_TOOLS
                                 },
-                                icon = {
-                                    Text(
-                                        text = "🛠️",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(38.dp)
+                                icon = { DrawerIconTile("🛠️") },
+                                modifier = Modifier.height(52.dp)
                             )
 
                             // 확장된 거래 도구 항목들
@@ -1148,7 +1141,10 @@ fun PayManagementApp(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                        .padding(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 8.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
                                 ) {
                                     // 반복 거래 관리
                                     Row(
@@ -1263,8 +1259,8 @@ fun PayManagementApp(
                                     ) {
                                         Text(
                                             text = "${strings.statistics} & ${strings.budgetSettings}",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                         Icon(
                                             imageVector = if (expandedMenu == ExpandableMenu.ANALYSIS)
@@ -1280,13 +1276,8 @@ fun PayManagementApp(
                                 onClick = {
                                     expandedMenu = if (expandedMenu == ExpandableMenu.ANALYSIS) null else ExpandableMenu.ANALYSIS
                                 },
-                                icon = {
-                                    Text(
-                                        text = "📊",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(38.dp)
+                                icon = { DrawerIconTile("📊") },
+                                modifier = Modifier.height(52.dp)
                             )
 
                             // 확장된 분석 & 예산 항목들
@@ -1298,7 +1289,10 @@ fun PayManagementApp(
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                        .padding(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 8.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
                                 ) {
                                     // 계산기
                                     Row(
@@ -1414,8 +1408,8 @@ fun PayManagementApp(
                                         ) {
                                             Text(
                                                 text = strings.supportDeveloper,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Medium
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.SemiBold
                                             )
                                             Icon(
                                                 imageVector = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE)
@@ -1431,13 +1425,8 @@ fun PayManagementApp(
                                     onClick = {
                                         expandedMenu = if (expandedMenu == ExpandableMenu.IN_APP_PURCHASE) null else ExpandableMenu.IN_APP_PURCHASE
                                     },
-                                    icon = {
-                                        Text(
-                                            text = "💰",
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                    },
-                                    modifier = Modifier.height(38.dp)
+                                    icon = { DrawerIconTile("💰") },
+                                    modifier = Modifier.height(52.dp)
                                 )
 
                                 // 확장된 인앱 구매 항목들
@@ -1449,7 +1438,10 @@ fun PayManagementApp(
                                     Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(start = 24.dp, top = 4.dp, bottom = 8.dp)
+                                            .padding(start = 12.dp, end = 12.dp, top = 2.dp, bottom = 8.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
                                     ) {
                                         // 개발자 응원하기
                                         Row(
@@ -1554,13 +1546,18 @@ fun PayManagementApp(
                                 }
                             }
 
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+
                             // 언어 설정
                             NavigationDrawerItem(
                                 label = {
                                     Text(
                                         text = strings.languageSettings,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 },
                                 selected = false,
@@ -1568,13 +1565,8 @@ fun PayManagementApp(
                                     showLanguageDialog = true
                                     scope.launch { drawerState.close() }
                                 },
-                                icon = {
-                                    Text(
-                                        text = "🌐",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(48.dp)
+                                icon = { DrawerIconTile("🌐") },
+                                modifier = Modifier.height(52.dp)
                             )
 
                             // 관리자에게 문의
@@ -1582,8 +1574,8 @@ fun PayManagementApp(
                                 label = {
                                     Text(
                                         text = strings.contactSupport,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Medium
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 },
                                 selected = false,
@@ -1591,13 +1583,8 @@ fun PayManagementApp(
                                     onContactSupport()
                                     scope.launch { drawerState.close() }
                                 },
-                                icon = {
-                                    Text(
-                                        text = "📧",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(48.dp)
+                                icon = { DrawerIconTile("📧") },
+                                modifier = Modifier.height(52.dp)
                             )
 
                             val appInfo = koinInject<com.woojin.paymanagement.utils.AppInfo>()
@@ -1608,8 +1595,8 @@ fun PayManagementApp(
                                     ) {
                                         Text(
                                             text = strings.aboutApp,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
@@ -1621,42 +1608,24 @@ fun PayManagementApp(
                                 },
                                 selected = false,
                                 onClick = { /* 앱 정보 표시 */ },
-                                icon = {
-                                    Text(
-                                        text = "ℹ️",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                },
-                                modifier = Modifier.height(48.dp)
+                                icon = { DrawerIconTile("ℹ️") },
+                                modifier = Modifier.height(52.dp)
                             )
                         }
 
                         // 하단: Color Scheme 설정 (고정)
                         Column(
-                            modifier = Modifier.padding(16.dp)
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)
                         ) {
-                            HorizontalDivider()
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = strings.themeSettings,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start
-                            ) {
-                                Text(
-                                    text = "🎨",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = strings.themeSettings,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
                             // Light/Dark 토글 스위치
                             val isSystemInDarkTheme = isSystemInDarkTheme()
@@ -1685,12 +1654,12 @@ fun PayManagementApp(
                                 Row(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(10.dp))
                                         .background(
                                             color = if (isLightSelected)
-                                                MaterialTheme.colorScheme.primaryContainer
+                                                MaterialTheme.colorScheme.surface
                                             else
-                                                MaterialTheme.colorScheme.surfaceVariant
+                                                Color.Transparent
                                         )
                                         .clickable {
                                             if (currentThemeMode != ThemeMode.LIGHT) {
@@ -1699,7 +1668,7 @@ fun PayManagementApp(
                                                 onThemeChanged?.invoke()
                                             }
                                         }
-                                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        .padding(vertical = 10.dp, horizontal = 8.dp),
                                     horizontalArrangement = Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -1712,7 +1681,7 @@ fun PayManagementApp(
                                         text = "Light",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = if (isLightSelected)
-                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                            BrandColor.mint
                                         else
                                             MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = if (isLightSelected)
@@ -1726,12 +1695,12 @@ fun PayManagementApp(
                                 Row(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(10.dp))
                                         .background(
                                             color = if (isDarkSelected)
-                                                MaterialTheme.colorScheme.primaryContainer
+                                                MaterialTheme.colorScheme.surface
                                             else
-                                                MaterialTheme.colorScheme.surfaceVariant
+                                                Color.Transparent
                                         )
                                         .clickable {
                                             if (currentThemeMode != ThemeMode.DARK) {
@@ -1740,7 +1709,7 @@ fun PayManagementApp(
                                                 onThemeChanged?.invoke()
                                             }
                                         }
-                                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                                        .padding(vertical = 10.dp, horizontal = 8.dp),
                                     horizontalArrangement = Arrangement.Center,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -1753,7 +1722,7 @@ fun PayManagementApp(
                                         text = "Dark",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = if (isDarkSelected)
-                                            MaterialTheme.colorScheme.onPrimaryContainer
+                                            BrandColor.mint
                                         else
                                             MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontWeight = if (isDarkSelected)
@@ -2339,3 +2308,31 @@ enum class ExpandableMenu {
     ANALYSIS,
     IN_APP_PURCHASE
 }
+
+/** 사이드 메뉴 아이콘: 이모지를 연한 색 타일 안에 */
+@Composable
+private fun DrawerIconTile(emoji: String) {
+    val tint = when (emoji) {
+        "🔔", "💰", "☕" -> Color(0xFFF0B04C)
+        "🌐", "📧", "ℹ️" -> Color(0xFF8B95A1)
+        else -> BrandColor.mint
+    }
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(RoundedCornerShape(11.dp))
+            .background(tint.copy(alpha = 0.12f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = emoji, fontSize = 17.sp)
+    }
+}
+
+/** 사이드 메뉴 스위치: 민트 트랙 + 흰 썸 */
+@Composable
+private fun drawerSwitchColors() = SwitchDefaults.colors(
+    checkedThumbColor = Color.White,
+    checkedTrackColor = BrandColor.mint,
+    checkedBorderColor = Color.Transparent,
+    uncheckedBorderColor = Color.Transparent
+)
