@@ -20,121 +20,45 @@ class PayPeriodCalculator(
     private val holidayRepository: HolidayRepository? = null
 ) {
 
+    /**
+     * 날짜가 속한 급여 기간 = (그 날짜 이전 가장 가까운 실제 급여일) ~ (다음 실제 급여일 전날).
+     *
+     * 실제 급여일은 주말·공휴일 조정으로 이웃 달로 넘어갈 수 있음
+     * (예: 급여일 1일 + 이전 평일 → 11/1(일)이면 10/30, 급여일 31일 + 다음 평일 → 1/31(토)이면 2/2).
+     * 그래서 "이번 달/지난 달 급여일"만 비교하지 않고 앞뒤 두 달씩의 실제 급여일 중에서 고름.
+     * 조정이 달을 넘지 않는 일반적인 경우엔 예전 계산과 결과가 같음.
+     */
     suspend fun getCurrentPayPeriod(
         payday: Int,
         adjustment: PaydayAdjustment,
         currentDate: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     ): PayPeriod {
-        // 현재 달의 월급날 계산
-        val currentMonthPayday = calculateActualPayday(currentDate.year, currentDate.month, payday, adjustment)
-        
-        return if (currentDate >= currentMonthPayday) {
-            // 이번 달 월급날이 지났으면, 이번 달 월급날 ~ 다음 달 월급날 전날
-            var nextMonthDate = currentDate.plus(1, DateTimeUnit.MONTH)
-            var nextMonthPayday = calculateActualPayday(
-                nextMonthDate.year,
-                nextMonthDate.month,
-                payday,
-                adjustment
-            )
-            // 조정된 다음 급여일이 현재 급여일 이전이면 한 달 더 앞으로
-            if (nextMonthPayday <= currentMonthPayday) {
-                nextMonthDate = nextMonthDate.plus(1, DateTimeUnit.MONTH)
-                nextMonthPayday = calculateActualPayday(
-                    nextMonthDate.year,
-                    nextMonthDate.month,
-                    payday,
-                    adjustment
-                )
-            }
-            PayPeriod(
-                startDate = currentMonthPayday,
-                endDate = nextMonthPayday.minus(1, DateTimeUnit.DAY),
-                displayText = formatPayPeriodDisplay(currentMonthPayday, nextMonthPayday.minus(1, DateTimeUnit.DAY))
-            )
-        } else {
-            // 이번 달 월급날이 아직 안 왔으면, 지난 달 월급날 ~ 이번 달 월급날 전날
-            var previousMonthDate = currentDate.minus(1, DateTimeUnit.MONTH)
-            var previousMonthPayday = calculateActualPayday(
-                previousMonthDate.year,
-                previousMonthDate.month,
-                payday,
-                adjustment
-            )
-            // 조정된 이전 급여일이 현재 급여일 이후이면 한 달 더 뒤로
-            if (previousMonthPayday >= currentMonthPayday) {
-                previousMonthDate = previousMonthDate.minus(1, DateTimeUnit.MONTH)
-                previousMonthPayday = calculateActualPayday(
-                    previousMonthDate.year,
-                    previousMonthDate.month,
-                    payday,
-                    adjustment
-                )
-            }
-            PayPeriod(
-                startDate = previousMonthPayday,
-                endDate = currentMonthPayday.minus(1, DateTimeUnit.DAY),
-                displayText = formatPayPeriodDisplay(previousMonthPayday, currentMonthPayday.minus(1, DateTimeUnit.DAY))
-            )
-        }
+        val paydays = (-2..2).map { offset ->
+            val monthDate = currentDate.plus(offset, DateTimeUnit.MONTH)
+            calculateActualPayday(monthDate.year, monthDate.month, payday, adjustment)
+        }.distinct().sorted()
+
+        val startDate = paydays.last { it <= currentDate }
+        val nextPayday = paydays.first { it > startDate }
+        val endDate = nextPayday.minus(1, DateTimeUnit.DAY)
+
+        return PayPeriod(
+            startDate = startDate,
+            endDate = endDate,
+            displayText = formatPayPeriodDisplay(startDate, endDate)
+        )
     }
-    
+
+    /** 다음 급여 기간 = 현재 기간 끝 다음날이 속한 기간 */
     suspend fun getNextPayPeriod(currentPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): PayPeriod {
-        val nextStartDate = currentPeriod.endDate.plus(1, DateTimeUnit.DAY)
-        var nextMonthDate = nextStartDate.plus(1, DateTimeUnit.MONTH)
-        var nextPayday = calculateActualPayday(
-            nextMonthDate.year,
-            nextMonthDate.month,
-            payday,
-            adjustment
-        )
-        // 주말/공휴일 조정으로 인해 다음 급여일이 nextStartDate 이전이 될 수 있음
-        // 이 경우 한 달 더 앞으로 이동
-        if (nextPayday <= nextStartDate) {
-            nextMonthDate = nextMonthDate.plus(1, DateTimeUnit.MONTH)
-            nextPayday = calculateActualPayday(
-                nextMonthDate.year,
-                nextMonthDate.month,
-                payday,
-                adjustment
-            )
-        }
-        val nextEndDate = nextPayday.minus(1, DateTimeUnit.DAY)
-
-        return PayPeriod(
-            startDate = nextStartDate,
-            endDate = nextEndDate,
-            displayText = formatPayPeriodDisplay(nextStartDate, nextEndDate)
-        )
+        return getCurrentPayPeriod(payday, adjustment, currentDate = currentPeriod.endDate.plus(1, DateTimeUnit.DAY))
     }
-    
+
+    /** 이전 급여 기간 = 현재 기간 시작 전날이 속한 기간 */
     suspend fun getPreviousPayPeriod(currentPeriod: PayPeriod, payday: Int, adjustment: PaydayAdjustment): PayPeriod {
-        val previousEndDate = currentPeriod.startDate.minus(1, DateTimeUnit.DAY)
-        // previousEndDate의 월을 기준으로 급여일 계산
-        var previousStartDate = calculateActualPayday(
-            previousEndDate.year,
-            previousEndDate.month,
-            payday,
-            adjustment
-        )
-        // 계산된 급여일이 previousEndDate 이후이면 한 달 뒤로 이동
-        if (previousStartDate > previousEndDate) {
-            val oneMonthBack = previousEndDate.minus(1, DateTimeUnit.MONTH)
-            previousStartDate = calculateActualPayday(
-                oneMonthBack.year,
-                oneMonthBack.month,
-                payday,
-                adjustment
-            )
-        }
-
-        return PayPeriod(
-            startDate = previousStartDate,
-            endDate = previousEndDate,
-            displayText = formatPayPeriodDisplay(previousStartDate, previousEndDate)
-        )
+        return getCurrentPayPeriod(payday, adjustment, currentDate = currentPeriod.startDate.minus(1, DateTimeUnit.DAY))
     }
-    
+
     suspend fun calculateActualPayday(
         year: Int,
         month: Month,
