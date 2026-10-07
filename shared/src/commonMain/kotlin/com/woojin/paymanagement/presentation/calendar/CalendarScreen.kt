@@ -50,6 +50,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,12 +80,9 @@ import com.woojin.paymanagement.theme.BrandColor
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
-import kotlinx.datetime.todayIn
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -144,6 +143,17 @@ fun CalendarScreen(
         }
     }
 
+    // 날짜가 바뀌었는지 확인 (앱을 켜 둔 채 자정이 지나거나, 다음 날 다시 열었을 때)
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onDayChanged()
+    }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(60_000)
+            viewModel.onDayChanged()
+        }
+    }
+
     // 뒤로가기 핸들링 - 앱 종료 확인
     com.woojin.paymanagement.utils.BackHandler {
         showExitDialog = true
@@ -154,7 +164,6 @@ fun CalendarScreen(
     var fabExpanded by remember { mutableStateOf(false) }
     // 길게 눌러 날짜 이동 안내: 한 번 사용하기 전까지만 표시
     var isMoveHintSeen by remember { mutableStateOf(preferencesManager.isMoveTransactionHintSeen()) }
-    var showYearMonthPicker by remember { mutableStateOf(false) }
 
     // HorizontalPager 상태 (무한 스크롤을 위해 큰 pageCount 사용)
     val initialPage = Int.MAX_VALUE / 2
@@ -222,7 +231,6 @@ fun CalendarScreen(
                     uiState.selectedDate?.let { selectedDate ->
                         PayPeriodHeader(
                             selectedDate = selectedDate,
-                            onClick = { showYearMonthPicker = true },
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
@@ -292,6 +300,7 @@ fun CalendarScreen(
                 // Calendar Grid
                 CalendarGrid(
                     payPeriod = uiState.currentPayPeriod,
+                    today = uiState.today,
                     transactions = if (uiState.isSharedMode)
                         uiState.sharedTransactions.map { it.transaction }
                     else
@@ -426,18 +435,6 @@ fun CalendarScreen(
         }
     }
 
-    // 년/월 선택 다이얼로그
-    if (showYearMonthPicker && uiState.selectedDate != null) {
-        YearMonthPickerDialog(
-            currentYear = uiState.selectedDate.year,
-            currentMonth = uiState.selectedDate.monthNumber,
-            onDismiss = { showYearMonthPicker = false },
-            onConfirm = { year, month ->
-                viewModel.navigateToYearMonth(year, month)
-            }
-        )
-    }
-
     // 앱 종료 확인 다이얼로그
     if (showExitDialog) {
         var showButtons by remember { mutableStateOf(false) }
@@ -550,7 +547,6 @@ fun CalendarScreen(
 @Composable
 private fun PayPeriodHeader(
     selectedDate: LocalDate,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val strings = LocalStrings.current
@@ -563,7 +559,7 @@ private fun PayPeriodHeader(
         color = MaterialTheme.colorScheme.primary,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
-        modifier = modifier.clickable(onClick = onClick)
+        modifier = modifier
     )
 }
 
@@ -784,6 +780,7 @@ private fun SectionBand(horizontalBleed: androidx.compose.ui.unit.Dp = 16.dp) {
 @Composable
 private fun CalendarGrid(
     payPeriod: PayPeriod,
+    today: LocalDate,
     transactions: List<Transaction>,
     selectedDate: LocalDate?,
     holidays: Set<LocalDate> = emptySet(),
@@ -791,8 +788,6 @@ private fun CalendarGrid(
     onDateSelected: (LocalDate) -> Unit,
     tutorialViewModel: com.woojin.paymanagement.presentation.tutorial.CalendarTutorialViewModel? = null
 ) {
-    // 오늘 날짜 계산
-    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
     // 월급 기간에 포함되는 모든 날짜 계산
     val allDates = generateDateSequence(payPeriod.startDate, payPeriod.endDate)
@@ -1299,158 +1294,6 @@ private fun TransactionItem(
             color = typeColor,
             fontWeight = FontWeight.Bold
         )
-    }
-}
-
-/**
- * 년/월 선택 다이얼로그
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun YearMonthPickerDialog(
-    currentYear: Int,
-    currentMonth: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (year: Int, month: Int) -> Unit
-) {
-    val strings = LocalStrings.current
-    var selectedYear by remember { mutableStateOf(currentYear) }
-    var selectedMonth by remember { mutableStateOf(currentMonth) }
-
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-            ) {
-                // 제목
-                Text(
-                    text = strings.selectPayday,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(bottom = 24.dp)
-                )
-
-                // 년도 선택
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = strings.yearLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { selectedYear -= 1 }) {
-                            Icon(
-                                Icons.Default.KeyboardArrowLeft,
-                                contentDescription = strings.previousYear,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        Text(
-                            text = strings.yearDisplay(selectedYear),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                        )
-
-                        IconButton(onClick = { selectedYear += 1 }) {
-                            Icon(
-                                Icons.Default.KeyboardArrowRight,
-                                contentDescription = strings.nextYear,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // 월 선택
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = strings.monthLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = {
-                            selectedMonth = if (selectedMonth == 1) 12 else selectedMonth - 1
-                        }) {
-                            Icon(
-                                Icons.Default.KeyboardArrowLeft,
-                                contentDescription = strings.previousMonthLabel,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        Text(
-                            text = strings.monthDisplayShort(selectedMonth),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                        )
-
-                        IconButton(onClick = {
-                            selectedMonth = if (selectedMonth == 12) 1 else selectedMonth + 1
-                        }) {
-                            Icon(
-                                Icons.Default.KeyboardArrowRight,
-                                contentDescription = strings.nextMonthLabel,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // 버튼
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(strings.cancel)
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    TextButton(onClick = {
-                        onConfirm(selectedYear, selectedMonth)
-                        onDismiss()
-                    }) {
-                        Text(strings.confirm)
-                    }
-                }
-            }
-        }
     }
 }
 

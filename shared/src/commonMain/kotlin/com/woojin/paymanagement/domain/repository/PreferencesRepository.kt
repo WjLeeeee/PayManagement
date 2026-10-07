@@ -14,4 +14,7 @@ interface PreferencesRepository {
 
     fun isSharedMode(): Boolean
     fun setIsSharedMode(enabled: Boolean)
+
+    fun getHolidaysRefreshedAt(): Long
+    fun setHolidaysRefreshedAt(time: Long)
 }

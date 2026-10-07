@@ -38,7 +38,7 @@ val presentationModule = module {
     }
     factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
     factory { DateDetailViewModel(get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
-    factory { PaydaySetupViewModel(get(), get(), get(), get()) }
+    factory { PaydaySetupViewModel(get(), get(), get(), get(), get()) }
     factory { StatisticsViewModel(get(), get(), get(), get(), get(), get(), get()) }
     factory { CalendarTutorialViewModel(get()) }
     factory { ParsedTransactionViewModel(get(), get(), get(), get(), get()) }

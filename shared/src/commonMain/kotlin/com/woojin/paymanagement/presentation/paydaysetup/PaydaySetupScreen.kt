@@ -1,6 +1,8 @@
 package com.woojin.paymanagement.presentation.paydaysetup
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,49 +42,61 @@ fun PaydaySetupContent(
 ) {
     val strings = LocalStrings.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(40.dp))
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(modifier = Modifier.height(24.dp))
 
-        PaydaySetupHeader(
-            title = strings.paydaySetup,
-            description = strings.paydaySetupDescription
-        )
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        PaydaySelector(
-            selectedPayday = uiState.selectedPayday,
-            onPaydaySelected = onPaydaySelected
-        )
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        PaydayAdjustmentSelector(
-            selectedAdjustment = uiState.selectedAdjustment,
-            onAdjustmentSelected = onAdjustmentSelected
-        )
-
-        if (uiState.error != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            ErrorMessage(
-                error = uiState.error,
-                onDismiss = onErrorDismiss
+            // 상단 결과 배너 (고르면 바로 바뀜)
+            PaydayHeroBanner(
+                payday = uiState.selectedPayday,
+                currentPeriod = uiState.currentPeriod,
+                nextPayday = uiState.nextPayday
             )
-        }
 
-        Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            PaydaySectionTitle(strings.selectPaydayPrompt)
+            Spacer(modifier = Modifier.height(12.dp))
+            PaydayGrid(
+                selectedPayday = uiState.selectedPayday,
+                onPaydaySelected = onPaydaySelected
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            PaydaySectionTitle(strings.paydayOverlapTitle)
+            Spacer(modifier = Modifier.height(10.dp))
+            PaydayAdjustmentSegment(
+                selectedAdjustment = uiState.selectedAdjustment,
+                onAdjustmentSelected = onAdjustmentSelected
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            PaydayShiftNote(
+                nextPayday = uiState.nextPayday,
+                nextPaydayNominal = uiState.nextPaydayNominal
+            )
+
+            if (uiState.error != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                ErrorMessage(
+                    error = uiState.error,
+                    onDismiss = onErrorDismiss
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         PaydaySetupButton(
             onClick = onCompleteSetup,
-            isLoading = uiState.isLoading
+            isLoading = uiState.isLoading,
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 20.dp)
         )
-
-        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 

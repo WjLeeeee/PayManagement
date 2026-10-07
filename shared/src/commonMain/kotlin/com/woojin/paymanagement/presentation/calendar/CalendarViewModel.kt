@@ -16,13 +16,18 @@ import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.Month
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
@@ -49,8 +54,21 @@ class CalendarViewModel(
     private var observedStartDate: LocalDate? = null
     private var observedEndDate: LocalDate? = null
 
+    // 상태 갱신 순서 보장: 거래 목록 변경·기간 이동·날짜 선택이 동시에 돌면 늦게 끝난 오래된 계산이
+    // 최신 상태를 덮어써 달력이 깨질 수 있어 한 번에 하나씩, 들어온 순서대로 처리 (Mutex는 FIFO)
+    private val stateMutex = Mutex()
+    private var transactionsUpdateJob: Job? = null
+    // currentPayPeriod를 계산할 때 쓴 급여일 설정 (설정 변경 감지용)
+    private var periodSettings: Pair<Int, com.woojin.paymanagement.utils.PaydayAdjustment>? = null
+
+    // 공휴일 받기는 한 번에 하나만. 받아도 데이터가 없는 연도(아직 발표 전 등)는 이번 실행 중 다시 시도 안 함
+    private val holidayMutex = Mutex()
+    private val attemptedHolidayYears = mutableSetOf<Int>()
+
     companion object {
         private val HOLIDAY_API_KEY = com.woojin.paymanagement.BuildKonfig.HOLIDAY_API_KEY
+        // 올해·내년 공휴일을 다시 받는 주기 (임시공휴일처럼 나중에 지정되는 공휴일 반영)
+        private const val HOLIDAY_REFRESH_INTERVAL_MS = 30L * 24 * 60 * 60 * 1000
     }
 
     init {
@@ -105,141 +123,155 @@ class CalendarViewModel(
         selectedDate: LocalDate? = null
     ) {
         coroutineScope.launch {
-            val currentPayPeriod = initialPayPeriod
-                ?: payPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
+            val currentPayPeriod = stateMutex.withLock {
+                val currentPayPeriod = if (initialPayPeriod != null) {
+                    // 이전에 보던 기간이 지금 급여일 설정과 다를 수 있으므로(데이터 가져오기 등) 현재 설정으로 다시 계산.
+                    // 설정이 그대로면 같은 기간이 나옴
+                    val anchor = selectedDate?.takeIf { it.isIn(initialPayPeriod) } ?: initialPayPeriod.startDate
+                    payPeriodCalculator.getCurrentPayPeriod(payday, adjustment, currentDate = anchor)
+                } else {
+                    payPeriodCalculator.getCurrentPayPeriod(payday, adjustment)
+                }
 
-            val recommendedDate = selectedDate
-                ?: payPeriodCalculator.getRecommendedDateForPeriod(currentPayPeriod, payday, adjustment)
+                // 선택 날짜가 기간 밖이면 헤더(선택 날짜 기준)와 달력(기간 기준)이 어긋나므로 추천 날짜 사용
+                val recommendedDate = selectedDate?.takeIf { it.isIn(currentPayPeriod) }
+                    ?: payPeriodCalculator.getRecommendedDateForPeriod(currentPayPeriod, payday, adjustment)
 
-            val isMoneyVisible = getMoneyVisibilityUseCase()
+                val isMoneyVisible = getMoneyVisibilityUseCase()
 
-            updateState(
-                transactions = transactions,
-                payPeriod = currentPayPeriod,
-                selectedDate = recommendedDate,
-                isMoneyVisible = isMoneyVisible
-            )
+                applyStateLocked(
+                    transactions = transactions,
+                    payPeriod = currentPayPeriod,
+                    selectedDate = recommendedDate,
+                    isMoneyVisible = isMoneyVisible
+                )
+                currentPayPeriod
+            }
 
             // init에서 복원된 공유 모드의 리스너를 급여기간 확정 후 여기서 시작
             if (uiState.isSharedMode) {
                 startObservingSharedTransactions(currentPayPeriod.startDate, currentPayPeriod.endDate)
             }
+            ensureHolidays()
         }
     }
 
     fun updateTransactions(transactions: List<Transaction>) {
-        updateState(transactions = transactions)
+        // 데이터 가져오기처럼 거래가 연달아 바뀌면 마지막 목록만 반영 (기다리던 이전 갱신은 취소)
+        transactionsUpdateJob?.cancel()
+        transactionsUpdateJob = coroutineScope.launch {
+            stateMutex.withLock { applyStateLocked(transactions = transactions) }
+        }
     }
 
     fun selectDate(date: LocalDate) {
-        updateState(selectedDate = date)
+        coroutineScope.launch {
+            stateMutex.withLock { applyStateLocked(selectedDate = date) }
+        }
     }
 
     fun navigateToPreviousPeriod() {
-        val currentSelectedDate = uiState.selectedDate ?: return
         coroutineScope.launch {
-            val previousPeriod = payPeriodCalculator.getPreviousPayPeriod(
-                currentPeriod = requireNotNull(uiState.currentPayPeriod),
-                payday = payday,
-                adjustment = adjustment
-            )
+            val previousPeriod = stateMutex.withLock {
+                // 잠금 안에서 최신 상태를 읽어야 빠르게 넘길 때도 기간이 꼬이지 않음
+                val currentPeriod = uiState.currentPayPeriod ?: return@launch
+                val currentSelectedDate = uiState.selectedDate ?: return@launch
 
-        // 현재 선택된 날짜의 일(day)을 유지하면서 월만 이전으로 변경
-        val newSelectedDate = try {
-            // 이전 달로 이동하면서 같은 일(day) 유지
-            val previousMonth = currentSelectedDate.minus(1, DateTimeUnit.MONTH)
-            // 새 급여 기간 내에서 유효한 날짜인지 확인
-            if (previousMonth >= previousPeriod.startDate && previousMonth <= previousPeriod.endDate) {
-                previousMonth
-            } else {
-                // 기간 밖이면 급여일 선택
-                previousPeriod.startDate
+                // 바로 앞 기간 = 현재 기간 시작 전날이 속한 급여 기간 (현재 급여일 설정 기준)
+                val previousPeriod = payPeriodCalculator.getCurrentPayPeriod(
+                    payday = payday,
+                    adjustment = adjustment,
+                    currentDate = currentPeriod.startDate.minus(1, DateTimeUnit.DAY)
+                )
+
+                // 현재 선택된 날짜의 일(day)을 유지하면서 월만 이전으로 변경
+                val newSelectedDate = try {
+                    val previousMonth = currentSelectedDate.minus(1, DateTimeUnit.MONTH)
+                    if (previousMonth.isIn(previousPeriod)) previousMonth else previousPeriod.startDate
+                } catch (e: Exception) {
+                    previousPeriod.startDate
+                }
+
+                applyStateLocked(payPeriod = previousPeriod, selectedDate = newSelectedDate)
+                previousPeriod
             }
-        } catch (e: Exception) {
-            // 날짜가 유효하지 않으면 (예: 1월 31일 → 2월 31일) 급여일 선택
-            previousPeriod.startDate
-        }
-
-            updateState(
-                payPeriod = previousPeriod,
-                selectedDate = newSelectedDate
-            )
             if (uiState.isSharedMode) {
                 startObservingSharedTransactions(previousPeriod.startDate, previousPeriod.endDate)
             }
+            ensureHolidays()
         }
     }
 
     fun navigateToNextPeriod() {
-        val currentSelectedDate = uiState.selectedDate ?: return
         coroutineScope.launch {
-            val nextPeriod = payPeriodCalculator.getNextPayPeriod(
-                currentPeriod = requireNotNull(uiState.currentPayPeriod),
-                payday = payday,
-                adjustment = adjustment
-            )
+            val nextPeriod = stateMutex.withLock {
+                val currentPeriod = uiState.currentPayPeriod ?: return@launch
+                val currentSelectedDate = uiState.selectedDate ?: return@launch
 
-            // 공휴일 자동 로딩 체크
-            checkAndLoadHolidays(nextPeriod.endDate)
+                // 바로 다음 기간 = 현재 기간 끝 다음날이 속한 급여 기간 (현재 급여일 설정 기준)
+                val nextPeriod = payPeriodCalculator.getCurrentPayPeriod(
+                    payday = payday,
+                    adjustment = adjustment,
+                    currentDate = currentPeriod.endDate.plus(1, DateTimeUnit.DAY)
+                )
 
-        // 현재 선택된 날짜의 일(day)을 유지하면서 월만 다음으로 변경
-        val newSelectedDate = try {
-            // 다음 달로 이동하면서 같은 일(day) 유지
-            val nextMonth = currentSelectedDate.plus(1, DateTimeUnit.MONTH)
-            // 새 급여 기간 내에서 유효한 날짜인지 확인
-            if (nextMonth >= nextPeriod.startDate && nextMonth <= nextPeriod.endDate) {
-                nextMonth
-            } else {
-                // 기간 밖이면 급여일 선택
-                nextPeriod.startDate
+                // 현재 선택된 날짜의 일(day)을 유지하면서 월만 다음으로 변경
+                val newSelectedDate = try {
+                    val nextMonth = currentSelectedDate.plus(1, DateTimeUnit.MONTH)
+                    if (nextMonth.isIn(nextPeriod)) nextMonth else nextPeriod.startDate
+                } catch (e: Exception) {
+                    nextPeriod.startDate
+                }
+
+                applyStateLocked(payPeriod = nextPeriod, selectedDate = newSelectedDate)
+                nextPeriod
             }
-        } catch (e: Exception) {
-            // 날짜가 유효하지 않으면 (예: 1월 31일 → 2월 31일) 급여일 선택
-            nextPeriod.startDate
-        }
-
-            updateState(
-                payPeriod = nextPeriod,
-                selectedDate = newSelectedDate
-            )
             if (uiState.isSharedMode) {
                 startObservingSharedTransactions(nextPeriod.startDate, nextPeriod.endDate)
             }
+            ensureHolidays()
         }
     }
 
     /**
-     * 특정 년/월의 급여일로 이동
-     * 예: 2025년 12월 선택 시 → 12월 25일~1월 24일 급여 기간
+     * 날짜가 바뀌었으면(자정 경과, 다음 날 앱 복귀) 오늘 표시를 갱신.
+     * 어제가 속한 기간을 보고 있었는데 오늘이 다음 기간이면 오늘이 속한 기간으로 이동.
+     * 다른 기간을 보고 있었다면 그대로 둠
      */
-    fun navigateToYearMonth(year: Int, month: Int) {
+    fun onDayChanged() {
+        val newToday = todayDate()
+        if (newToday == uiState.today) return
         coroutineScope.launch {
-            // 선택한 년/월의 실제 급여일 계산 (주말 조정 포함)
-            val targetPayday = payPeriodCalculator.calculateActualPayday(
-                year = year,
-                month = Month(month),
-                payday = payday,
-                adjustment = adjustment
-            )
+            val movedPeriod = stateMutex.withLock {
+                val oldToday = uiState.today
+                if (newToday == oldToday) return@launch
+                val period = uiState.currentPayPeriod
+                val selected = uiState.selectedDate
+                uiState = uiState.copy(today = newToday)
+                if (period == null) return@launch
 
-            // 해당 급여일을 기준으로 급여 기간 계산
-            // getCurrentPayPeriod는 전달된 날짜가 급여일이면 그날부터 다음 급여일까지의 기간을 반환
-            val targetPayPeriod = payPeriodCalculator.getCurrentPayPeriod(
-                payday = payday,
-                adjustment = adjustment,
-                currentDate = targetPayday
-            )
-
-            // 급여일을 선택 날짜로 설정
-            updateState(
-                payPeriod = targetPayPeriod,
-                selectedDate = targetPayday
-            )
-            if (uiState.isSharedMode) {
-                startObservingSharedTransactions(targetPayPeriod.startDate, targetPayPeriod.endDate)
+                if (oldToday.isIn(period) && !newToday.isIn(period)) {
+                    // 오늘부터 새 급여 기간 → 오늘이 속한 기간으로 이동하고 오늘 선택
+                    val newPeriod = payPeriodCalculator.getCurrentPayPeriod(payday, adjustment, currentDate = newToday)
+                    applyStateLocked(payPeriod = newPeriod, selectedDate = newToday)
+                    newPeriod
+                } else {
+                    // 같은 기간이면 어제(=오늘이던 날)를 선택 중일 때만 오늘로 옮김
+                    if (selected == oldToday && newToday.isIn(period)) {
+                        applyStateLocked(selectedDate = newToday)
+                    }
+                    null
+                }
             }
+            if (movedPeriod != null && uiState.isSharedMode) {
+                startObservingSharedTransactions(movedPeriod.startDate, movedPeriod.endDate)
+            }
+            // 새해가 됐거나 갱신 주기가 지났을 수 있으므로 공휴일 확인
+            ensureHolidays()
         }
     }
+
+    private fun todayDate(): LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault())
 
     fun refreshSharedRoomState() {
         if (sharedRoomRepository == null) return
@@ -361,38 +393,55 @@ class CalendarViewModel(
         }
     }
 
-    private fun updateState(
+    /**
+     * 상태 계산·반영. 반드시 stateMutex 안에서 호출 (기본값도 잠금 안에서 읽혀 항상 최신 상태 기준)
+     */
+    private suspend fun applyStateLocked(
         transactions: List<Transaction> = uiState.transactions,
         payPeriod: PayPeriod? = null,
         selectedDate: LocalDate? = null,
         isMoneyVisible: Boolean = uiState.isMoneyVisible
     ) {
-        coroutineScope.launch {
-            val actualPayPeriod = payPeriod ?: uiState.currentPayPeriod ?: payPeriodCalculator.getCurrentPayPeriod(
-                payday,
-                adjustment
-            )
-            val actualSelectedDate = selectedDate ?: uiState.selectedDate
-                ?: payPeriodCalculator.getRecommendedDateForPeriod(actualPayPeriod, payday, adjustment)
+        val settings = payday to adjustment
+        var actualPayPeriod = payPeriod ?: uiState.currentPayPeriod ?: payPeriodCalculator.getCurrentPayPeriod(
+            payday,
+            adjustment
+        )
+        var actualSelectedDate = selectedDate ?: uiState.selectedDate
+            ?: payPeriodCalculator.getRecommendedDateForPeriod(actualPayPeriod, payday, adjustment)
 
-            val payPeriodSummary = getPayPeriodSummaryUseCase(transactions, actualPayPeriod)
-            val dailyTransactions = getDailyTransactionsUseCase(transactions, actualSelectedDate)
-
-            // 공휴일 정보 가져오기
-            val holidayInfo = getHolidaysForPayPeriod(actualPayPeriod)
-
-            uiState = uiState.copy(
-                currentPayPeriod = actualPayPeriod,
-                selectedDate = actualSelectedDate,
-                transactions = transactions,
-                payPeriodSummary = payPeriodSummary,
-                dailyTransactions = dailyTransactions,
-                isMoneyVisible = isMoneyVisible,
-                holidays = holidayInfo.dates,
-                holidayNames = holidayInfo.names
-            )
+        // 급여일 설정이 바뀌었는데(데이터 가져오기, 급여일 변경) 보고 있던 기간이 예전 설정 기준이면
+        // 현재 설정으로 다시 맞춤. 안 그러면 이전/다음 이동 때 기간 길이가 틀어져 달력이 깨짐
+        val lastSettings = periodSettings
+        if (payPeriod == null && lastSettings != null && lastSettings != settings) {
+            val anchor = actualSelectedDate.takeIf { it.isIn(actualPayPeriod) } ?: actualPayPeriod.startDate
+            actualPayPeriod = payPeriodCalculator.getCurrentPayPeriod(payday, adjustment, currentDate = anchor)
+            if (!actualSelectedDate.isIn(actualPayPeriod)) {
+                actualSelectedDate = payPeriodCalculator.getRecommendedDateForPeriod(actualPayPeriod, payday, adjustment)
+            }
         }
+        periodSettings = settings
+
+        val payPeriodSummary = getPayPeriodSummaryUseCase(transactions, actualPayPeriod)
+        val dailyTransactions = getDailyTransactionsUseCase(transactions, actualSelectedDate)
+
+        // 공휴일 정보 가져오기
+        val holidayInfo = getHolidaysForPayPeriod(actualPayPeriod)
+
+        uiState = uiState.copy(
+            currentPayPeriod = actualPayPeriod,
+            selectedDate = actualSelectedDate,
+            transactions = transactions,
+            payPeriodSummary = payPeriodSummary,
+            dailyTransactions = dailyTransactions,
+            isMoneyVisible = isMoneyVisible,
+            holidays = holidayInfo.dates,
+            holidayNames = holidayInfo.names
+        )
     }
+
+    private fun LocalDate.isIn(period: PayPeriod): Boolean = this >= period.startDate && this <= period.endDate
+
 
     /**
      * 급여 기간에 해당하는 공휴일 목록 가져오기
@@ -450,25 +499,69 @@ class CalendarViewModel(
     )
 
     /**
-     * 공휴일 자동 로딩 체크
-     * 현재 보는 연도 또는 다음 연도 데이터가 없으면 해당 연도를 추가 로드
+     * 보고 있는 기간에 필요한 공휴일 데이터 확인
+     * - 지금 기간·다음 기간에 걸친 연도 중 없는 연도는 받음
+     * - 30일마다 올해·내년을 다시 받아 임시공휴일 등 나중에 지정된 공휴일 반영
+     * - 새로 받았으면 지금 기간(월급날 조정)과 빨간 날 표시를 다시 계산
      */
-    private fun checkAndLoadHolidays(currentViewDate: LocalDate) {
+    private fun ensureHolidays() {
         coroutineScope.launch {
-            try {
-                val yearsToCheck = listOf(currentViewDate.year, currentViewDate.year + 1)
-                val missingYears = yearsToCheck.filter { year ->
-                    holidayRepository.getHolidaysByYear(year).isEmpty()
-                }
+            val fetched = holidayMutex.withLock {
+                try {
+                    val period = uiState.currentPayPeriod ?: return@launch
+                    val today = todayDate()
 
-                if (missingYears.isNotEmpty()) {
-                    holidayRepository.fetchAndSaveHolidays(HOLIDAY_API_KEY, missingYears).onFailure { error ->
-                        println("공휴일 자동 로딩 실패: ${error.message}")
+                    // 다음 기간이 해를 넘길 수 있어 끝 연도 +1까지 확인
+                    val neededYears = setOf(period.startDate.year, period.endDate.year, period.endDate.year + 1)
+                    val missingYears = neededYears.filter { year ->
+                        year !in attemptedHolidayYears && holidayRepository.getHolidaysByYear(year).isEmpty()
                     }
+
+                    val now = Clock.System.now().toEpochMilliseconds()
+                    val refreshDue = now - preferencesRepository.getHolidaysRefreshedAt() > HOLIDAY_REFRESH_INTERVAL_MS
+                    val refreshYears = if (refreshDue) listOf(today.year, today.year + 1) else emptyList()
+
+                    val years = (missingYears + refreshYears).distinct().sorted()
+                    if (years.isEmpty()) return@launch
+
+                    attemptedHolidayYears.addAll(missingYears)
+                    val result = holidayRepository.fetchAndSaveHolidays(HOLIDAY_API_KEY, years)
+                    if (result.isFailure) {
+                        // 네트워크 실패 등: 다음 기회(앱 복귀·기간 이동)에 다시 시도
+                        attemptedHolidayYears.removeAll(missingYears.toSet())
+                        println("공휴일 데이터 받기 실패: ${result.exceptionOrNull()?.message}")
+                        return@launch
+                    }
+                    if (refreshDue) preferencesRepository.setHolidaysRefreshedAt(now)
+                    true
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    println("공휴일 데이터 확인 중 오류: ${e.message}")
+                    return@launch
                 }
-            } catch (e: Exception) {
-                println("공휴일 자동 로딩 체크 중 오류: ${e.message}")
             }
+            if (fetched) recalculateCurrentPeriod()
+        }
+    }
+
+    /**
+     * 공휴일 데이터가 바뀐 뒤 지금 보고 있는 기간을 다시 계산 (월급날 조정 + 빨간 날 표시)
+     */
+    private suspend fun recalculateCurrentPeriod() {
+        val changedPeriod = stateMutex.withLock {
+            val period = uiState.currentPayPeriod ?: return
+            // 월급날이 며칠 옮겨져도 같은 기간을 가리키도록 기간 중간 날짜를 기준으로 계산
+            val anchor = period.startDate.plus(14, DateTimeUnit.DAY)
+            val newPeriod = payPeriodCalculator.getCurrentPayPeriod(payday, adjustment, currentDate = anchor)
+            val selected = uiState.selectedDate
+            val newSelected = selected?.takeIf { it.isIn(newPeriod) }
+                ?: payPeriodCalculator.getRecommendedDateForPeriod(newPeriod, payday, adjustment)
+            applyStateLocked(payPeriod = newPeriod, selectedDate = newSelected)
+            newPeriod.takeIf { it.startDate != period.startDate || it.endDate != period.endDate }
+        }
+        if (changedPeriod != null && uiState.isSharedMode) {
+            startObservingSharedTransactions(changedPeriod.startDate, changedPeriod.endDate)
         }
     }
 }
