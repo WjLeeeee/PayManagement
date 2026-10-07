@@ -28,7 +28,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 87
-        versionName = "7.0"
+        versionName = "7.1"
     }
 
     // 서명 설정
