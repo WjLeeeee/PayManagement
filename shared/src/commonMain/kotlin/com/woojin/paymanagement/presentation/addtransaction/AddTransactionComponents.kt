@@ -61,6 +61,14 @@ import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.domain.model.DailyAllowance
+import com.woojin.paymanagement.utils.Utils
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
+import kotlin.math.roundToInt
 
 @Composable
 fun TransactionTypeSelector(
@@ -852,4 +860,84 @@ fun CategoryChipGrid(
             }
         }
     }
+}
+
+/**
+ * 금액 아래 안내: 노동시간 환산(ⓘ 누르면 계산 기준 안내) + 저장 후 오늘 남은 돈
+ * hourlyWage가 없으면 노동시간, dailyAllowance가 없으면 오늘 남은 돈 줄을 표시하지 않음
+ */
+@Composable
+fun SpendingInsight(
+    amount: Double,
+    hourlyWage: Double?,
+    dailyAllowance: DailyAllowance?
+) {
+    val strings = LocalStrings.current
+    var showInfoDialog by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (hourlyWage != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = strings.laborTime(formatLaborTime(amount, hourlyWage)),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.size(4.dp))
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = strings.hourlyWageInfoTitle,
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(RoundedCornerShape(50))
+                        .clickable { showInfoDialog = true }
+                )
+            }
+        }
+
+        if (dailyAllowance != null) {
+            val before = dailyAllowance.remainingToday
+            val after = before - amount
+            if (hourlyWage != null) Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = strings.remainingTodayAfterSave(formatSignedAmount(before), formatSignedAmount(after)),
+                fontSize = 13.sp,
+                color = if (after < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    if (showInfoDialog && hourlyWage != null) {
+        AlertDialog(
+            onDismissRequest = { showInfoDialog = false },
+            title = { Text(strings.hourlyWageInfoTitle) },
+            text = { Text(strings.hourlyWageInfoMessage(Utils.formatAmount(hourlyWage))) },
+            confirmButton = {
+                TextButton(onClick = { showInfoDialog = false }) {
+                    Text(strings.confirm)
+                }
+            }
+        )
+    }
+}
+
+/** 1시간 42분 / 12분, 8시간 이상은 8시간 = 1일로 환산 (2.3일) */
+@Composable
+private fun formatLaborTime(amount: Double, hourlyWage: Double): String {
+    val strings = LocalStrings.current
+    val totalMinutes = (amount / hourlyWage * 60).roundToInt().coerceAtLeast(1)
+    return if (totalMinutes >= 8 * 60) {
+        val tenthsOfDay = (totalMinutes / 48.0).roundToInt()
+        strings.laborDays(if (tenthsOfDay % 10 == 0) "${tenthsOfDay / 10}" else "${tenthsOfDay / 10}.${tenthsOfDay % 10}")
+    } else {
+        strings.laborDuration(totalMinutes / 60, totalMinutes % 60)
+    }
+}
+
+@Composable
+private fun formatSignedAmount(amount: Double): String {
+    val strings = LocalStrings.current
+    return "${if (amount < 0) "-" else ""}${strings.amountWithUnit(Utils.formatAmount(amount))}"
 }

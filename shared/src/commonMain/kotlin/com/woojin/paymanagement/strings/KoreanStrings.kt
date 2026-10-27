@@ -854,4 +854,21 @@ object KoreanStrings : AppStrings {
     override val filterStartDate = "시작일"
     override val filterEndDate = "종료일"
     override val filterAll = "전체"
+
+    override val dailyAllowanceTitle = "오늘 쓸 수 있는 돈"
+    override fun dailyAllowanceLimit(amount: String) = "하루 $amount"
+    override fun daysUntilPayday(days: Int) = "월급날까지 D-$days"
+    override val dailyAllowanceOverBudget = "예산 초과"
+    override val dailyAllowanceSetupHint = "예산 설정에서 급여를 입력하면 하루 쓸 수 있는 돈을 알려드려요"
+    override fun remainingTodayAfterSave(before: String, after: String) = "저장 후 오늘 남은 돈: $before → $after"
+    override fun laborTime(duration: String) = "≈ $duration 노동"
+    override fun laborDuration(hours: Int, minutes: Int) = when {
+        hours == 0 -> "${minutes}분"
+        minutes == 0 -> "${hours}시간"
+        else -> "${hours}시간 ${minutes}분"
+    }
+    override fun laborDays(days: String) = "${days}일"
+    override val hourlyWageInfoTitle = "노동시간 계산 기준"
+    override fun hourlyWageInfoMessage(hourlyWage: String) =
+        "시급 ${hourlyWage}원 = 월급 ÷ 209시간\n\n209시간은 법정 월 소정근로시간(하루 8시간, 주 40시간, 주휴 포함)이에요.\n8시간 이상이면 8시간을 1일로 환산해요."
 }

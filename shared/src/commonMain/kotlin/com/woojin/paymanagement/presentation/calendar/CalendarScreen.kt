@@ -77,6 +77,7 @@ import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialOverlay
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.BrandColor
+import com.woojin.paymanagement.domain.model.DailyAllowance
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.coroutines.delay
@@ -289,6 +290,10 @@ fun CalendarScreen(
                     else
                         uiState.transactions,
                     payPeriod = uiState.currentPayPeriod,
+                    // 하루 얼마는 개인 가계부 기준이라 공유 모드에서는 숨김
+                    dailyAllowance = if (uiState.isSharedMode) null else uiState.dailyAllowance,
+                    showDailyAllowanceHint = !uiState.isSharedMode && uiState.dailyAllowance == null &&
+                        uiState.today >= uiState.currentPayPeriod.startDate && uiState.today <= uiState.currentPayPeriod.endDate,
                     isMoneyVisible = uiState.isMoneyVisible,
                     onToggleVisibility = { viewModel.toggleMoneyVisibility() },
                     onStatisticsClick = { onStatisticsClick(uiState.currentPayPeriod) },
@@ -567,6 +572,8 @@ private fun PayPeriodHeader(
 private fun PayPeriodSummaryCard(
     transactions: List<Transaction>,
     payPeriod: PayPeriod,
+    dailyAllowance: DailyAllowance?,
+    showDailyAllowanceHint: Boolean,
     isMoneyVisible: Boolean,
     onToggleVisibility: () -> Unit,
     onStatisticsClick: () -> Unit = {},
@@ -722,6 +729,70 @@ private fun PayPeriodSummaryCard(
                     }
                 }
             }
+
+            // 3줄: 월급날까지 하루 얼마 (오늘이 속한 기간일 때만)
+            if (dailyAllowance != null || showDailyAllowanceHint) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(onCard.copy(alpha = 0.25f))
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                if (dailyAllowance != null) {
+                    DailyAllowanceRow(dailyAllowance = dailyAllowance, isMoneyVisible = isMoneyVisible)
+                } else {
+                    Text(
+                        text = strings.dailyAllowanceSetupHint,
+                        fontSize = 12.sp,
+                        color = onCard.copy(alpha = 0.85f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 급여 기간 요약 카드의 하루 얼마 줄: 오늘 남은 돈 / 하루 한도 · 월급날까지 남은 일수 */
+@Composable
+private fun DailyAllowanceRow(
+    dailyAllowance: DailyAllowance,
+    isMoneyVisible: Boolean
+) {
+    val strings = LocalStrings.current
+    val remaining = dailyAllowance.remainingToday
+    val isOverBudget = dailyAllowance.dailyLimit <= 0
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        SummaryValue(
+            label = strings.dailyAllowanceTitle, emoji = "💸",
+            value = if (isOverBudget) {
+                strings.dailyAllowanceOverBudget
+            } else {
+                "${if (remaining < 0) "-" else ""}${strings.amountWithUnit(Utils.formatAmount(remaining))}"
+            },
+            align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
+        )
+        Column(horizontalAlignment = Alignment.End) {
+            if (!isOverBudget) {
+                Text(
+                    text = strings.dailyAllowanceLimit(strings.amountWithUnit(Utils.formatAmount(dailyAllowance.dailyLimit))),
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+            }
+            Text(
+                text = strings.daysUntilPayday(dailyAllowance.daysLeft),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
         }
     }
 }

@@ -9,6 +9,7 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.data.Category
+import com.woojin.paymanagement.domain.model.DailyAllowance
 import kotlinx.datetime.LocalDate
 
 enum class SaveTarget {
@@ -63,6 +64,11 @@ data class AddTransactionUiState(
 
     // 예산 초과 알림
     val budgetExceededMessage: String? = null,
+
+    // 노동시간 환산 시급 (예산 설정의 고정 급여가 있을 때만)
+    val hourlyWage: Double? = null,
+    // 월급날까지 하루 얼마 (저장 후 오늘 남은 돈 미리보기용)
+    val dailyAllowance: DailyAllowance? = null,
 
     // 공유방 저장 대상 (공유방 참여 중일 때만 사용)
     val isInSharedRoom: Boolean = false,

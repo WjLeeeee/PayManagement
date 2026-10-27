@@ -898,4 +898,21 @@ object EnglishStrings : AppStrings {
     override val filterStartDate = "Start Date"
     override val filterEndDate = "End Date"
     override val filterAll = "All"
+
+    override val dailyAllowanceTitle = "Available today"
+    override fun dailyAllowanceLimit(amount: String) = "$amount/day"
+    override fun daysUntilPayday(days: Int) = "D-$days to payday"
+    override val dailyAllowanceOverBudget = "Over budget"
+    override val dailyAllowanceSetupHint = "Enter your salary in Budget Settings to see how much you can spend per day"
+    override fun remainingTodayAfterSave(before: String, after: String) = "Left today after saving: $before → $after"
+    override fun laborTime(duration: String) = "≈ $duration of work"
+    override fun laborDuration(hours: Int, minutes: Int) = when {
+        hours == 0 -> "${minutes}m"
+        minutes == 0 -> "${hours}h"
+        else -> "${hours}h ${minutes}m"
+    }
+    override fun laborDays(days: String) = "$days days"
+    override val hourlyWageInfoTitle = "How work time is calculated"
+    override fun hourlyWageInfoMessage(hourlyWage: String) =
+        "Hourly wage ₩$hourlyWage = monthly salary ÷ 209 hours\n\n209 hours is the Korean statutory monthly working hours (8h/day, 40h/week, including paid weekly holiday).\nFrom 8 hours on, 8 hours count as 1 day."
 }

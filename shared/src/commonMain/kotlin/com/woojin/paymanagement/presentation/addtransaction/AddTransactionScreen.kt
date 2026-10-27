@@ -61,8 +61,12 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.utils.BackHandler
+import com.woojin.paymanagement.utils.parseAmountToDouble
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.todayIn
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -94,6 +98,7 @@ fun AddTransactionScreen(
         } else {
             viewModel.initialize(transactions, selectedDate, editTransaction)
         }
+        viewModel.loadSpendingInsights(transactions)
     }
 
     Scaffold(
@@ -234,6 +239,23 @@ fun AddTransactionScreen(
                 }
             }
         )
+
+        // 노동시간 환산 + 저장 후 오늘 남은 돈 (지출 금액 입력 시)
+        val netAmount = parseAmountToDouble(uiState.amount.text) -
+            (if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount.text) else 0.0)
+        if (uiState.selectedType == TransactionType.EXPENSE && netAmount > 0 &&
+            (uiState.hourlyWage != null || uiState.dailyAllowance != null)
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
+            SpendingInsight(
+                amount = netAmount,
+                hourlyWage = uiState.hourlyWage,
+                // 오늘 남은 돈은 오늘 날짜로 새로 추가할 때만 (수정·다른 날짜는 계산이 달라짐)
+                dailyAllowance = uiState.dailyAllowance?.takeIf {
+                    !uiState.isEditMode && uiState.date == Clock.System.todayIn(TimeZone.currentSystemDefault())
+                }
+            )
+        }
 
         Spacer(modifier = Modifier.height(10.dp))
 

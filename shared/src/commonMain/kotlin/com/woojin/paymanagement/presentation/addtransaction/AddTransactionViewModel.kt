@@ -23,6 +23,8 @@ import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
 import com.woojin.paymanagement.domain.usecase.GetCustomPaymentMethodsUseCase
+import com.woojin.paymanagement.domain.usecase.CalculateDailyAllowanceUseCase
+import com.woojin.paymanagement.domain.usecase.GetCurrentBudgetPlanUseCase
 import com.woojin.paymanagement.database.DatabaseHelper
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -48,6 +50,8 @@ class AddTransactionViewModel(
     private val getCategoriesUseCase: com.woojin.paymanagement.domain.usecase.GetCategoriesSortedByUsageUseCase,
     private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
     private val databaseHelper: DatabaseHelper,
+    private val calculateDailyAllowanceUseCase: CalculateDailyAllowanceUseCase,
+    private val getCurrentBudgetPlanUseCase: GetCurrentBudgetPlanUseCase,
     private val sharedRoomRepository: SharedRoomRepository? = null
 ) : ViewModel() {
     var uiState by mutableStateOf(AddTransactionUiState())
@@ -113,6 +117,21 @@ class AddTransactionViewModel(
             selectedCustomCardName = currentSelectedCardName,
             isInSharedRoom = SharedModeManager.sharedRoomId != null
         )
+    }
+
+    /**
+     * 금액 아래 표시용: 노동시간 환산 시급(고정 급여 ÷ 209시간), 오늘 남은 돈
+     */
+    fun loadSpendingInsights(transactions: List<Transaction>) {
+        viewModelScope.launch {
+            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            val monthlySalary = getCurrentBudgetPlanUseCase(today).first()?.monthlySalary ?: 0.0
+            val dailyAllowance = runCatching { calculateDailyAllowanceUseCase(transactions, today) }.getOrNull()
+            uiState = uiState.copy(
+                hourlyWage = if (monthlySalary > 0) monthlySalary / MONTHLY_WORKING_HOURS else null,
+                dailyAllowance = dailyAllowance
+            )
+        }
     }
 
     fun initialize(
@@ -777,5 +796,10 @@ class AddTransactionViewModel(
      */
     fun clearBudgetExceededMessage() {
         uiState = uiState.copy(budgetExceededMessage = null)
+    }
+
+    companion object {
+        // 법정 월 소정근로시간 (주 40시간 + 주휴 8시간 기준)
+        private const val MONTHLY_WORKING_HOURS = 209.0
     }
 }

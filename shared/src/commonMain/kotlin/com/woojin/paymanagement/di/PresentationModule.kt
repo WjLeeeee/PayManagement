@@ -32,11 +32,12 @@ val presentationModule = module {
             getCategoriesUseCase = get(),
             payPeriodCalculator = get(),
             holidayRepository = get(),
+            calculateDailyAllowanceUseCase = get(),
             coroutineScope = get(),
             sharedRoomRepository = getOrNull()
         )
     }
-    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
+    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
     factory { DateDetailViewModel(get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
     factory { PaydaySetupViewModel(get(), get(), get(), get(), get()) }
     factory { StatisticsViewModel(get(), get(), get(), get(), get(), get(), get()) }

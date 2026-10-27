@@ -61,6 +61,7 @@ import com.woojin.paymanagement.domain.usecase.CheckTodayRecurringTransactionsUs
 import com.woojin.paymanagement.domain.usecase.MarkRecurringTransactionExecutedUseCase
 import com.woojin.paymanagement.domain.usecase.FetchHolidaysUseCase
 import com.woojin.paymanagement.domain.usecase.CheckBudgetExceededUseCase
+import com.woojin.paymanagement.domain.usecase.CalculateDailyAllowanceUseCase
 import com.woojin.paymanagement.domain.repository.BillingRepository
 import com.woojin.paymanagement.domain.repository.BillingRepositoryImpl
 import com.woojin.paymanagement.data.repository.CustomPaymentMethodRepositoryImpl
@@ -96,6 +97,7 @@ val domainModule = module {
     factory { GetPayPeriodSummaryUseCase() }
     factory { GetDailyTransactionsUseCase() }
     factory { CalculateDailySummaryUseCase() }
+    factoryOf(::CalculateDailyAllowanceUseCase)
 
     // Budget Check Use Cases
     factoryOf(::CheckBudgetExceededUseCase)

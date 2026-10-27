@@ -843,4 +843,17 @@ interface AppStrings {
     val filterStartDate: String
     val filterEndDate: String
     val filterAll: String
+
+    // ===== Daily Allowance / Labor Time =====
+    val dailyAllowanceTitle: String
+    fun dailyAllowanceLimit(amount: String): String
+    fun daysUntilPayday(days: Int): String
+    val dailyAllowanceOverBudget: String
+    val dailyAllowanceSetupHint: String
+    fun remainingTodayAfterSave(before: String, after: String): String
+    fun laborTime(duration: String): String
+    fun laborDuration(hours: Int, minutes: Int): String
+    fun laborDays(days: String): String
+    val hourlyWageInfoTitle: String
+    fun hourlyWageInfoMessage(hourlyWage: String): String
 }
