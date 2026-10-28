@@ -59,7 +59,11 @@ class GetAvailableGiftCardsUseCase {
         val existingIds = giftCardMap.values.map { it.id }.toSet()
         dbCards.filter { it.isActive && it.remainingAmount > 0 && !existingIds.contains(it.id) }
             .forEach { dbCard ->
-                if (!giftCardMap.containsKey(dbCard.name)) {
+                // 같은 이름의 옛 카드가 다 썼거나 비활성이면 새 카드로 교체 (안 그러면 새 카드가 가려짐)
+                val sameName = giftCardMap[dbCard.name]
+                if (sameName == null || sameName.remainingAmount <= 0 ||
+                    (activeCardIds != null && sameName.id !in activeCardIds)
+                ) {
                     giftCardMap[dbCard.name] = dbCard
                 }
             }

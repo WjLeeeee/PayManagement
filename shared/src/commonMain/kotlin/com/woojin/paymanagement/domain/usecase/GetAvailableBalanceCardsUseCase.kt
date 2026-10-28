@@ -60,7 +60,11 @@ class GetAvailableBalanceCardsUseCase {
         val existingIds = balanceCardMap.values.map { it.id }.toSet()
         dbCards.filter { it.isActive && it.currentBalance > 0 && !existingIds.contains(it.id) }
             .forEach { dbCard ->
-                if (!balanceCardMap.containsKey(dbCard.name)) {
+                // 같은 이름의 옛 카드가 다 썼거나 비활성이면 새 카드로 교체 (안 그러면 새 카드가 가려짐)
+                val sameName = balanceCardMap[dbCard.name]
+                if (sameName == null || sameName.currentBalance <= 0 ||
+                    (activeCardIds != null && sameName.id !in activeCardIds)
+                ) {
                     balanceCardMap[dbCard.name] = dbCard
                 }
             }
