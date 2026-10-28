@@ -65,8 +65,6 @@ import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.BalanceCardSummary
 import com.woojin.paymanagement.data.CardBreakdown
-import com.woojin.paymanagement.data.GiftCard
-import com.woojin.paymanagement.data.GiftCardSummary
 import com.woojin.paymanagement.data.PaymentMethodSummary
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
@@ -83,7 +81,6 @@ import kotlinx.coroutines.flow.collectLatest
 fun StatisticsScreen(
     transactions: List<Transaction>,
     availableBalanceCards: List<BalanceCard> = emptyList(),
-    availableGiftCards: List<GiftCard> = emptyList(),
     initialPayPeriod: PayPeriod? = null,
     onBack: () -> Unit,
     viewModel: StatisticsViewModel
@@ -100,10 +97,10 @@ fun StatisticsScreen(
     var statisticsData by remember { mutableStateOf(StatisticsUiState()) }
     var selectedTab by remember { mutableStateOf(StatTab.INCOME) }
 
-    LaunchedEffect(initialPayPeriod, availableBalanceCards, availableGiftCards) {
-        viewModel.initializeStatistics(initialPayPeriod, availableBalanceCards, availableGiftCards)
+    LaunchedEffect(initialPayPeriod, availableBalanceCards) {
+        viewModel.initializeStatistics(initialPayPeriod, availableBalanceCards)
 
-        viewModel.getStatisticsFlow(availableBalanceCards, availableGiftCards)
+        viewModel.getStatisticsFlow(availableBalanceCards)
             .collectLatest { newState ->
                 statisticsData = newState
             }
@@ -111,7 +108,7 @@ fun StatisticsScreen(
 
     LaunchedEffect(uiState.currentPayPeriod) {
         if (uiState.currentPayPeriod != null) {
-            viewModel.getStatisticsFlow(availableBalanceCards, availableGiftCards)
+            viewModel.getStatisticsFlow(availableBalanceCards)
                 .collectLatest { newState ->
                     statisticsData = newState
                 }
@@ -344,7 +341,7 @@ fun StatisticsScreen(
         // Payment Method Summary
         statisticsData.paymentSummary?.let { paymentSummary ->
             if (paymentSummary.cashIncome > 0 || paymentSummary.cashExpense > 0 || paymentSummary.cardExpense > 0 ||
-                paymentSummary.balanceCards.isNotEmpty() || paymentSummary.giftCards.isNotEmpty()) {
+                paymentSummary.balanceCards.isNotEmpty()) {
 
                 Spacer(modifier = Modifier.height(22.dp))
                 StatSectionBand()
@@ -1048,11 +1045,9 @@ private fun PaymentMethodSection(
             Spacer(modifier = Modifier.height(18.dp))
         }
 
-        // 기타 (잔액권 + 상품권) Summary
-        val otherIncome = paymentSummary.balanceCards.sumOf { it.income } +
-                          paymentSummary.giftCards.sumOf { it.income }
-        val otherExpense = paymentSummary.balanceCards.sumOf { it.expense } +
-                           paymentSummary.giftCards.sumOf { it.expense }
+        // 기타 (잔액권) Summary
+        val otherIncome = paymentSummary.balanceCards.sumOf { it.income }
+        val otherExpense = paymentSummary.balanceCards.sumOf { it.expense }
 
         if (otherIncome > 0 || otherExpense > 0) {
             OtherPaymentSummaryCard(

@@ -5,7 +5,6 @@ import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.repository.TransactionRepository
-import kotlinx.coroutines.flow.first
 
 data class DeletionValidationResult(
     val canDelete: Boolean,
@@ -89,55 +88,6 @@ class DeleteTransactionUseCase(
                         isActive = restoredBalance > 0
                     )
                 }
-            }
-
-            // 3. 상품권 수입 거래 삭제 시 → 상품권 삭제
-            if (transaction.type == TransactionType.INCOME &&
-                transaction.incomeType == IncomeType.GIFT_CARD &&
-                transaction.giftCardId != null) {
-                databaseHelper.deleteGiftCard(transaction.giftCardId)
-            }
-
-            // 4. 상품권 지출 거래 삭제 시 → 사용량 복구 + 연동 거래 삭제
-            if (transaction.type == TransactionType.EXPENSE &&
-                transaction.paymentMethod == PaymentMethod.GIFT_CARD &&
-                transaction.giftCardId != null) {
-                val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId)
-                if (currentCard != null) {
-                    val restoredUsedAmount = currentCard.usedAmount - transaction.amount
-                    val remainingAmount = currentCard.totalAmount - restoredUsedAmount
-                    databaseHelper.updateGiftCardUsage(
-                        id = currentCard.id,
-                        usedAmount = restoredUsedAmount,
-                        isActive = remainingAmount > 0
-                    )
-                }
-
-                // 같은 날짜에 자동 생성된 연동 거래 삭제
-                // Case 1: 상품권 잔액 > 지출 → 현금 환급 수입 거래가 자동 생성됨
-                // Case 2: 상품권 잔액 < 지출 → 현금 지출 거래가 자동 생성됨
-                val sameDayTransactions = databaseHelper.getTransactionsByDate(transaction.date).first()
-
-                // 환급 거래: type=INCOME, category="상품권 환급", memo="${cardName} 환급"
-                val refundMemo = "${transaction.cardName} 환급"
-                sameDayTransactions
-                    .filter {
-                        it.type == TransactionType.INCOME &&
-                        it.category == "상품권 환급" &&
-                        it.memo == refundMemo
-                    }
-                    .forEach { repository.deleteTransaction(it.id) }
-
-                // 현금 보충 지출: type=EXPENSE, paymentMethod=CASH, 같은 category+memo, giftCardId=null
-                sameDayTransactions
-                    .filter {
-                        it.type == TransactionType.EXPENSE &&
-                        it.paymentMethod == PaymentMethod.CASH &&
-                        it.category == transaction.category &&
-                        it.memo == transaction.memo &&
-                        it.giftCardId == null
-                    }
-                    .forEach { repository.deleteTransaction(it.id) }
             }
         }
 

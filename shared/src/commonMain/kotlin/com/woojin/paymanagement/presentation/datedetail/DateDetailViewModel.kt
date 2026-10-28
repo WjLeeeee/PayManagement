@@ -168,7 +168,6 @@ class DateDetailViewModel(
             memo = this.memo,
             paymentMethod = this.paymentMethod ?: PaymentMethod.CASH,
             balanceCardId = this.balanceCardId,
-            giftCardId = this.giftCardId,
             cardName = this.cardName,
             pattern = RecurringPattern.MONTHLY,
             dayOfMonth = this.date.dayOfMonth,

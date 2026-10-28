@@ -207,7 +207,6 @@ interface AppStrings {
     val cash: String
     val card: String
     val bankTransfer: String
-    val giftCard: String
     val paymentMethod: String
     val transactionSaved: String
     val transactionDeleted: String
@@ -309,11 +308,8 @@ interface AppStrings {
     val lastUsed: String
     val totalSpent: String
     val balanceCardManagement: String
-    val giftCardManagement: String
     val addBalanceCard: String
-    val addGiftCard: String
     val editBalanceCard: String
-    val editGiftCard: String
     val initialBalance: String
     val currentBalance: String
     val usedBalance: String
@@ -664,20 +660,15 @@ interface AppStrings {
     val newBalanceCard: String
     val chargeExistingBalanceCard: String
     val balanceCardNameHint: String
-    val giftCardNameHint: String
     val selectBalanceCardToCharge: String
     val selectBalanceCardLabel: String
     val purchaseAmountLabel: String
     val purchaseAmountHint: String
-    val selectGiftCardLabel: String
     val dutchPaySettlement: String
     val settlementAmountLabel: String
     val settlementDescription: String
     fun balanceCardFullUsage(amount: Int, remaining: Int): String
     fun balanceCardPartialUsage(cardAmount: Int, cashAmount: Int): String
-    fun giftCardFullUsage(amount: Int): String
-    fun giftCardRefundUsage(amount: Int, refund: Int): String
-    fun giftCardPartialUsage(cardAmount: Int, cashAmount: Int): String
 
     // ===== Calculator (additional) =====
     val periodCalculator: String
@@ -769,7 +760,6 @@ interface AppStrings {
     val deleteCategoryTransactionWarning: String
 
     // ===== Card Management (additional) =====
-    val balanceGiftCardManagement: String
     val activeTab: String
     val completedTab: String
     val noActiveCards: String

@@ -13,7 +13,6 @@ import com.woojin.paymanagement.domain.repository.HolidayRepository
 import com.woojin.paymanagement.domain.usecase.CalculateDailySummaryUseCase
 import com.woojin.paymanagement.domain.usecase.DeleteTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
-import com.woojin.paymanagement.domain.usecase.GetAvailableGiftCardsUseCase
 import com.woojin.paymanagement.domain.usecase.GetDailyTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodSummaryUseCase
 import com.woojin.paymanagement.domain.usecase.GetTransactionsByDateUseCase
@@ -107,7 +106,6 @@ val domainModule = module {
     factoryOf(::SaveMultipleTransactionsUseCase)
     factory { UpdateTransactionUseCase(get(), get()) }
     factoryOf(::GetAvailableBalanceCardsUseCase)
-    factoryOf(::GetAvailableGiftCardsUseCase)
 
     // DateDetail Use Cases
     factoryOf(::GetTransactionsByDateUseCase)

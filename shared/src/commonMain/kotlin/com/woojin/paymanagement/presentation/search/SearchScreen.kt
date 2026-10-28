@@ -647,13 +647,11 @@ private fun getPaymentMethodText(transaction: Transaction, strings: AppStrings):
             PaymentMethod.CASH -> strings.cash
             PaymentMethod.CARD -> transaction.cardName ?: strings.card
             PaymentMethod.BALANCE_CARD -> strings.balanceCard
-            PaymentMethod.GIFT_CARD -> strings.giftCard
             null -> ""
         }
         TransactionType.INCOME -> when (transaction.incomeType) {
             IncomeType.CASH -> strings.cash
             IncomeType.BALANCE_CARD -> strings.balanceCard
-            IncomeType.GIFT_CARD -> strings.giftCard
             null -> ""
         }
         TransactionType.SAVING -> ""

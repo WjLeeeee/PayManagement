@@ -27,6 +27,9 @@ actual class BillingClient(
     private var billingClient: GoogleBillingClient? = null
     private var productDetailsCache: Map<String, ProductDetails> = emptyMap()
     private var pendingPurchaseResult: ((BillingResult) -> Unit)? = null
+    private val preferencesManager = PreferencesManager(context)
+    // 광고 제거를 이미 반영한 결제 토큰 (같은 결제가 두 번 반영되지 않게)
+    private val grantedPurchases = context.getSharedPreferences("billing_granted_purchases", Context.MODE_PRIVATE)
 
     private val purchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases ->
         when (billingResult.responseCode) {
@@ -35,8 +38,12 @@ actual class BillingClient(
                     for (purchase in purchases) {
                         handlePurchase(purchase)
                     }
-                    // 결제 성공
-                    pendingPurchaseResult?.invoke(BillingResult.Success)
+                    // 결제 대기(PENDING)는 아직 돈이 나간 게 아니라 성공으로 보지 않음. 완료되면 이 리스너가 다시 불려 반영됨
+                    val completed = purchases.any { it.purchaseState == Purchase.PurchaseState.PURCHASED }
+                    pendingPurchaseResult?.invoke(
+                        if (completed) BillingResult.Success
+                        else BillingResult.Error("결제 승인을 기다리고 있어요. 결제가 완료되면 자동으로 반영됩니다.")
+                    )
                     pendingPurchaseResult = null
                 }
             }
@@ -261,18 +268,8 @@ actual class BillingClient(
 
         billingClient?.queryPurchasesAsync(params) { billingResult, purchases ->
             if (billingResult.responseCode == BillingResponseCode.OK) {
-                purchases.forEach { purchase ->
-                    if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                        // 미처리된 구매 모두 소비
-                        val consumeParams = ConsumeParams.newBuilder()
-                            .setPurchaseToken(purchase.purchaseToken)
-                            .build()
-
-                        billingClient?.consumeAsync(consumeParams) { _, _ ->
-                            // 자동 정리 완료
-                        }
-                    }
-                }
+                // 앱이 꺼진 사이 완료된 결제도 광고 제거를 반영한 뒤 소비
+                purchases.forEach { handlePurchase(it) }
             }
         }
     }
@@ -283,6 +280,8 @@ actual class BillingClient(
      */
     private fun handlePurchase(purchase: Purchase) {
         if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+            grantAdRemoval(purchase)
+
             // 일회성 소모품은 consume 처리 (반복 구매 가능)
             val consumeParams = ConsumeParams.newBuilder()
                 .setPurchaseToken(purchase.purchaseToken)
@@ -297,10 +296,30 @@ actual class BillingClient(
     }
 
     /**
+     * 광고 제거 상품이면 남은 기간에 이어서 기간을 더함 (다시 사도 남은 기간이 사라지지 않음)
+     */
+    private fun grantAdRemoval(purchase: Purchase) {
+        val days = purchase.products.sumOf { id -> AdRemovalProductId.entries.find { it.productId == id }?.days ?: 0 }
+        if (days == 0) return
+        val granted = grantedPurchases.getStringSet(KEY_GRANTED_TOKENS, emptySet()).orEmpty()
+        if (purchase.purchaseToken in granted) return
+
+        val now = System.currentTimeMillis()
+        val base = maxOf(now, preferencesManager.getAdRemovalExpiryTime())
+        preferencesManager.setAdRemovalExpiryTime(base + days * DAY_MILLIS)
+        grantedPurchases.edit().putStringSet(KEY_GRANTED_TOKENS, granted + purchase.purchaseToken).apply()
+    }
+
+    /**
      * 연결 종료
      */
     actual fun disconnect() {
         billingClient?.endConnection()
         billingClient = null
+    }
+
+    private companion object {
+        const val KEY_GRANTED_TOKENS = "granted_tokens"
+        const val DAY_MILLIS = 24 * 60 * 60 * 1000L
     }
 }

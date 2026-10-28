@@ -214,7 +214,7 @@ class CardNotificationListenerService : NotificationListenerService() {
             // 새로운 형식: title에 "₩금액 결제 완료"가 있는 경우
             // ₩ (U+20A9) 또는 ￦ (U+FFE6) 둘 다 처리
             if (title.contains("결제 완료") && (title.contains("₩") || title.contains("￦"))) {
-                val parsedTransaction = parseSamsungPayNotification(title, text)
+                val parsedTransaction = parseSamsungPayNotification(title, text, sbn.postTime)
 
                 if (parsedTransaction != null) {
                     Log.d(TAG, "Parsed Samsung Pay transaction: $parsedTransaction")
@@ -245,7 +245,7 @@ class CardNotificationListenerService : NotificationListenerService() {
      * title: "₩1,700 결제 완료"
      * text: "(주)카카오"
      */
-    private fun parseSamsungPayNotification(title: String, text: String): ParsedTransaction? {
+    private fun parseSamsungPayNotification(title: String, text: String, postTime: Long): ParsedTransaction? {
         try {
             // title에서 금액 파싱: "₩1,700 결제 완료" -> 1700.0
             // ₩ (U+20A9) 또는 ￦ (U+FFE6) 둘 다 지원
@@ -280,11 +280,12 @@ class CardNotificationListenerService : NotificationListenerService() {
                 return null
             }
 
-            // 고유 ID 생성 (title + text 조합)
+            // 고유 ID 생성 (title + text + 알림 시각). 삼성페이 알림엔 시간이 없어서
+            // 시각을 빼면 같은 가게·같은 금액을 다시 결제했을 때 같은 ID로 무시됨
             val rawNotification = "Samsung Pay: $title - $text"
 
             return ParsedTransaction(
-                id = generateNotificationId(rawNotification),
+                id = generateNotificationId("$rawNotification @$postTime"),
                 amount = amount,
                 merchantName = merchantName,
                 date = transactionDate,

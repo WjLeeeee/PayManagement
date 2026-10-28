@@ -1217,7 +1217,6 @@ private fun TransactionItem(
             when (transaction.incomeType) {
                 com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
                 com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
                 null -> strings.cash
             }
         }
@@ -1226,7 +1225,6 @@ private fun TransactionItem(
                 com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
                 com.woojin.paymanagement.data.PaymentMethod.CARD -> transaction.cardName ?: strings.card
                 com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
                 null -> strings.cash
             }
         }

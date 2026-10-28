@@ -96,6 +96,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import org.koin.core.Koin
+import com.woojin.paymanagement.domain.repository.loadSharedTransactions
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 
@@ -446,7 +447,6 @@ fun PayManagementApp(
     // 데이터베이스 초기화를 지연시켜 크래시 방지
     var transactions by remember { mutableStateOf<List<Transaction>>(emptyList()) }
     var availableBalanceCards by remember { mutableStateOf<List<com.woojin.paymanagement.data.BalanceCard>>(emptyList()) }
-    var availableGiftCards by remember { mutableStateOf<List<com.woojin.paymanagement.data.GiftCard>>(emptyList()) }
 
     // 데이터베이스 데이터를 안전하게 로드
     LaunchedEffect(Unit) {
@@ -463,14 +463,6 @@ fun PayManagementApp(
         try {
             databaseHelper.getActiveBalanceCards().collect {
                 availableBalanceCards = it
-            }
-        } catch (e: Exception) { }
-    }
-
-    LaunchedEffect(Unit) {
-        try {
-            databaseHelper.getActiveGiftCards().collect {
-                availableGiftCards = it
             }
         } catch (e: Exception) { }
     }
@@ -1180,7 +1172,7 @@ fun PayManagementApp(
 
                                     Spacer(modifier = Modifier.height(4.dp))
 
-                                    // 결제수단 관리 (잔액권/상품권 + 카드 관리 통합)
+                                    // 결제수단 관리 (잔액권 + 카드 관리 통합)
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1847,7 +1839,6 @@ fun PayManagementApp(
             StatisticsScreen(
                 transactions = transactions,
                 availableBalanceCards = availableBalanceCards,
-                availableGiftCards = availableGiftCards,
                 initialPayPeriod = selectedPayPeriod,
                 onBack = { navigateBack() },
                 viewModel = statisticsViewModel
@@ -1900,21 +1891,6 @@ fun PayManagementApp(
                                     }
                                 }
 
-                                // 상품권 수입인 경우 상품권 생성
-                                if (transaction.type == com.woojin.paymanagement.data.TransactionType.INCOME &&
-                                    transaction.incomeType == com.woojin.paymanagement.data.IncomeType.GIFT_CARD &&
-                                    transaction.giftCardId != null && transaction.cardName != null) {
-                                    val giftCard = com.woojin.paymanagement.data.GiftCard(
-                                        id = transaction.giftCardId,
-                                        name = transaction.cardName,
-                                        totalAmount = transaction.amount,
-                                        usedAmount = 0.0,
-                                        createdDate = transaction.date,
-                                        isActive = true
-                                    )
-                                    databaseHelper.insertGiftCard(giftCard)
-                                }
-
                                 // 잔액권 지출인 경우 잔액권 잔액 업데이트
                                 if (transaction.type == com.woojin.paymanagement.data.TransactionType.EXPENSE &&
                                     transaction.paymentMethod == com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD &&
@@ -1927,22 +1903,6 @@ fun PayManagementApp(
                                             id = currentCard.id,
                                             currentBalance = newBalance,
                                             isActive = newBalance > 0
-                                        )
-                                    }
-                                }
-
-                                // 상품권 지출인 경우 상품권 사용량 업데이트
-                                if (transaction.type == com.woojin.paymanagement.data.TransactionType.EXPENSE &&
-                                    transaction.paymentMethod == com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD &&
-                                    transaction.giftCardId != null) {
-                                    // 데이터베이스에서 최신 카드 정보 조회
-                                    val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId)
-                                    if (currentCard != null) {
-                                        val newUsedAmount = currentCard.usedAmount + transaction.amount
-                                        databaseHelper.updateGiftCardUsage(
-                                            id = currentCard.id,
-                                            usedAmount = newUsedAmount,
-                                            isActive = newUsedAmount < currentCard.totalAmount
                                         )
                                     }
                                 }
@@ -2050,21 +2010,6 @@ fun PayManagementApp(
                                     }
                                 }
 
-                                // 상품권 수입인 경우 상품권 생성
-                                if (transaction.type == com.woojin.paymanagement.data.TransactionType.INCOME &&
-                                    transaction.incomeType == com.woojin.paymanagement.data.IncomeType.GIFT_CARD &&
-                                    transaction.giftCardId != null && transaction.cardName != null) {
-                                    val giftCard = com.woojin.paymanagement.data.GiftCard(
-                                        id = transaction.giftCardId,
-                                        name = transaction.cardName,
-                                        totalAmount = transaction.amount,
-                                        usedAmount = 0.0,
-                                        createdDate = transaction.date,
-                                        isActive = true
-                                    )
-                                    databaseHelper.insertGiftCard(giftCard)
-                                }
-
                                 // 잔액권 지출인 경우 잔액권 잔액 업데이트
                                 if (transaction.type == com.woojin.paymanagement.data.TransactionType.EXPENSE &&
                                     transaction.paymentMethod == com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD &&
@@ -2077,22 +2022,6 @@ fun PayManagementApp(
                                             id = currentCard.id,
                                             currentBalance = newBalance,
                                             isActive = newBalance > 0
-                                        )
-                                    }
-                                }
-
-                                // 상품권 지출인 경우 상품권 사용량 업데이트
-                                if (transaction.type == com.woojin.paymanagement.data.TransactionType.EXPENSE &&
-                                    transaction.paymentMethod == com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD &&
-                                    transaction.giftCardId != null) {
-                                    // 데이터베이스에서 최신 카드 정보 조회
-                                    val currentCard = databaseHelper.getGiftCardById(transaction.giftCardId)
-                                    if (currentCard != null) {
-                                        val newUsedAmount = currentCard.usedAmount + transaction.amount
-                                        databaseHelper.updateGiftCardUsage(
-                                            id = currentCard.id,
-                                            usedAmount = newUsedAmount,
-                                            isActive = newUsedAmount < currentCard.totalAmount
                                         )
                                     }
                                 }
@@ -2253,8 +2182,16 @@ fun PayManagementApp(
         val payPeriodCalculator = remember { koinInject<com.woojin.paymanagement.utils.PayPeriodCalculator>() }
 
         var currentPayPeriod by remember { mutableStateOf<com.woojin.paymanagement.utils.PayPeriod?>(null) }
+        // 공유 모드: 계산기는 아무 기간이나 고를 수 있는데 달력 캐시는 한 급여 기간뿐이라 공유방 전체 거래를 불러옴
+        var sharedTransactionsForCalculator by remember { mutableStateOf<List<Transaction>>(emptyList()) }
 
         LaunchedEffect(Unit) {
+            if (SharedModeManager.isSharedMode) {
+                sharedTransactionsForCalculator = koinInstance
+                    ?.getOrNull<com.woojin.paymanagement.domain.repository.SharedRoomRepository>()
+                    ?.loadSharedTransactions()
+                    .orEmpty()
+            }
             val payday = preferencesManager.getPayday()
             val adjustment = preferencesManager.getPaydayAdjustment()
             val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -2268,7 +2205,7 @@ fun PayManagementApp(
         currentPayPeriod?.let { period ->
             CalculatorDialog(
                 transactions = if (SharedModeManager.isSharedMode)
-                    SharedModeManager.cachedSharedTransactions.map { it.transaction }
+                    sharedTransactionsForCalculator
                 else
                     transactions,
                 onDismiss = { showCalculatorDialog = false },

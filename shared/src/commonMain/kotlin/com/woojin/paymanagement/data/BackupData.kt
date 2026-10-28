@@ -13,7 +13,6 @@ data class BackupData(
     val paydayAdjustment: String = "NONE", // 월급날 조정 (enum name)
     val transactions: List<TransactionBackup> = emptyList(),
     val balanceCards: List<BalanceCardBackup> = emptyList(),
-    val giftCards: List<GiftCardBackup> = emptyList(),
     val categories: List<CategoryBackup> = emptyList(), // v3부터 추가
     val budgetPlans: List<BudgetPlanBackup> = emptyList(), // v3부터 추가
     val categoryBudgets: List<CategoryBudgetBackup> = emptyList(), // v3부터 추가
@@ -33,7 +32,6 @@ data class TransactionBackup(
     val paymentMethod: String?,
     val incomeType: String?,
     val balanceCardId: String?,
-    val giftCardId: String?,
     val cardName: String?,
     val merchant: String? = null, // 사용처 (v2부터 추가)
     val actualAmount: Double? = null, // 실제 결제액 - 더치페이 (v2부터 추가)
@@ -50,17 +48,6 @@ data class BalanceCardBackup(
     val currentBalance: Double,
     val createdDate: String, // ISO 8601 형식
     val isActive: Boolean
-)
-
-@Serializable
-data class GiftCardBackup(
-    val id: String,
-    val name: String,
-    val totalAmount: Double,
-    val usedAmount: Double,
-    val createdDate: String, // ISO 8601 형식
-    val isActive: Boolean,
-    val minimumUsageRate: Double = 0.8 // v2부터 추가
 )
 
 @Serializable
@@ -135,7 +122,6 @@ data class RecurringTransactionBackup(
     val memo: String = "",
     val paymentMethod: String,
     val balanceCardId: String? = null,
-    val giftCardId: String? = null,
     val cardName: String? = null, // 커스텀 카드명 (CARD 결제 시)
     val pattern: String, // "MONTHLY", "WEEKLY" or "DAILY"
     val dayOfMonth: Int? = null,

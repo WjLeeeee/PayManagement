@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.data.repository
 
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
@@ -49,12 +50,17 @@ class TransactionRepositoryImpl(
         databaseHelper.deleteTransaction(transactionId)
     }
 
-    override suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String) {
-        databaseHelper.updateTransactionsCategoryName(oldCategoryName, newCategoryName)
+    override suspend fun updateTransactionsCategoryName(type: TransactionType, oldCategoryName: String, newCategoryName: String) {
+        databaseHelper.updateTransactionsCategoryName(type, oldCategoryName, newCategoryName)
     }
 
-    override suspend fun updateTransactionsSubCategoryName(oldSubCategoryName: String, newSubCategoryName: String) {
-        databaseHelper.updateTransactionsSubCategoryName(oldSubCategoryName, newSubCategoryName)
+    override suspend fun updateTransactionsSubCategoryName(
+        type: TransactionType,
+        parentCategoryName: String,
+        oldSubCategoryName: String,
+        newSubCategoryName: String
+    ) {
+        databaseHelper.updateTransactionsSubCategoryName(type, parentCategoryName, oldSubCategoryName, newSubCategoryName)
     }
 
     override suspend fun getOldestTransactionDate(): LocalDate? {

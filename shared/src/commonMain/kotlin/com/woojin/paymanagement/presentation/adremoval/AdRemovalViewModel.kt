@@ -8,17 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.woojin.paymanagement.domain.repository.BillingRepository
 import com.woojin.paymanagement.utils.BillingResult
 import com.woojin.paymanagement.utils.AdRemovalProductId
-import com.woojin.paymanagement.utils.PreferencesManager
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 
 /**
  * 광고 제거 화면의 ViewModel
  * Clean Architecture의 Presentation Layer에 위치
  */
 class AdRemovalViewModel(
-    private val billingRepository: BillingRepository,
-    private val preferencesManager: PreferencesManager
+    private val billingRepository: BillingRepository
 ) : ViewModel() {
 
     var uiState by mutableStateOf(AdRemovalUiState())
@@ -59,13 +56,7 @@ class AdRemovalViewModel(
 
                 when (result) {
                     is BillingResult.Success -> {
-                        // 구매 성공 - 만료 시간 계산 및 저장
-                        val currentTime = Clock.System.now().toEpochMilliseconds()
-                        val daysInMillis = selectedPeriod.days * 24 * 60 * 60 * 1000L
-                        val expiryTime = currentTime + daysInMillis
-
-                        preferencesManager.setAdRemovalExpiryTime(expiryTime)
-
+                        // 광고 제거 기간은 결제 클라이언트가 결제 완료(PURCHASED) 시 이미 반영함
                         updateUiState {
                             copy(
                                 isPurchasing = false,

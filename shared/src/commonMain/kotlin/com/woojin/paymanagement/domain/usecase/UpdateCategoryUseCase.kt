@@ -42,12 +42,16 @@ class UpdateCategoryUseCase(
 
         if (nameChanged) {
             if (isSubCategory) {
+                val parent = categoryRepository.getCategoryById(newCategory.parentId!!) ?: return
                 transactionRepository.updateTransactionsSubCategoryName(
+                    type = newCategory.type,
+                    parentCategoryName = parent.name,
                     oldSubCategoryName = oldCategory.name,
                     newSubCategoryName = newCategory.name
                 )
             } else {
                 transactionRepository.updateTransactionsCategoryName(
+                    type = newCategory.type,
                     oldCategoryName = oldCategory.name,
                     newCategoryName = newCategory.name
                 )

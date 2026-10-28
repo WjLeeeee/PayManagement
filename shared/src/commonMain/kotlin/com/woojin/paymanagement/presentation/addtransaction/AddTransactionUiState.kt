@@ -3,7 +3,6 @@ package com.woojin.paymanagement.presentation.addtransaction
 import androidx.compose.ui.text.input.TextFieldValue
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.CustomPaymentMethod
-import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.Transaction
@@ -23,7 +22,6 @@ data class AddTransactionUiState(
     val selectedIncomeType: IncomeType = IncomeType.CASH,
     val selectedPaymentMethod: PaymentMethod = PaymentMethod.CASH,
     val selectedBalanceCard: BalanceCard? = null,
-    val selectedGiftCard: GiftCard? = null,
     val cardName: String = "",
     val category: String = "",
     val subCategory: String = "",
@@ -38,7 +36,6 @@ data class AddTransactionUiState(
 
     // 카드 목록
     val availableBalanceCards: List<BalanceCard> = emptyList(),
-    val availableGiftCards: List<GiftCard> = emptyList(),
 
     // 카테고리 목록 (동적으로 로드)
     val availableCategories: List<Category> = emptyList(),

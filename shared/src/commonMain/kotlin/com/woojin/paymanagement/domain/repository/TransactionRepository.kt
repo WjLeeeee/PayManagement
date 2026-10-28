@@ -1,6 +1,7 @@
 package com.woojin.paymanagement.domain.repository
 
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.data.TransactionType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.LocalDate
 
@@ -12,7 +13,12 @@ interface TransactionRepository {
     suspend fun insertTransaction(transaction: Transaction)
     suspend fun updateTransaction(transaction: Transaction)
     suspend fun deleteTransaction(transactionId: String)
-    suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String)
-    suspend fun updateTransactionsSubCategoryName(oldSubCategoryName: String, newSubCategoryName: String)
+    suspend fun updateTransactionsCategoryName(type: TransactionType, oldCategoryName: String, newCategoryName: String)
+    suspend fun updateTransactionsSubCategoryName(
+        type: TransactionType,
+        parentCategoryName: String,
+        oldSubCategoryName: String,
+        newSubCategoryName: String
+    )
     suspend fun getOldestTransactionDate(): LocalDate?
 }

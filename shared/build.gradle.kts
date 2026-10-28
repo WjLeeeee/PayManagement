@@ -78,6 +78,10 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
         }
+        androidUnitTest.dependencies {
+            // DB 테스트용 JVM SQLite 드라이버
+            implementation(libs.sqldelight.sqlite.driver)
+        }
     }
 }
 

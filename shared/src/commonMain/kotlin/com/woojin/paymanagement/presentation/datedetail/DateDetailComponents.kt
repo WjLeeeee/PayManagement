@@ -73,7 +73,6 @@ private fun getPaymentMethodText(paymentMethod: PaymentMethod?, strings: AppStri
         PaymentMethod.CASH -> strings.cash
         PaymentMethod.CARD -> cardName ?: strings.card
         PaymentMethod.BALANCE_CARD -> cardName ?: strings.balanceCard
-        PaymentMethod.GIFT_CARD -> cardName ?: strings.giftCard
         null -> ""
     }
 }
@@ -85,7 +84,6 @@ private fun getIncomeTypeText(incomeType: IncomeType?, strings: AppStrings, card
     return when (incomeType) {
         IncomeType.CASH -> strings.cash
         IncomeType.BALANCE_CARD -> cardName ?: strings.balanceCard
-        IncomeType.GIFT_CARD -> cardName ?: strings.giftCard
         null -> ""
     }
 }

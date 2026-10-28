@@ -56,7 +56,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.CustomPaymentMethod
-import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.TransactionType
@@ -156,12 +155,10 @@ fun IncomeTypeSelector(
                     label = when (incomeType) {
                         IncomeType.CASH -> strings.cash
                         IncomeType.BALANCE_CARD -> strings.balanceCard
-                        IncomeType.GIFT_CARD -> strings.giftCard
                     },
                     emoji = when (incomeType) {
                         IncomeType.CASH -> "💵"
                         IncomeType.BALANCE_CARD -> "🎫"
-                        IncomeType.GIFT_CARD -> "🎁"
                     },
                     selected = incomeType == selectedIncomeType,
                     onClick = { onIncomeTypeSelected(incomeType) }
@@ -247,27 +244,6 @@ fun IncomeTypeSelector(
                 )
             )
         }
-
-        // 상품권 선택 시 - 기존 로직 유지
-        if (selectedIncomeType == IncomeType.GIFT_CARD) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = cardName,
-                onValueChange = onCardNameChanged,
-                label = {
-                    Text(
-                        text = strings.giftCardNameHint,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-        }
     }
 }
 
@@ -277,11 +253,8 @@ fun PaymentMethodSelector(
     selectedPaymentMethod: PaymentMethod,
     onPaymentMethodSelected: (PaymentMethod) -> Unit,
     availableBalanceCards: List<BalanceCard>,
-    availableGiftCards: List<GiftCard>,
     selectedBalanceCard: BalanceCard?,
     onBalanceCardSelected: (BalanceCard?) -> Unit,
-    selectedGiftCard: GiftCard?,
-    onGiftCardSelected: (GiftCard?) -> Unit,
     amount: String,
     customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
     selectedCustomCardName: String? = null,
@@ -305,7 +278,6 @@ fun PaymentMethodSelector(
                     PaymentMethod.CASH -> true
                     PaymentMethod.CARD -> true
                     PaymentMethod.BALANCE_CARD -> availableBalanceCards.isNotEmpty()
-                    PaymentMethod.GIFT_CARD -> availableGiftCards.isNotEmpty()
                 }
 
                 if (isAvailable) {
@@ -314,13 +286,11 @@ fun PaymentMethodSelector(
                             PaymentMethod.CASH -> strings.cash
                             PaymentMethod.CARD -> strings.card
                             PaymentMethod.BALANCE_CARD -> strings.balanceCard
-                            PaymentMethod.GIFT_CARD -> strings.giftCard
                         },
                         emoji = when (paymentMethod) {
                             PaymentMethod.CASH -> "💵"
                             PaymentMethod.CARD -> "💳"
                             PaymentMethod.BALANCE_CARD -> "🎫"
-                            PaymentMethod.GIFT_CARD -> "🎁"
                         },
                         selected = paymentMethod == selectedPaymentMethod,
                         onClick = { onPaymentMethodSelected(paymentMethod) }
@@ -354,25 +324,6 @@ fun PaymentMethodSelector(
             if (selectedBalanceCard != null && amount.isNotBlank()) {
                 BalanceCardUsageInfo(
                     balanceCard = selectedBalanceCard,
-                    expenseAmount = amount
-                )
-            }
-        }
-
-        // 상품권 선택 및 안내
-        if (selectedPaymentMethod == PaymentMethod.GIFT_CARD && availableGiftCards.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            CardSelectionDropdown(
-                cards = availableGiftCards,
-                selectedCard = selectedGiftCard,
-                onCardSelected = onGiftCardSelected,
-                label = strings.selectGiftCardLabel
-            )
-
-            if (selectedGiftCard != null && amount.isNotBlank()) {
-                GiftCardUsageInfo(
-                    giftCard = selectedGiftCard,
                     expenseAmount = amount
                 )
             }
@@ -454,7 +405,6 @@ private fun <T> CardSelectionDropdown(
         OutlinedTextField(
             value = when (selectedCard) {
                 is BalanceCard -> "${selectedCard.name} (${selectedCard.currentBalance.toInt()}${strings.currencySymbol})"
-                is GiftCard -> "${selectedCard.name} (${selectedCard.remainingAmount.toInt()}${strings.currencySymbol})"
                 else -> ""
             },
             onValueChange = { },
@@ -483,7 +433,6 @@ private fun <T> CardSelectionDropdown(
                         Text(
                             text = when (card) {
                                 is BalanceCard -> "${card.name} (${card.currentBalance.toInt()}${strings.currencySymbol})"
-                                is GiftCard -> "${card.name} (${card.remainingAmount.toInt()}${strings.currencySymbol})"
                                 else -> card.toString()
                             },
                             color = MaterialTheme.colorScheme.onSurface
@@ -520,42 +469,6 @@ private fun BalanceCardUsageInfo(
             else -> {
                 val cashNeeded = amount - balanceCardAmount
                 strings.balanceCardPartialUsage(balanceCardAmount.toInt(), cashNeeded.toInt())
-            }
-        }
-
-        Text(
-            text = "💡 $infoText",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = modifier.padding(horizontal = 4.dp)
-        )
-    }
-}
-
-@Composable
-private fun GiftCardUsageInfo(
-    giftCard: GiftCard,
-    expenseAmount: String,
-    modifier: Modifier = Modifier
-) {
-    val strings = LocalStrings.current
-    val amount = expenseAmount.replace(",", "").toDoubleOrNull()
-    if (amount != null && amount > 0) {
-        val giftCardAmount = giftCard.remainingAmount
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        val infoText = when {
-            giftCardAmount > amount -> {
-                val refund = giftCardAmount - amount
-                strings.giftCardRefundUsage(amount.toInt(), refund.toInt())
-            }
-            giftCardAmount < amount -> {
-                val cashNeeded = amount - giftCardAmount
-                strings.giftCardPartialUsage(giftCardAmount.toInt(), cashNeeded.toInt())
-            }
-            else -> {
-                strings.giftCardFullUsage(amount.toInt())
             }
         }
 
