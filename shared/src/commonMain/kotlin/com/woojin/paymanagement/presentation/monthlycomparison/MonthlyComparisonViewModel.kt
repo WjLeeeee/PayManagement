@@ -8,6 +8,8 @@ import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.repository.CategoryRepository
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
 import com.woojin.paymanagement.domain.repository.SharedModeManager
+import com.woojin.paymanagement.domain.repository.SharedRoomRepository
+import com.woojin.paymanagement.domain.repository.loadSharedTransactions
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.PayPeriodCalculator
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +24,8 @@ class MonthlyComparisonViewModel(
     private val categoryRepository: CategoryRepository,
     private val preferencesRepository: PreferencesRepository,
     private val payPeriodCalculator: PayPeriodCalculator,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val sharedRoomRepository: SharedRoomRepository? = null
 ) {
     var uiState by mutableStateOf(MonthlyComparisonUiState())
         private set
@@ -84,9 +87,9 @@ class MonthlyComparisonViewModel(
             // 카테고리 정보 로드
             val categories = categoryRepository.getAllCategories().firstOrNull() ?: emptyList()
 
-            // 거래 데이터 로드 (공유 모드면 공유 거래 사용)
+            // 거래 데이터 로드 (공유 모드면 두 기간의 공유 거래를 직접 불러옴. 달력 캐시엔 한 기간만 있음)
             val transactions = if (SharedModeManager.isSharedMode)
-                SharedModeManager.cachedSharedTransactions.map { it.transaction }
+                sharedRoomRepository?.loadSharedTransactions(previousPayPeriod.startDate, currentPayPeriod.endDate).orEmpty()
             else
                 databaseHelper.getAllTransactions().firstOrNull() ?: emptyList()
 

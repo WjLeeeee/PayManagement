@@ -87,7 +87,6 @@ class RecurringTransactionWorker(
             incomeType = null,
             paymentMethod = paymentMethod,
             balanceCardId = balanceCardId,
-            giftCardId = giftCardId,
             cardName = cardName,
             settlementAmount = null,
             isSettlement = false

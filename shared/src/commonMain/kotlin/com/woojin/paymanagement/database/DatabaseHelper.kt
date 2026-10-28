@@ -6,8 +6,9 @@ import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
+import com.woojin.paymanagement.data.paymentMethodOf
+import com.woojin.paymanagement.data.incomeTypeOf
 import com.woojin.paymanagement.data.BalanceCard
-import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.ParsedTransaction
 import com.woojin.paymanagement.data.FailedNotification
 import com.woojin.paymanagement.data.Category
@@ -35,6 +36,9 @@ class DatabaseHelper(
 ) {
     private val queries = database.transactionQueries
     private val json = Json { ignoreUnknownKeys = true }
+
+    /** 여러 쓰기를 하나로 묶음: body에서 예외가 나면 전부 되돌림 */
+    fun transaction(body: () -> Unit) = queries.transaction { body() }
     
     fun getAllTransactions(): Flow<List<Transaction>> {
         return queries.selectAllTransactions()
@@ -72,7 +76,7 @@ class DatabaseHelper(
         }
     }
 
-    suspend fun insertTransaction(transaction: Transaction) {
+    fun insertTransaction(transaction: Transaction) {
         queries.insertTransaction(
             id = transaction.id,
             amount = transaction.amount,
@@ -84,7 +88,6 @@ class DatabaseHelper(
             incomeType = transaction.incomeType?.name,
             paymentMethod = transaction.paymentMethod?.name,
             balanceCardId = transaction.balanceCardId,
-            giftCardId = transaction.giftCardId,
             cardName = transaction.cardName,
             settlementAmount = transaction.settlementAmount,
             isSettlement = if (transaction.isSettlement) 1L else 0L,
@@ -103,7 +106,6 @@ class DatabaseHelper(
             incomeType = transaction.incomeType?.name,
             paymentMethod = transaction.paymentMethod?.name,
             balanceCardId = transaction.balanceCardId,
-            giftCardId = transaction.giftCardId,
             cardName = transaction.cardName,
             settlementAmount = transaction.settlementAmount,
             isSettlement = if (transaction.isSettlement) 1L else 0L,
@@ -116,16 +118,23 @@ class DatabaseHelper(
         queries.deleteTransaction(id)
     }
 
-    suspend fun deleteAllTransactions() {
+    fun deleteAllTransactions() {
         queries.deleteAllTransactions()
     }
 
-    suspend fun updateTransactionsCategoryName(oldCategoryName: String, newCategoryName: String) {
-        queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName)
+    // 같은 이름이 수입·지출 등 다른 유형에도 있을 수 있어서 유형까지 맞는 거래만 바꿈
+    suspend fun updateTransactionsCategoryName(type: TransactionType, oldCategoryName: String, newCategoryName: String) {
+        queries.updateTransactionsCategoryName(newCategoryName, oldCategoryName, type.name)
     }
 
-    suspend fun updateTransactionsSubCategoryName(oldSubCategoryName: String, newSubCategoryName: String) {
-        queries.updateTransactionsSubCategoryName(newSubCategoryName, oldSubCategoryName)
+    // 같은 소분류 이름이 다른 상위 카테고리 아래에도 있을 수 있어서 상위 카테고리까지 맞는 거래만 바꿈
+    suspend fun updateTransactionsSubCategoryName(
+        type: TransactionType,
+        parentCategoryName: String,
+        oldSubCategoryName: String,
+        newSubCategoryName: String
+    ) {
+        queries.updateTransactionsSubCategoryName(newSubCategoryName, oldSubCategoryName, parentCategoryName, type.name)
     }
 
     fun searchTransactions(keyword: String): Flow<List<Transaction>> {
@@ -178,7 +187,7 @@ class DatabaseHelper(
             }
     }
 
-    suspend fun insertBalanceCard(balanceCard: BalanceCard) {
+    fun insertBalanceCard(balanceCard: BalanceCard) {
         queries.insertBalanceCard(
             id = balanceCard.id,
             name = balanceCard.name,
@@ -220,84 +229,12 @@ class DatabaseHelper(
         queries.deleteBalanceCard(id)
     }
 
-    suspend fun deleteAllBalanceCards() {
+    fun deleteAllBalanceCards() {
         queries.deleteAllBalanceCards()
     }
 
     fun getTransactionsByBalanceCard(balanceCardId: String): Flow<List<Transaction>> {
         return queries.selectTransactionsByBalanceCard(balanceCardId)
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities ->
-                entities.map { it.toTransaction() }
-            }
-    }
-
-    // GiftCard 관련 메서드들
-    fun getAllGiftCards(): Flow<List<GiftCard>> {
-        return queries.selectAllGiftCards()
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities ->
-                entities.map { it.toGiftCard() }
-            }
-    }
-
-    fun getActiveGiftCards(): Flow<List<GiftCard>> {
-        return queries.selectActiveGiftCards()
-            .asFlow()
-            .mapToList(Dispatchers.IO)
-            .map { entities ->
-                entities.map { it.toGiftCard() }
-            }
-    }
-
-    suspend fun insertGiftCard(giftCard: GiftCard) {
-        queries.insertGiftCard(
-            id = giftCard.id,
-            name = giftCard.name,
-            totalAmount = giftCard.totalAmount,
-            usedAmount = giftCard.usedAmount,
-            createdDate = giftCard.createdDate.toString(),
-            isActive = if (giftCard.isActive) 1L else 0L,
-            minimumUsageRate = giftCard.minimumUsageRate
-        )
-    }
-
-    suspend fun updateGiftCard(giftCard: GiftCard) {
-        queries.updateGiftCard(
-            name = giftCard.name,
-            totalAmount = giftCard.totalAmount,
-            usedAmount = giftCard.usedAmount,
-            createdDate = giftCard.createdDate.toString(),
-            isActive = if (giftCard.isActive) 1L else 0L,
-            minimumUsageRate = giftCard.minimumUsageRate,
-            id = giftCard.id
-        )
-    }
-
-    suspend fun getGiftCardById(id: String): GiftCard? {
-        return queries.selectGiftCardById(id).executeAsOneOrNull()?.toGiftCard()
-    }
-
-    suspend fun updateGiftCardUsage(id: String, usedAmount: Double, isActive: Boolean) {
-        queries.updateGiftCardUsage(
-            usedAmount = usedAmount,
-            isActive = if (isActive) 1L else 0L,
-            id = id
-        )
-    }
-
-    suspend fun deleteGiftCard(id: String) {
-        queries.deleteGiftCard(id)
-    }
-
-    suspend fun deleteAllGiftCards() {
-        queries.deleteAllGiftCards()
-    }
-
-    fun getTransactionsByGiftCard(giftCardId: String): Flow<List<Transaction>> {
-        return queries.selectTransactionsByGiftCard(giftCardId)
             .asFlow()
             .mapToList(Dispatchers.IO)
             .map { entities ->
@@ -402,7 +339,7 @@ class DatabaseHelper(
         return queries.selectCategoryById(id).executeAsOneOrNull()?.toCategory()
     }
 
-    suspend fun insertCategory(category: Category) {
+    fun insertCategory(category: Category) {
         queries.insertCategory(
             id = category.id,
             name = category.name,
@@ -441,7 +378,7 @@ class DatabaseHelper(
         queries.deleteCategory(id)
     }
 
-    suspend fun deleteAllCategories() {
+    fun deleteAllCategories() {
         queries.deleteAllCategories()
     }
 
@@ -464,7 +401,7 @@ class DatabaseHelper(
             }
     }
 
-    suspend fun insertBudgetPlan(budgetPlan: BudgetPlan) {
+    fun insertBudgetPlan(budgetPlan: BudgetPlan) {
         queries.insertBudgetPlan(
             id = budgetPlan.id,
             effectiveFromDate = budgetPlan.effectiveFromDate.toString(),
@@ -487,7 +424,7 @@ class DatabaseHelper(
         queries.deleteBudgetPlan(id)
     }
 
-    suspend fun deleteAllBudgetPlans() {
+    fun deleteAllBudgetPlans() {
         queries.deleteAllBudgetPlans()
     }
 
@@ -501,7 +438,7 @@ class DatabaseHelper(
             }
     }
 
-    suspend fun insertCategoryBudget(categoryBudget: CategoryBudget) {
+    fun insertCategoryBudget(categoryBudget: CategoryBudget) {
         queries.insertCategoryBudget(
             id = categoryBudget.id,
             budgetPlanId = categoryBudget.budgetPlanId,
@@ -583,7 +520,7 @@ class DatabaseHelper(
         }
     }
 
-    suspend fun setTransferChecked(periodStartDate: LocalDate, transferItemId: String, checked: Boolean) {
+    fun setTransferChecked(periodStartDate: LocalDate, transferItemId: String, checked: Boolean) {
         if (checked) {
             queries.insertTransferCheck(periodStartDate.toString(), transferItemId)
         } else {
@@ -591,7 +528,7 @@ class DatabaseHelper(
         }
     }
 
-    suspend fun deleteAllTransferChecks() {
+    fun deleteAllTransferChecks() {
         queries.deleteAllTransferChecks()
     }
 
@@ -604,7 +541,7 @@ class DatabaseHelper(
         queries.deleteCategoryBudget(id)
     }
 
-    suspend fun deleteAllCategoryBudgets() {
+    fun deleteAllCategoryBudgets() {
         queries.deleteAllCategoryBudgets()
     }
 
@@ -623,7 +560,6 @@ class DatabaseHelper(
         queries.deleteAllTransferChecks()
         queries.deleteAllTransactions()
         queries.deleteAllBalanceCards()
-        queries.deleteAllGiftCards()
         queries.deleteAllCategories()  // 카테고리는 마지막에 삭제
         // 파싱된 거래 내역은 유지 (백업 대상이 아님)
     }
@@ -637,10 +573,9 @@ class DatabaseHelper(
             merchant = this.merchant,
             memo = this.memo,
             date = LocalDate.parse(this.date),
-            incomeType = this.incomeType?.let { IncomeType.valueOf(it) },
-            paymentMethod = this.paymentMethod?.let { PaymentMethod.valueOf(it) },
+            incomeType = this.incomeType?.let { incomeTypeOf(it) },
+            paymentMethod = this.paymentMethod?.let { paymentMethodOf(it) },
             balanceCardId = this.balanceCardId,
-            giftCardId = this.giftCardId,
             cardName = this.cardName,
             settlementAmount = this.settlementAmount,
             isSettlement = this.isSettlement == 1L,
@@ -656,18 +591,6 @@ class DatabaseHelper(
             currentBalance = this.currentBalance,
             createdDate = LocalDate.parse(this.createdDate),
             isActive = this.isActive == 1L
-        )
-    }
-
-    private fun GiftCardEntity.toGiftCard(): GiftCard {
-        return GiftCard(
-            id = this.id,
-            name = this.name,
-            totalAmount = this.totalAmount,
-            usedAmount = this.usedAmount,
-            createdDate = LocalDate.parse(this.createdDate),
-            isActive = this.isActive == 1L,
-            minimumUsageRate = this.minimumUsageRate
         )
     }
 
@@ -758,7 +681,7 @@ class DatabaseHelper(
             }
     }
 
-    suspend fun insertRecurringTransaction(recurringTransaction: RecurringTransaction) {
+    fun insertRecurringTransaction(recurringTransaction: RecurringTransaction) {
         queries.insertRecurringTransaction(
             id = recurringTransaction.id,
             type = recurringTransaction.type.name,
@@ -768,7 +691,6 @@ class DatabaseHelper(
             memo = recurringTransaction.memo,
             paymentMethod = recurringTransaction.paymentMethod.name,
             balanceCardId = recurringTransaction.balanceCardId,
-            giftCardId = recurringTransaction.giftCardId,
             cardName = recurringTransaction.cardName,
             pattern = recurringTransaction.pattern.name,
             dayOfMonth = recurringTransaction.dayOfMonth?.toLong(),
@@ -790,7 +712,6 @@ class DatabaseHelper(
             memo = recurringTransaction.memo,
             paymentMethod = recurringTransaction.paymentMethod.name,
             balanceCardId = recurringTransaction.balanceCardId,
-            giftCardId = recurringTransaction.giftCardId,
             cardName = recurringTransaction.cardName,
             pattern = recurringTransaction.pattern.name,
             dayOfMonth = recurringTransaction.dayOfMonth?.toLong(),
@@ -813,7 +734,7 @@ class DatabaseHelper(
         queries.deleteRecurringTransaction(id)
     }
 
-    suspend fun deleteAllRecurringTransactions() {
+    fun deleteAllRecurringTransactions() {
         queries.deleteAllRecurringTransactions()
     }
 
@@ -825,9 +746,8 @@ class DatabaseHelper(
             amount = this.amount,
             merchant = this.merchant,
             memo = this.memo,
-            paymentMethod = PaymentMethod.valueOf(this.paymentMethod),
+            paymentMethod = paymentMethodOf(this.paymentMethod),
             balanceCardId = this.balanceCardId,
-            giftCardId = this.giftCardId,
             cardName = this.cardName,
             pattern = RecurringPattern.valueOf(this.pattern),
             dayOfMonth = this.dayOfMonth?.toInt(),
@@ -940,7 +860,7 @@ class DatabaseHelper(
             }
     }
 
-    suspend fun insertCustomPaymentMethod(customPaymentMethod: CustomPaymentMethod) {
+    fun insertCustomPaymentMethod(customPaymentMethod: CustomPaymentMethod) {
         queries.insertCustomPaymentMethod(
             id = customPaymentMethod.id,
             name = customPaymentMethod.name,
@@ -968,7 +888,7 @@ class DatabaseHelper(
         queries.deleteCustomPaymentMethod(id)
     }
 
-    suspend fun deleteAllCustomPaymentMethods() {
+    fun deleteAllCustomPaymentMethods() {
         queries.deleteAllCustomPaymentMethods()
     }
 
@@ -978,10 +898,6 @@ class DatabaseHelper(
 
     suspend fun updateTransactionCardNameByBalanceCardId(balanceCardId: String, newCardName: String) {
         queries.updateTransactionCardNameByBalanceCardId(newCardName, balanceCardId)
-    }
-
-    suspend fun updateTransactionCardNameByGiftCardId(giftCardId: String, newCardName: String) {
-        queries.updateTransactionCardNameByGiftCardId(newCardName, giftCardId)
     }
 
     private fun CustomPaymentMethodEntity.toCustomPaymentMethod(): CustomPaymentMethod {

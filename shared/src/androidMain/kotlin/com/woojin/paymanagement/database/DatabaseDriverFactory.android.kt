@@ -62,23 +62,6 @@ actual class DatabaseDriverFactory(private val context: Context) {
             0
         )
 
-        // GiftCardEntity 테이블이 없으면 생성
-        driver.execute(
-            null,
-            """
-            CREATE TABLE IF NOT EXISTS GiftCardEntity (
-                id TEXT NOT NULL PRIMARY KEY,
-                name TEXT NOT NULL,
-                totalAmount REAL NOT NULL,
-                usedAmount REAL NOT NULL,
-                createdDate TEXT NOT NULL,
-                isActive INTEGER NOT NULL DEFAULT 1,
-                minimumUsageRate REAL NOT NULL DEFAULT 0.8
-            )
-            """.trimIndent(),
-            0
-        )
-
         // BudgetPlanEntity 마이그레이션 (v10 -> v11)
         // 기존 스키마 확인
         val hasOldBudgetSchema = try {
@@ -704,6 +687,44 @@ actual class DatabaseDriverFactory(private val context: Context) {
             )
         } catch (e: Exception) {
             // 이미 존재하면 무시
+        }
+
+        // 상품권 기능 제거: 기존 상품권 거래·반복거래는 현금으로 바꾸고 상품권 테이블 삭제 (여러 번 실행돼도 결과 같음)
+        try {
+            driver.execute(
+                null,
+                "UPDATE TransactionEntity SET paymentMethod = 'CASH', giftCardId = NULL WHERE paymentMethod = 'GIFT_CARD'",
+                0
+            )
+        } catch (e: Exception) {
+            // 테이블이 없으면 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "UPDATE TransactionEntity SET incomeType = 'CASH', giftCardId = NULL WHERE incomeType = 'GIFT_CARD'",
+                0
+            )
+        } catch (e: Exception) {
+            // 테이블이 없으면 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "UPDATE RecurringTransactionEntity SET paymentMethod = 'CASH', giftCardId = NULL WHERE paymentMethod = 'GIFT_CARD'",
+                0
+            )
+        } catch (e: Exception) {
+            // 테이블이 없으면 무시
+        }
+        try {
+            driver.execute(
+                null,
+                "DROP TABLE IF EXISTS GiftCardEntity",
+                0
+            )
+        } catch (e: Exception) {
+            // 테이블이 없으면 무시
         }
 
         // 기존 "적금" 거래/카테고리/반복거래를 SAVING 타입으로 마이그레이션 (Schema v18)

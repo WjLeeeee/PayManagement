@@ -3,8 +3,8 @@ package com.woojin.paymanagement.android.shared
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.woojin.paymanagement.data.IncomeType
-import com.woojin.paymanagement.data.PaymentMethod
+import com.woojin.paymanagement.data.incomeTypeOf
+import com.woojin.paymanagement.data.paymentMethodOf
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.model.RoomMember
@@ -253,7 +253,6 @@ class FirebaseSharedRoomRepository(
         "incomeType" to incomeType?.name,
         "paymentMethod" to paymentMethod?.name,
         "balanceCardId" to balanceCardId,
-        "giftCardId" to giftCardId,
         "cardName" to cardName,
         "settlementAmount" to settlementAmount,
         "isSettlement" to isSettlement,
@@ -280,10 +279,9 @@ class FirebaseSharedRoomRepository(
                 merchant = getString("merchant"),
                 memo = memo,
                 date = date,
-                incomeType = getString("incomeType")?.let { IncomeType.valueOf(it) },
-                paymentMethod = getString("paymentMethod")?.let { PaymentMethod.valueOf(it) },
+                incomeType = getString("incomeType")?.let { incomeTypeOf(it) },
+                paymentMethod = getString("paymentMethod")?.let { paymentMethodOf(it) },
                 balanceCardId = getString("balanceCardId"),
-                giftCardId = getString("giftCardId"),
                 cardName = getString("cardName"),
                 settlementAmount = getDouble("settlementAmount"),
                 isSettlement = getBoolean("isSettlement") ?: false

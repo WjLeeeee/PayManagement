@@ -26,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.CustomPaymentMethod
-import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.strings.LocalStrings
@@ -63,7 +62,7 @@ fun CardManagementScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 카드 관리 | 잔액권/상품권 탭
+            // 카드 관리 | 잔액권 탭
             TabRow(selectedTabIndex = if (uiState.selectedTab == CardTab.CARD_MANAGEMENT) 0 else 1) {
                 Tab(
                     selected = uiState.selectedTab == CardTab.CARD_MANAGEMENT,
@@ -71,14 +70,14 @@ fun CardManagementScreen(
                     text = { Text(strings.cardManagement) }
                 )
                 Tab(
-                    selected = uiState.selectedTab == CardTab.BALANCE_GIFT,
-                    onClick = { viewModel.selectTab(CardTab.BALANCE_GIFT) },
-                    text = { Text(strings.balanceGiftCardManagement) }
+                    selected = uiState.selectedTab == CardTab.BALANCE,
+                    onClick = { viewModel.selectTab(CardTab.BALANCE) },
+                    text = { Text(strings.balanceCardManagement) }
                 )
             }
 
             when (uiState.selectedTab) {
-                CardTab.BALANCE_GIFT -> BalanceGiftTabContent(uiState = uiState, viewModel = viewModel)
+                CardTab.BALANCE -> BalanceCardTabContent(uiState = uiState, viewModel = viewModel)
                 CardTab.CARD_MANAGEMENT -> CardManagementTabContent(uiState = uiState, viewModel = viewModel)
             }
         }
@@ -221,104 +220,6 @@ fun CardManagementScreen(
             }
         }
 
-        // 상품권 추가 다이얼로그
-        if (uiState.isAddGiftCardDialogVisible) {
-            AlertDialog(
-                onDismissRequest = { viewModel.hideAddGiftCardDialog() },
-                title = { Text(strings.addGiftCard) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = uiState.newGiftCardName,
-                            onValueChange = { viewModel.updateNewGiftCardName(it) },
-                            label = { Text(strings.giftCard) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = uiState.newGiftCardAmount,
-                            onValueChange = { viewModel.updateNewGiftCardAmount(it) },
-                            label = { Text(strings.remainingAmount) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { viewModel.addGiftCard() }) {
-                        Text(strings.add)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.hideAddGiftCardDialog() }) {
-                        Text(strings.cancel)
-                    }
-                }
-            )
-        }
-
-        // 상품권 수정 다이얼로그
-        if (uiState.isEditGiftCardDialogVisible) {
-            AlertDialog(
-                onDismissRequest = { viewModel.hideEditGiftCardDialog() },
-                title = { Text(strings.editGiftCard) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = uiState.editGiftCardName,
-                            onValueChange = { viewModel.updateEditGiftCardName(it) },
-                            label = { Text(strings.giftCard) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = uiState.editGiftCardRemainingAmount,
-                            onValueChange = { viewModel.updateEditGiftCardRemainingAmount(it) },
-                            label = { Text(strings.remainingAmount) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { viewModel.updateGiftCard() }) {
-                        Text(strings.edit)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.hideEditGiftCardDialog() }) {
-                        Text(strings.cancel)
-                    }
-                }
-            )
-        }
-
-        // 상품권 삭제 확인 다이얼로그
-        if (uiState.isDeleteGiftCardDialogVisible) {
-            uiState.deletingGiftCard?.let { card ->
-                AlertDialog(
-                    onDismissRequest = { viewModel.hideDeleteGiftCardDialog() },
-                    title = { Text(strings.delete) },
-                    text = { Text(strings.deletePaymentMethodConfirmMessage(card.name)) },
-                    confirmButton = {
-                        TextButton(
-                            onClick = { viewModel.confirmDeleteGiftCard() },
-                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                        ) {
-                            Text(strings.delete)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { viewModel.hideDeleteGiftCardDialog() }) {
-                            Text(strings.cancel)
-                        }
-                    }
-                )
-            }
-        }
-
         // 에러 표시
         uiState.error?.let { errorMessage ->
             AlertDialog(
@@ -335,7 +236,7 @@ fun CardManagementScreen(
 }
 
 @Composable
-private fun BalanceGiftTabContent(
+private fun BalanceCardTabContent(
     uiState: CardManagementUiState,
     viewModel: CardManagementViewModel
 ) {
@@ -360,18 +261,10 @@ private fun BalanceGiftTabContent(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(strings.addBalanceCard)
                 }
-                OutlinedButton(
-                    onClick = { viewModel.showAddGiftCardDialog() },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(strings.addGiftCard)
-                }
             }
         }
 
-        if (uiState.balanceCards.isEmpty() && uiState.giftCards.isEmpty()) {
+        if (uiState.balanceCards.isEmpty()) {
             item {
                 Box(
                     modifier = Modifier
@@ -399,18 +292,6 @@ private fun BalanceGiftTabContent(
                 onDelete = { viewModel.showDeleteBalanceCardDialog(balanceCard) }
             )
         }
-
-        items(uiState.giftCards) { giftCard ->
-            val cardItem = CardItem.Gift(giftCard)
-            GiftCardItem(
-                giftCard = giftCard,
-                isExpanded = uiState.expandedCardId == giftCard.id,
-                transactions = uiState.cardTransactions[giftCard.id] ?: emptyList(),
-                onClick = { viewModel.toggleCardExpansion(cardItem) },
-                onEdit = { viewModel.showEditGiftCardDialog(giftCard) },
-                onDelete = { viewModel.showDeleteGiftCardDialog(giftCard) }
-            )
-        }
     }
 }
 
@@ -420,7 +301,7 @@ private fun CardManagementTabContent(
     viewModel: CardManagementViewModel
 ) {
     val strings = LocalStrings.current
-    val defaultCount = 4
+    val defaultCount = 3
     val customCount = uiState.customPaymentMethods.size
 
     LazyColumn(
@@ -450,8 +331,7 @@ private fun CardManagementTabContent(
         val defaultMethods = listOf(
             "💰" to strings.cash,
             "💳" to strings.card,
-            "🎫" to strings.balanceCard,
-            "🎁" to strings.giftCard
+            "🎫" to strings.balanceCard
         )
         items(defaultMethods) { (emoji, name) ->
             DefaultPaymentMethodItem(emoji = emoji, name = name)
@@ -881,103 +761,6 @@ private fun TransactionItem(
 private fun formatDate(date: LocalDate): String {
     return "${date.year}.${date.monthNumber.toString().padStart(2, '0')}.${date.dayOfMonth.toString().padStart(2, '0')}"
 }
-
-@Composable
-private fun GiftCardItem(
-    giftCard: GiftCard,
-    isExpanded: Boolean,
-    transactions: List<Transaction>,
-    onClick: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val strings = LocalStrings.current
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f),
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                        )
-                    )
-                )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onClick)
-                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "🎁",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    Column {
-                        Text(
-                            text = giftCard.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = strings.balanceDisplay(Utils.formatAmount(giftCard.remainingAmount)),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                Row {
-                    IconButton(onClick = onEdit) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = strings.edit,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = strings.delete,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            }
-
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
-                TransactionHistorySection(transactions = transactions)
-            }
-        }
-    }
-}
-
-// 커스텀 결제수단 관련 Composable들
 
 @Composable
 private fun AddPaymentMethodItem(onClick: () -> Unit) {

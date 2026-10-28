@@ -35,7 +35,6 @@ data class RecurringTransaction(
     val memo: String = "",  // 메모 (선택)
     val paymentMethod: PaymentMethod,
     val balanceCardId: String? = null,
-    val giftCardId: String? = null,
     val cardName: String? = null,  // 커스텀 카드명 (CARD 결제 시)
     val pattern: RecurringPattern,
     val dayOfMonth: Int? = null,  // 1~31 (MONTHLY일 때 사용)
@@ -55,34 +54,32 @@ data class RecurringTransaction(
     ): Boolean {
         if (!isActive) return false
 
-        // 원래 실행 날짜 계산
-        val originalDate = when (pattern) {
+        return when (pattern) {
             RecurringPattern.MONTHLY -> {
-                if (dayOfMonth == null) return false
-                try {
-                    LocalDate(today.year, today.month, dayOfMonth)
-                } catch (e: Exception) {
-                    // 해당 월에 없는 날짜 (예: 2월 30일)
-                    return false
+                val day = dayOfMonth ?: return false
+                // 지난달·이번 달·다음 달 실행일 중 (주말·공휴일 조정 후) 오늘인 게 있으면 실행
+                // 조정으로 달을 넘는 경우(예: 11/1(일) → 10/30(금))도 잡으려고 앞뒤 달까지 봄
+                val thisMonth = LocalDate(today.year, today.month, 1)
+                (-1..1).any { offset ->
+                    adjustForWeekend(monthlyDate(thisMonth.plus(DatePeriod(months = offset)), day), isHoliday) == today
                 }
             }
             RecurringPattern.WEEKLY -> {
                 // 매주 패턴은 특정 요일이므로 주말 처리 필요 없음
                 // DayOfWeek.ordinal + 1 = ISO day number (1=월요일, 7=일요일)
-                return dayOfWeek != null && (today.dayOfWeek.ordinal + 1) == dayOfWeek
+                dayOfWeek != null && (today.dayOfWeek.ordinal + 1) == dayOfWeek
             }
             RecurringPattern.DAILY -> {
                 // 주말 미포함 설정이면 토/일에는 실행하지 않음
-                if (!includeWeekends && (today.dayOfWeek == DayOfWeek.SATURDAY || today.dayOfWeek == DayOfWeek.SUNDAY)) {
-                    return false
-                }
-                return true
+                includeWeekends || (today.dayOfWeek != DayOfWeek.SATURDAY && today.dayOfWeek != DayOfWeek.SUNDAY)
             }
         }
+    }
 
-        // 주말/공휴일 처리 적용
-        val adjustedDate = adjustForWeekend(originalDate, isHoliday)
-        return today == adjustedDate
+    /** 그 달의 실행일. 그 달에 없는 날짜(예: 4월 31일)는 그 달 마지막 날 (급여일 계산과 같은 규칙) */
+    private fun monthlyDate(firstOfMonth: LocalDate, day: Int): LocalDate {
+        val lastDay = firstOfMonth.plus(DatePeriod(months = 1)).plus(DatePeriod(days = -1)).dayOfMonth
+        return LocalDate(firstOfMonth.year, firstOfMonth.month, minOf(day, lastDay))
     }
 
     /**

@@ -4,7 +4,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.woojin.paymanagement.data.BalanceCard
-import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
 import com.woojin.paymanagement.domain.repository.SharedModeManager
@@ -50,8 +49,7 @@ class StatisticsViewModel(
 
     fun initializeStatistics(
         initialPayPeriod: PayPeriod?,
-        availableBalanceCards: List<BalanceCard>,
-        availableGiftCards: List<GiftCard>
+        availableBalanceCards: List<BalanceCard>
     ) {
         coroutineScope.launch {
             val payday = preferencesRepository.getPayday()
@@ -61,13 +59,12 @@ class StatisticsViewModel(
 
             uiState = uiState.copy(currentPayPeriod = currentPayPeriod)
 
-            loadStatisticsData(availableBalanceCards, availableGiftCards)
+            loadStatisticsData(availableBalanceCards)
         }
     }
 
     fun getStatisticsFlow(
-        availableBalanceCards: List<BalanceCard>,
-        availableGiftCards: List<GiftCard>
+        availableBalanceCards: List<BalanceCard>
     ): Flow<StatisticsUiState> {
         val currentPayPeriod = uiState.currentPayPeriod ?: return flowOf(uiState)
 
@@ -77,7 +74,7 @@ class StatisticsViewModel(
                 .map { it.transaction }
                 .filter { it.date >= currentPayPeriod.startDate && it.date <= currentPayPeriod.endDate }
             val chartData = calculateChartDataUseCase(sharedTransactions)
-            val paymentSummary = analyzePaymentMethodsUseCase(sharedTransactions, availableBalanceCards, availableGiftCards)
+            val paymentSummary = analyzePaymentMethodsUseCase(sharedTransactions, availableBalanceCards)
             return flowOf(uiState.copy(
                 transactions = sharedTransactions,
                 chartData = chartData,
@@ -89,7 +86,7 @@ class StatisticsViewModel(
         return getPayPeriodTransactionsUseCase(currentPayPeriod)
             .combine(flowOf(availableBalanceCards)) { transactions, balanceCards ->
                 val chartData = calculateChartDataUseCase(transactions)
-                val paymentSummary = analyzePaymentMethodsUseCase(transactions, balanceCards, availableGiftCards)
+                val paymentSummary = analyzePaymentMethodsUseCase(transactions, balanceCards)
 
                 uiState.copy(
                     transactions = transactions,
@@ -137,8 +134,7 @@ class StatisticsViewModel(
     }
 
     private fun loadStatisticsData(
-        availableBalanceCards: List<BalanceCard>,
-        availableGiftCards: List<GiftCard>
+        availableBalanceCards: List<BalanceCard>
     ) {
         uiState = uiState.copy(isLoading = true)
         // Flow는 외부에서 수집되므로 여기서는 로딩 상태만 설정

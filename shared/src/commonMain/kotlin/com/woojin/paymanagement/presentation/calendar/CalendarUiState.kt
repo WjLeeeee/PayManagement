@@ -2,6 +2,7 @@ package com.woojin.paymanagement.presentation.calendar
 
 import com.woojin.paymanagement.data.Category
 import com.woojin.paymanagement.data.Transaction
+import com.woojin.paymanagement.domain.model.DailyAllowance
 import com.woojin.paymanagement.domain.model.SharedTransaction
 import com.woojin.paymanagement.utils.PayPeriod
 import kotlinx.datetime.Clock
@@ -17,6 +18,8 @@ data class CalendarUiState(
     val today: LocalDate = Clock.System.todayIn(TimeZone.currentSystemDefault()),
     val transactions: List<Transaction> = emptyList(),
     val payPeriodSummary: PayPeriodSummary = PayPeriodSummary(),
+    // 월급날까지 하루 얼마 (오늘이 속한 기간을 볼 때만, 급여·수입 정보가 없으면 null)
+    val dailyAllowance: DailyAllowance? = null,
     val dailyTransactions: List<Transaction> = emptyList(),
     val isMoneyVisible: Boolean = true,
     val error: String? = null,

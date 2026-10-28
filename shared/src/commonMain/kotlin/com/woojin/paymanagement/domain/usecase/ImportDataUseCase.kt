@@ -3,7 +3,7 @@ package com.woojin.paymanagement.domain.usecase
 import com.woojin.paymanagement.data.*
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.model.BackupType
-import com.woojin.paymanagement.utils.PreferencesManager
+import com.woojin.paymanagement.domain.repository.PreferencesRepository
 import kotlinx.serialization.json.Json
 import kotlinx.datetime.LocalDate
 
@@ -12,7 +12,7 @@ import kotlinx.datetime.LocalDate
  */
 class ImportDataUseCase(
     private val databaseHelper: DatabaseHelper,
-    private val preferencesManager: PreferencesManager
+    private val preferencesRepository: PreferencesRepository
 ) {
     private val json = Json {
         prettyPrint = true
@@ -36,175 +36,100 @@ class ImportDataUseCase(
                 return Result.failure(Exception("JSON 파싱 실패: ${e.message}\n파일 형식을 확인해주세요"))
             }
 
-            // JSON에 실제로 포함된 데이터 타입 감지
-            val hasCategories = backupData.categories.isNotEmpty()
-            val hasCards = backupData.balanceCards.isNotEmpty() || backupData.giftCards.isNotEmpty()
-            val hasBudget = backupData.budgetPlans.isNotEmpty() || backupData.categoryBudgets.isNotEmpty()
-            val hasTransactions = backupData.transactions.isNotEmpty()
-            val hasRecurringTransactions = backupData.recurringTransactions.isNotEmpty()
-            val hasCustomPaymentMethods = backupData.customPaymentMethods.isNotEmpty()
-            val hasSettings = backupData.payday > 0  // 설정 정보가 있는지 확인
-
-            // 기존 데이터 삭제 (선택적) - 실제로 가져올 데이터만 삭제
-            if (replaceExisting) {
-                if (hasCategories) databaseHelper.deleteAllCategories()
-                if (hasCards) {
-                    databaseHelper.deleteAllBalanceCards()
-                    databaseHelper.deleteAllGiftCards()
-                }
-                if (hasBudget) {
-                    databaseHelper.deleteAllCategoryBudgets()
-                    databaseHelper.deleteAllBudgetPlans()
-                    databaseHelper.deleteAllTransferChecks()
-                }
-                if (hasTransactions) databaseHelper.deleteAllTransactions()
-                if (hasRecurringTransactions) databaseHelper.deleteAllRecurringTransactions()
-                if (hasCustomPaymentMethods) databaseHelper.deleteAllCustomPaymentMethods()
-            }
-
-            // 설정 복원 (설정 정보가 있는 경우만)
-            if (hasSettings) {
-                preferencesManager.setPayday(backupData.payday)
-                preferencesManager.setPaydayAdjustment(
-                    com.woojin.paymanagement.utils.PaydayAdjustment.valueOf(backupData.paydayAdjustment)
+            // 1) 모든 항목을 먼저 변환. 하나라도 못 읽으면 기존 데이터를 건드리지 않고 중단
+            val restore = try {
+                RestoreData(
+                    categories = backupData.categories.map { it.toCategory() },
+                    balanceCards = backupData.balanceCards.map { it.toBalanceCard() },
+                    budgetPlans = backupData.budgetPlans.map { it.toBudgetPlan() },
+                    categoryBudgets = backupData.categoryBudgets.map { it.toCategoryBudget() },
+                    // 이체 완료 체크는 보조 데이터라 못 읽는 항목은 건너뜀 (기존 동작 유지)
+                    transferChecks = backupData.transferChecks.mapNotNull { backup ->
+                        runCatching { LocalDate.parse(backup.periodStartDate) to backup.transferItemId }.getOrNull()
+                    },
+                    transactions = backupData.transactions.map { it.toTransaction() },
+                    recurringTransactions = backupData.recurringTransactions.map { it.toRecurringTransaction() },
+                    customPaymentMethods = backupData.customPaymentMethods.map { it.toCustomPaymentMethod() },
+                    paydayAdjustment = if (backupData.payday > 0) {
+                        com.woojin.paymanagement.utils.PaydayAdjustment.valueOf(backupData.paydayAdjustment)
+                    } else null
                 )
+            } catch (e: Exception) {
+                return Result.failure(Exception("백업 파일에 읽을 수 없는 항목이 있어 가져오지 않았습니다. 기존 데이터는 그대로입니다.\n${e.message}"))
             }
 
-            // 데이터 복원
-            var successCount = 0
-            var failureCount = 0
-            var totalCount = 0
+            // JSON에 실제로 포함된 데이터 타입 감지
+            val hasCategories = restore.categories.isNotEmpty()
+            val hasCards = restore.balanceCards.isNotEmpty()
+            val hasBudget = restore.budgetPlans.isNotEmpty() || restore.categoryBudgets.isNotEmpty()
+            val hasTransactions = restore.transactions.isNotEmpty()
+            val hasRecurringTransactions = restore.recurringTransactions.isNotEmpty()
+            val hasCustomPaymentMethods = restore.customPaymentMethods.isNotEmpty()
 
-            // 카테고리 복원 (데이터가 있는 경우만)
-            if (hasCategories) {
-                totalCount += backupData.categories.size
-                backupData.categories.forEach { backup ->
-                    try {
-                        val category = backup.toCategory()
-                        databaseHelper.insertCategory(category)
-                        successCount++
-                    } catch (e: Exception) {
-                        failureCount++
+            // 2) 삭제 + 삽입을 한 트랜잭션으로. 중간에 실패하거나 앱이 꺼지면 전부 되돌아감
+            databaseHelper.transaction {
+                // 기존 데이터 삭제 (선택적) - 실제로 가져올 데이터만 삭제
+                if (replaceExisting) {
+                    if (hasCategories) databaseHelper.deleteAllCategories()
+                    if (hasCards) databaseHelper.deleteAllBalanceCards()
+                    if (hasBudget) {
+                        databaseHelper.deleteAllCategoryBudgets()
+                        databaseHelper.deleteAllBudgetPlans()
+                        databaseHelper.deleteAllTransferChecks()
+                    }
+                    if (hasTransactions) databaseHelper.deleteAllTransactions()
+                    if (hasRecurringTransactions) databaseHelper.deleteAllRecurringTransactions()
+                    if (hasCustomPaymentMethods) databaseHelper.deleteAllCustomPaymentMethods()
+                }
+
+                restore.categories.forEach { databaseHelper.insertCategory(it) }
+                restore.balanceCards.forEach { databaseHelper.insertBalanceCard(it) }
+                restore.budgetPlans.forEach { databaseHelper.insertBudgetPlan(it) }
+                restore.categoryBudgets.forEach { databaseHelper.insertCategoryBudget(it) }
+                // 이체 완료 체크 복원 (예산이 있을 때만, INSERT OR IGNORE라 중복은 무시됨)
+                if (hasBudget) {
+                    restore.transferChecks.forEach { (periodStartDate, transferItemId) ->
+                        databaseHelper.setTransferChecked(periodStartDate, transferItemId, checked = true)
                     }
                 }
+                restore.transactions.forEach { databaseHelper.insertTransaction(it) }
+                restore.recurringTransactions.forEach { databaseHelper.insertRecurringTransaction(it) }
+                restore.customPaymentMethods.forEach { databaseHelper.insertCustomPaymentMethod(it) }
             }
 
-            // 잔액권/상품권 복원 (데이터가 있는 경우만)
-            if (hasCards) {
-                totalCount += backupData.balanceCards.size + backupData.giftCards.size
-
-                backupData.balanceCards.forEach { backup ->
-                    try {
-                        val balanceCard = backup.toBalanceCard()
-                        databaseHelper.insertBalanceCard(balanceCard)
-                        successCount++
-                    } catch (e: Exception) {
-                        failureCount++
-                    }
-                }
-
-                backupData.giftCards.forEach { backup ->
-                    try {
-                        val giftCard = backup.toGiftCard()
-                        databaseHelper.insertGiftCard(giftCard)
-                        successCount++
-                    } catch (e: Exception) {
-                        failureCount++
-                    }
-                }
+            // 3) 설정 복원 (설정 정보가 있는 경우만, DB 복원이 성공한 뒤에)
+            restore.paydayAdjustment?.let { adjustment ->
+                preferencesRepository.setPayday(backupData.payday)
+                preferencesRepository.setPaydayAdjustment(adjustment)
             }
 
-            // 예산 설정 복원 (데이터가 있는 경우만)
-            if (hasBudget) {
-                totalCount += backupData.budgetPlans.size + backupData.categoryBudgets.size
-
-                backupData.budgetPlans.forEach { backup ->
-                    try {
-                        val budgetPlan = backup.toBudgetPlan()
-                        databaseHelper.insertBudgetPlan(budgetPlan)
-                        successCount++
-                    } catch (e: Exception) {
-                        failureCount++
-                    }
-                }
-
-                backupData.categoryBudgets.forEach { backup ->
-                    try {
-                        val categoryBudget = backup.toCategoryBudget()
-                        databaseHelper.insertCategoryBudget(categoryBudget)
-                        successCount++
-                    } catch (e: Exception) {
-                        failureCount++
-                    }
-                }
-
-                // 이체 완료 체크 복원 (INSERT OR IGNORE라 중복은 무시됨)
-                backupData.transferChecks.forEach { backup ->
-                    try {
-                        databaseHelper.setTransferChecked(
-                            periodStartDate = LocalDate.parse(backup.periodStartDate),
-                            transferItemId = backup.transferItemId,
-                            checked = true
-                        )
-                    } catch (e: Exception) {
-                        // 체크 기록은 보조 데이터라 실패해도 카운트에 반영하지 않음
-                    }
-                }
-            }
-
-            // 거래 내역 복원 (데이터가 있는 경우만)
-            if (hasTransactions) {
-                totalCount += backupData.transactions.size
-                backupData.transactions.forEach { backup ->
-                    try {
-                        val transaction = backup.toTransaction()
-                        databaseHelper.insertTransaction(transaction)
-                        successCount++
-                    } catch (e: Exception) {
-                        failureCount++
-                    }
-                }
-            }
-
-            // 반복거래 복원 (데이터가 있는 경우만)
-            if (hasRecurringTransactions) {
-                totalCount += backupData.recurringTransactions.size
-                backupData.recurringTransactions.forEach { backup ->
-                    try {
-                        val recurringTransaction = backup.toRecurringTransaction()
-                        databaseHelper.insertRecurringTransaction(recurringTransaction)
-                        successCount++
-                    } catch (e: Exception) {
-                        failureCount++
-                    }
-                }
-            }
-
-            // 커스텀 결제수단 복원 (데이터가 있는 경우만)
-            if (hasCustomPaymentMethods) {
-                totalCount += backupData.customPaymentMethods.size
-                backupData.customPaymentMethods.forEach { backup ->
-                    try {
-                        val customPaymentMethod = backup.toCustomPaymentMethod()
-                        databaseHelper.insertCustomPaymentMethod(customPaymentMethod)
-                        successCount++
-                    } catch (e: Exception) {
-                        failureCount++
-                    }
-                }
-            }
-
+            val totalCount = restore.categories.size + restore.balanceCards.size +
+                restore.budgetPlans.size + restore.categoryBudgets.size + restore.transactions.size +
+                restore.recurringTransactions.size + restore.customPaymentMethods.size
             Result.success(
                 ImportResult(
                     totalCount = totalCount,
-                    successCount = successCount,
-                    failureCount = failureCount
+                    successCount = totalCount,
+                    failureCount = 0
                 )
             )
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
+
+    /** 복원 전에 미리 변환해 둔 백업 내용 */
+    private class RestoreData(
+        val categories: List<Category>,
+        val balanceCards: List<BalanceCard>,
+        val budgetPlans: List<BudgetPlan>,
+        val categoryBudgets: List<CategoryBudget>,
+        val transferChecks: List<Pair<LocalDate, String>>,
+        val transactions: List<Transaction>,
+        val recurringTransactions: List<RecurringTransaction>,
+        val customPaymentMethods: List<CustomPaymentMethod>,
+        val paydayAdjustment: com.woojin.paymanagement.utils.PaydayAdjustment?
+    )
 
     private fun resolveTransactionType(type: String, category: String?): TransactionType {
         val parsed = TransactionType.valueOf(type)
@@ -224,10 +149,9 @@ class ImportDataUseCase(
         type = resolveTransactionType(type, category),
         category = category ?: "",
         memo = memo ?: "",
-        paymentMethod = paymentMethod?.let { PaymentMethod.valueOf(it) },
-        incomeType = incomeType?.let { IncomeType.valueOf(it) },
+        paymentMethod = paymentMethod?.let { paymentMethodOf(it) },
+        incomeType = incomeType?.let { incomeTypeOf(it) },
         balanceCardId = balanceCardId,
-        giftCardId = giftCardId,
         cardName = cardName,
         merchant = merchant,
         settlementAmount = settlementAmount,
@@ -242,16 +166,6 @@ class ImportDataUseCase(
         currentBalance = currentBalance,
         createdDate = LocalDate.parse(createdDate),
         isActive = isActive
-    )
-
-    private fun GiftCardBackup.toGiftCard() = GiftCard(
-        id = id,
-        name = name,
-        totalAmount = totalAmount,
-        usedAmount = usedAmount,
-        createdDate = LocalDate.parse(createdDate),
-        isActive = isActive,
-        minimumUsageRate = minimumUsageRate
     )
 
     private fun CategoryBackup.toCategory() = Category(
@@ -310,9 +224,8 @@ class ImportDataUseCase(
         amount = amount,
         merchant = merchant,
         memo = memo,
-        paymentMethod = PaymentMethod.valueOf(paymentMethod),
+        paymentMethod = paymentMethodOf(paymentMethod),
         balanceCardId = balanceCardId,
-        giftCardId = giftCardId,
         cardName = cardName,
         pattern = RecurringPattern.valueOf(pattern),
         dayOfMonth = dayOfMonth,

@@ -56,11 +56,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.CustomPaymentMethod
-import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.strings.LocalStrings
+import com.woojin.paymanagement.domain.model.DailyAllowance
+import com.woojin.paymanagement.utils.Utils
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
+import kotlin.math.roundToInt
 
 @Composable
 fun TransactionTypeSelector(
@@ -148,12 +155,10 @@ fun IncomeTypeSelector(
                     label = when (incomeType) {
                         IncomeType.CASH -> strings.cash
                         IncomeType.BALANCE_CARD -> strings.balanceCard
-                        IncomeType.GIFT_CARD -> strings.giftCard
                     },
                     emoji = when (incomeType) {
                         IncomeType.CASH -> "💵"
                         IncomeType.BALANCE_CARD -> "🎫"
-                        IncomeType.GIFT_CARD -> "🎁"
                     },
                     selected = incomeType == selectedIncomeType,
                     onClick = { onIncomeTypeSelected(incomeType) }
@@ -239,27 +244,6 @@ fun IncomeTypeSelector(
                 )
             )
         }
-
-        // 상품권 선택 시 - 기존 로직 유지
-        if (selectedIncomeType == IncomeType.GIFT_CARD) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = cardName,
-                onValueChange = onCardNameChanged,
-                label = {
-                    Text(
-                        text = strings.giftCardNameHint,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    focusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-        }
     }
 }
 
@@ -269,11 +253,8 @@ fun PaymentMethodSelector(
     selectedPaymentMethod: PaymentMethod,
     onPaymentMethodSelected: (PaymentMethod) -> Unit,
     availableBalanceCards: List<BalanceCard>,
-    availableGiftCards: List<GiftCard>,
     selectedBalanceCard: BalanceCard?,
     onBalanceCardSelected: (BalanceCard?) -> Unit,
-    selectedGiftCard: GiftCard?,
-    onGiftCardSelected: (GiftCard?) -> Unit,
     amount: String,
     customPaymentMethods: List<CustomPaymentMethod> = emptyList(),
     selectedCustomCardName: String? = null,
@@ -297,7 +278,6 @@ fun PaymentMethodSelector(
                     PaymentMethod.CASH -> true
                     PaymentMethod.CARD -> true
                     PaymentMethod.BALANCE_CARD -> availableBalanceCards.isNotEmpty()
-                    PaymentMethod.GIFT_CARD -> availableGiftCards.isNotEmpty()
                 }
 
                 if (isAvailable) {
@@ -306,13 +286,11 @@ fun PaymentMethodSelector(
                             PaymentMethod.CASH -> strings.cash
                             PaymentMethod.CARD -> strings.card
                             PaymentMethod.BALANCE_CARD -> strings.balanceCard
-                            PaymentMethod.GIFT_CARD -> strings.giftCard
                         },
                         emoji = when (paymentMethod) {
                             PaymentMethod.CASH -> "💵"
                             PaymentMethod.CARD -> "💳"
                             PaymentMethod.BALANCE_CARD -> "🎫"
-                            PaymentMethod.GIFT_CARD -> "🎁"
                         },
                         selected = paymentMethod == selectedPaymentMethod,
                         onClick = { onPaymentMethodSelected(paymentMethod) }
@@ -346,25 +324,6 @@ fun PaymentMethodSelector(
             if (selectedBalanceCard != null && amount.isNotBlank()) {
                 BalanceCardUsageInfo(
                     balanceCard = selectedBalanceCard,
-                    expenseAmount = amount
-                )
-            }
-        }
-
-        // 상품권 선택 및 안내
-        if (selectedPaymentMethod == PaymentMethod.GIFT_CARD && availableGiftCards.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            CardSelectionDropdown(
-                cards = availableGiftCards,
-                selectedCard = selectedGiftCard,
-                onCardSelected = onGiftCardSelected,
-                label = strings.selectGiftCardLabel
-            )
-
-            if (selectedGiftCard != null && amount.isNotBlank()) {
-                GiftCardUsageInfo(
-                    giftCard = selectedGiftCard,
                     expenseAmount = amount
                 )
             }
@@ -446,7 +405,6 @@ private fun <T> CardSelectionDropdown(
         OutlinedTextField(
             value = when (selectedCard) {
                 is BalanceCard -> "${selectedCard.name} (${selectedCard.currentBalance.toInt()}${strings.currencySymbol})"
-                is GiftCard -> "${selectedCard.name} (${selectedCard.remainingAmount.toInt()}${strings.currencySymbol})"
                 else -> ""
             },
             onValueChange = { },
@@ -475,7 +433,6 @@ private fun <T> CardSelectionDropdown(
                         Text(
                             text = when (card) {
                                 is BalanceCard -> "${card.name} (${card.currentBalance.toInt()}${strings.currencySymbol})"
-                                is GiftCard -> "${card.name} (${card.remainingAmount.toInt()}${strings.currencySymbol})"
                                 else -> card.toString()
                             },
                             color = MaterialTheme.colorScheme.onSurface
@@ -512,42 +469,6 @@ private fun BalanceCardUsageInfo(
             else -> {
                 val cashNeeded = amount - balanceCardAmount
                 strings.balanceCardPartialUsage(balanceCardAmount.toInt(), cashNeeded.toInt())
-            }
-        }
-
-        Text(
-            text = "💡 $infoText",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = modifier.padding(horizontal = 4.dp)
-        )
-    }
-}
-
-@Composable
-private fun GiftCardUsageInfo(
-    giftCard: GiftCard,
-    expenseAmount: String,
-    modifier: Modifier = Modifier
-) {
-    val strings = LocalStrings.current
-    val amount = expenseAmount.replace(",", "").toDoubleOrNull()
-    if (amount != null && amount > 0) {
-        val giftCardAmount = giftCard.remainingAmount
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        val infoText = when {
-            giftCardAmount > amount -> {
-                val refund = giftCardAmount - amount
-                strings.giftCardRefundUsage(amount.toInt(), refund.toInt())
-            }
-            giftCardAmount < amount -> {
-                val cashNeeded = amount - giftCardAmount
-                strings.giftCardPartialUsage(giftCardAmount.toInt(), cashNeeded.toInt())
-            }
-            else -> {
-                strings.giftCardFullUsage(amount.toInt())
             }
         }
 
@@ -852,4 +773,84 @@ fun CategoryChipGrid(
             }
         }
     }
+}
+
+/**
+ * 금액 아래 안내: 노동시간 환산(ⓘ 누르면 계산 기준 안내) + 저장 후 오늘 남은 돈
+ * hourlyWage가 없으면 노동시간, dailyAllowance가 없으면 오늘 남은 돈 줄을 표시하지 않음
+ */
+@Composable
+fun SpendingInsight(
+    amount: Double,
+    hourlyWage: Double?,
+    dailyAllowance: DailyAllowance?
+) {
+    val strings = LocalStrings.current
+    var showInfoDialog by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (hourlyWage != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = strings.laborTime(formatLaborTime(amount, hourlyWage)),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.size(4.dp))
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = strings.hourlyWageInfoTitle,
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(RoundedCornerShape(50))
+                        .clickable { showInfoDialog = true }
+                )
+            }
+        }
+
+        if (dailyAllowance != null) {
+            val before = dailyAllowance.remainingToday
+            val after = before - amount
+            if (hourlyWage != null) Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = strings.remainingTodayAfterSave(formatSignedAmount(before), formatSignedAmount(after)),
+                fontSize = 13.sp,
+                color = if (after < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    if (showInfoDialog && hourlyWage != null) {
+        AlertDialog(
+            onDismissRequest = { showInfoDialog = false },
+            title = { Text(strings.hourlyWageInfoTitle) },
+            text = { Text(strings.hourlyWageInfoMessage(Utils.formatAmount(hourlyWage))) },
+            confirmButton = {
+                TextButton(onClick = { showInfoDialog = false }) {
+                    Text(strings.confirm)
+                }
+            }
+        )
+    }
+}
+
+/** 1시간 42분 / 12분, 8시간 이상은 8시간 = 1일로 환산 (2.3일) */
+@Composable
+private fun formatLaborTime(amount: Double, hourlyWage: Double): String {
+    val strings = LocalStrings.current
+    val totalMinutes = (amount / hourlyWage * 60).roundToInt().coerceAtLeast(1)
+    return if (totalMinutes >= 8 * 60) {
+        val tenthsOfDay = (totalMinutes / 48.0).roundToInt()
+        strings.laborDays(if (tenthsOfDay % 10 == 0) "${tenthsOfDay / 10}" else "${tenthsOfDay / 10}.${tenthsOfDay % 10}")
+    } else {
+        strings.laborDuration(totalMinutes / 60, totalMinutes % 60)
+    }
+}
+
+@Composable
+internal fun formatSignedAmount(amount: Double): String {
+    val strings = LocalStrings.current
+    return "${if (amount < 0) "-" else ""}${strings.amountWithUnit(Utils.formatAmount(amount))}"
 }

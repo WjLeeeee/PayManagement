@@ -572,6 +572,5 @@ private fun getPaymentMethodDisplayName(paymentMethod: com.woojin.paymanagement.
         com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cashCheckCard
         com.woojin.paymanagement.data.PaymentMethod.CARD -> strings.creditCard
         com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> strings.balanceCard
-        com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> strings.giftCard
     }
 }

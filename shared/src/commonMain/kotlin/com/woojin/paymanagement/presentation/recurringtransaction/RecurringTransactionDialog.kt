@@ -472,8 +472,7 @@ fun RecurringTransactionDialog(
                                 listOf(
                                     PaymentMethod.CASH to strings.cashCheckCard,
                                     PaymentMethod.CARD to strings.creditCard,
-                                    PaymentMethod.BALANCE_CARD to strings.balanceCard,
-                                    PaymentMethod.GIFT_CARD to strings.giftCard
+                                    PaymentMethod.BALANCE_CARD to strings.balanceCard
                                 ).forEach { (method, label) ->
                                     RecurringPillChip(
                                         label = label,
@@ -568,7 +567,6 @@ fun RecurringTransactionDialog(
                                     memo = memo,
                                     paymentMethod = if (selectedType == TransactionType.SAVING || selectedType == TransactionType.INVESTMENT) PaymentMethod.CASH else selectedPaymentMethod,
                                     balanceCardId = transaction?.balanceCardId,
-                                    giftCardId = transaction?.giftCardId,
                                     cardName = if (selectedType != TransactionType.SAVING && selectedType != TransactionType.INVESTMENT && selectedPaymentMethod == PaymentMethod.CARD) selectedCardName else null,
                                     pattern = selectedPattern,
                                     dayOfMonth = if (selectedPattern == RecurringPattern.MONTHLY) dayOfMonth else null,

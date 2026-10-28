@@ -45,7 +45,7 @@ CREATE TABLE TransactionEntity (
     incomeType TEXT,
     paymentMethod TEXT,
     balanceCardId TEXT,
-    giftCardId TEXT,
+    giftCardId TEXT,  -- 상품권 기능 제거로 미사용 (기존 DB 호환용 컬럼)
     cardName TEXT,
     settlementAmount REAL,
     isSettlement INTEGER NOT NULL DEFAULT 0,
@@ -59,16 +59,6 @@ CREATE TABLE BalanceCardEntity (
     currentBalance REAL NOT NULL,
     createdDate TEXT NOT NULL,
     isActive INTEGER NOT NULL DEFAULT 1
-);
-
-CREATE TABLE GiftCardEntity (
-    id TEXT NOT NULL PRIMARY KEY,
-    name TEXT NOT NULL,
-    totalAmount REAL NOT NULL,
-    usedAmount REAL NOT NULL,
-    createdDate TEXT NOT NULL,
-    isActive INTEGER NOT NULL DEFAULT 1,
-    minimumUsageRate REAL NOT NULL DEFAULT 0.8
 );
 
 CREATE TABLE BudgetPlanEntity (
@@ -109,7 +99,7 @@ CREATE TABLE RecurringTransactionEntity (
     memo TEXT NOT NULL DEFAULT '',  -- 메모 (선택)
     paymentMethod TEXT NOT NULL,
     balanceCardId TEXT,
-    giftCardId TEXT,
+    giftCardId TEXT,  -- 상품권 기능 제거로 미사용 (기존 DB 호환용 컬럼)
     cardName TEXT,  -- 커스텀 카드명 (CARD 결제 시)
     pattern TEXT NOT NULL,  -- MONTHLY, WEEKLY 또는 DAILY
     dayOfMonth INTEGER,  -- 1~31 (MONTHLY일 때)
@@ -129,8 +119,8 @@ CREATE TABLE HolidayEntity (
 );
 
 insertTransaction:
-INSERT INTO TransactionEntity(id, amount, type, category, merchant, memo, date, incomeType, paymentMethod, balanceCardId, giftCardId, cardName, settlementAmount, isSettlement, subCategory)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO TransactionEntity(id, amount, type, category, merchant, memo, date, incomeType, paymentMethod, balanceCardId, cardName, settlementAmount, isSettlement, subCategory)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllTransactions:
 SELECT * FROM TransactionEntity
@@ -151,7 +141,7 @@ SELECT MIN(date) AS oldestDate FROM TransactionEntity;
 
 updateTransaction:
 UPDATE TransactionEntity
-SET amount = ?, type = ?, category = ?, merchant = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, settlementAmount = ?, isSettlement = ?, subCategory = ?
+SET amount = ?, type = ?, category = ?, merchant = ?, memo = ?, date = ?, incomeType = ?, paymentMethod = ?, balanceCardId = ?, cardName = ?, settlementAmount = ?, isSettlement = ?, subCategory = ?
 WHERE id = ?;
 
 deleteTransaction:
@@ -164,12 +154,12 @@ DELETE FROM TransactionEntity;
 updateTransactionsCategoryName:
 UPDATE TransactionEntity
 SET category = ?
-WHERE category = ?;
+WHERE category = ? AND type = ?;
 
 updateTransactionsSubCategoryName:
 UPDATE TransactionEntity
 SET subCategory = ?
-WHERE subCategory = ?;
+WHERE subCategory = ? AND category = ? AND type = ?;
 
 getSuggestedCategoryByMerchant:
 SELECT category, COUNT(*)
@@ -238,46 +228,6 @@ WHERE balanceCardId = ? AND type = 'EXPENSE';
 selectTransactionsByBalanceCard:
 SELECT * FROM TransactionEntity
 WHERE balanceCardId = ?
-ORDER BY date DESC;
-
--- GiftCard 관련 쿼리들
-insertGiftCard:
-INSERT INTO GiftCardEntity(id, name, totalAmount, usedAmount, createdDate, isActive, minimumUsageRate)
-VALUES (?, ?, ?, ?, ?, ?, ?);
-
-selectAllGiftCards:
-SELECT * FROM GiftCardEntity
-ORDER BY createdDate DESC;
-
-selectActiveGiftCards:
-SELECT * FROM GiftCardEntity
-WHERE isActive = 1
-ORDER BY createdDate DESC;
-
-selectGiftCardById:
-SELECT * FROM GiftCardEntity
-WHERE id = ?;
-
-updateGiftCard:
-UPDATE GiftCardEntity
-SET name = ?, totalAmount = ?, usedAmount = ?, createdDate = ?, isActive = ?, minimumUsageRate = ?
-WHERE id = ?;
-
-updateGiftCardUsage:
-UPDATE GiftCardEntity
-SET usedAmount = ?, isActive = ?
-WHERE id = ?;
-
-deleteGiftCard:
-DELETE FROM GiftCardEntity
-WHERE id = ?;
-
-deleteAllGiftCards:
-DELETE FROM GiftCardEntity;
-
-selectTransactionsByGiftCard:
-SELECT * FROM TransactionEntity
-WHERE giftCardId = ?
 ORDER BY date DESC;
 
 -- ParsedTransaction 관련 쿼리들
@@ -453,8 +403,8 @@ WHERE category = ? AND type IN ('EXPENSE', 'SAVING', 'INVESTMENT') AND date >= ?
 
 -- RecurringTransaction 관련 쿼리들
 insertRecurringTransaction:
-INSERT INTO RecurringTransactionEntity(id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, giftCardId, cardName, pattern, dayOfMonth, dayOfWeek, weekendHandling, includeWeekends, isActive, createdAt, lastExecutedDate)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO RecurringTransactionEntity(id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, cardName, pattern, dayOfMonth, dayOfWeek, weekendHandling, includeWeekends, isActive, createdAt, lastExecutedDate)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 selectAllRecurringTransactions:
 SELECT id, type, category, amount, merchant, memo, paymentMethod, balanceCardId, giftCardId, cardName, pattern, dayOfMonth, dayOfWeek, weekendHandling, includeWeekends, isActive, createdAt, lastExecutedDate FROM RecurringTransactionEntity
@@ -471,7 +421,7 @@ WHERE id = ?;
 
 updateRecurringTransaction:
 UPDATE RecurringTransactionEntity
-SET type = ?, category = ?, amount = ?, merchant = ?, memo = ?, paymentMethod = ?, balanceCardId = ?, giftCardId = ?, cardName = ?, pattern = ?, dayOfMonth = ?, dayOfWeek = ?, weekendHandling = ?, includeWeekends = ?, isActive = ?
+SET type = ?, category = ?, amount = ?, merchant = ?, memo = ?, paymentMethod = ?, balanceCardId = ?, cardName = ?, pattern = ?, dayOfMonth = ?, dayOfWeek = ?, weekendHandling = ?, includeWeekends = ?, isActive = ?
 WHERE id = ?;
 
 updateRecurringTransactionLastExecuted:
@@ -595,7 +545,3 @@ UPDATE TransactionEntity
 SET cardName = ?
 WHERE balanceCardId = ?;
 
-updateTransactionCardNameByGiftCardId:
-UPDATE TransactionEntity
-SET cardName = ?
-WHERE giftCardId = ?;

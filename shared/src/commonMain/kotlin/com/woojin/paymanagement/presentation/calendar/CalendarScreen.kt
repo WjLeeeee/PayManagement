@@ -72,11 +72,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.INVESTMENT_INCOME_CATEGORIES
 import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.presentation.addtransaction.formatSignedAmount
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialOverlay
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.BrandColor
+import com.woojin.paymanagement.domain.model.DailyAllowance
 import com.woojin.paymanagement.utils.PayPeriod
 import com.woojin.paymanagement.utils.Utils
 import kotlinx.coroutines.delay
@@ -289,6 +292,10 @@ fun CalendarScreen(
                     else
                         uiState.transactions,
                     payPeriod = uiState.currentPayPeriod,
+                    // 하루 얼마는 개인 가계부 기준이라 공유 모드에서는 숨김
+                    dailyAllowance = if (uiState.isSharedMode) null else uiState.dailyAllowance,
+                    showDailyAllowanceHint = !uiState.isSharedMode && uiState.dailyAllowance == null &&
+                        uiState.today >= uiState.currentPayPeriod.startDate && uiState.today <= uiState.currentPayPeriod.endDate,
                     isMoneyVisible = uiState.isMoneyVisible,
                     onToggleVisibility = { viewModel.toggleMoneyVisibility() },
                     onStatisticsClick = { onStatisticsClick(uiState.currentPayPeriod) },
@@ -567,6 +574,8 @@ private fun PayPeriodHeader(
 private fun PayPeriodSummaryCard(
     transactions: List<Transaction>,
     payPeriod: PayPeriod,
+    dailyAllowance: DailyAllowance?,
+    showDailyAllowanceHint: Boolean,
     isMoneyVisible: Boolean,
     onToggleVisibility: () -> Unit,
     onStatisticsClick: () -> Unit = {},
@@ -585,11 +594,12 @@ private fun PayPeriodSummaryCard(
     val saving = periodTransactions
         .filter { it.type == TransactionType.SAVING }
         .sumOf { it.displayAmount }
-    val investmentIncomeCategories = setOf("익절", "배당금")
     val investment = periodTransactions
         .filter { it.type == TransactionType.INVESTMENT }
-        .sumOf { t -> if (t.category in investmentIncomeCategories) t.displayAmount else -t.displayAmount }
-    val balance = income - expense
+        .sumOf { t -> if (t.category in INVESTMENT_INCOME_CATEGORIES) t.displayAmount else -t.displayAmount }
+    // 나간 돈 = 지출 + 저축 + 투자(익절·배당금은 돌아온 돈). 상세는 카드를 눌러 통계 화면에서
+    val outflow = expense + saving - investment
+    val remaining = income - outflow
 
     val strings = LocalStrings.current
     val onCard = Color.White
@@ -661,7 +671,7 @@ private fun PayPeriodSummaryCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 1줄: 수입 / 지출 / 잔액
+            // 1줄: 수입 / 나간 돈 / 남은 돈
             Row(modifier = Modifier.fillMaxWidth()) {
                 SummaryValue(
                     label = strings.income, emoji = null,
@@ -669,27 +679,26 @@ private fun PayPeriodSummaryCard(
                     align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
                 )
                 SummaryValue(
-                    label = strings.expense, emoji = null,
-                    value = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
+                    label = strings.outflow, emoji = null,
+                    // 익절·배당금이 더 많으면 나간 돈이 음수 → +로 표시
+                    value = "${if (outflow < 0) "+" else "-"}${strings.amountWithUnit(Utils.formatAmount(outflow))}",
                     align = Alignment.CenterHorizontally, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
                 )
                 SummaryValue(
-                    label = strings.balance, emoji = null,
+                    label = strings.remainingMoney, emoji = null,
                     value = "${
                         when {
-                            balance > 0 -> "+"
-                            balance < 0 -> "-"
+                            remaining > 0 -> "+"
+                            remaining < 0 -> "-"
                             else -> ""
                         }
-                    }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}",
+                    }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(remaining)))}",
                     align = Alignment.End, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
                 )
             }
 
-            // 2줄: 저축 / 투자 (해당 거래가 있을 때만 표시 - 기존 조건 유지)
-            val hasSaving = saving > 0
-            val hasInvestment = investment != 0.0
-            if (hasSaving || hasInvestment) {
+            // 2줄: 월급날까지 하루 얼마 (오늘이 속한 기간일 때만)
+            if (dailyAllowance != null || showDailyAllowanceHint) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Box(
                     modifier = Modifier
@@ -698,30 +707,59 @@ private fun PayPeriodSummaryCard(
                         .background(onCard.copy(alpha = 0.25f))
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    if (hasSaving) {
-                        SummaryValue(
-                            label = strings.saving, emoji = "🐷",
-                            value = "-${strings.amountWithUnit(Utils.formatAmount(saving))}",
-                            align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (hasInvestment) {
-                        SummaryValue(
-                            label = strings.investment, emoji = "💹",
-                            value = "${if (investment > 0) "+" else "-"}${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(investment)))}",
-                            // 저축이 있으면 위 '지출' 칸과 같은 가운데 열, 없으면 첫 칸
-                            align = if (hasSaving) Alignment.CenterHorizontally else Alignment.Start,
-                            isMoneyVisible = isMoneyVisible,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    // 남는 칸을 비워서 위 3칸과 열을 맞춤
-                    repeat(3 - (if (hasSaving) 1 else 0) - (if (hasInvestment) 1 else 0)) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+                if (dailyAllowance != null) {
+                    DailyAllowanceRow(dailyAllowance = dailyAllowance, isMoneyVisible = isMoneyVisible)
+                } else {
+                    Text(
+                        text = strings.dailyAllowanceSetupHint,
+                        fontSize = 12.sp,
+                        color = onCard.copy(alpha = 0.85f)
+                    )
                 }
             }
+        }
+    }
+}
+
+/** 급여 기간 요약 카드의 하루 얼마 줄: 오늘 남은 돈 / 하루 한도 · 월급날까지 남은 일수 */
+@Composable
+private fun DailyAllowanceRow(
+    dailyAllowance: DailyAllowance,
+    isMoneyVisible: Boolean
+) {
+    val strings = LocalStrings.current
+    val remaining = dailyAllowance.remainingToday
+    val isOverBudget = dailyAllowance.dailyLimit <= 0
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        SummaryValue(
+            label = strings.dailyAllowanceTitle, emoji = "💸",
+            value = if (isOverBudget) {
+                strings.dailyAllowanceOverBudget
+            } else {
+                formatSignedAmount(remaining)
+            },
+            align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
+        )
+        Column(horizontalAlignment = Alignment.End) {
+            if (!isOverBudget) {
+                Text(
+                    text = strings.dailyAllowanceLimit(strings.amountWithUnit(Utils.formatAmount(dailyAllowance.dailyLimit))),
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.85f),
+                    modifier = if (!isMoneyVisible) Modifier.blur(8.dp) else Modifier
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+            }
+            Text(
+                text = strings.daysUntilPayday(dailyAllowance.daysLeft),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
         }
     }
 }
@@ -1179,7 +1217,6 @@ private fun TransactionItem(
             when (transaction.incomeType) {
                 com.woojin.paymanagement.data.IncomeType.CASH -> strings.cash
                 com.woojin.paymanagement.data.IncomeType.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                com.woojin.paymanagement.data.IncomeType.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
                 null -> strings.cash
             }
         }
@@ -1188,7 +1225,6 @@ private fun TransactionItem(
                 com.woojin.paymanagement.data.PaymentMethod.CASH -> strings.cash
                 com.woojin.paymanagement.data.PaymentMethod.CARD -> transaction.cardName ?: strings.card
                 com.woojin.paymanagement.data.PaymentMethod.BALANCE_CARD -> "${strings.balanceCard} ${transaction.cardName ?: ""}"
-                com.woojin.paymanagement.data.PaymentMethod.GIFT_CARD -> "${strings.giftCard} ${transaction.cardName ?: ""}"
                 null -> strings.cash
             }
         }
@@ -1278,13 +1314,12 @@ private fun TransactionItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        val investmentIncomeCategories = setOf("익절", "배당금")
         Text(
             text = "${when (transaction.type) {
                 TransactionType.INCOME -> "+"
                 TransactionType.EXPENSE -> "-"
                 TransactionType.SAVING -> "-"
-                TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
+                TransactionType.INVESTMENT -> if (transaction.category in INVESTMENT_INCOME_CATEGORIES) "+" else "-"
             }}${
                 strings.amountWithUnit(Utils.formatAmount(
                     transaction.displayAmount

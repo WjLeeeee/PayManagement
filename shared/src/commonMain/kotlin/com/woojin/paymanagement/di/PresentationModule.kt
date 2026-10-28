@@ -32,11 +32,12 @@ val presentationModule = module {
             getCategoriesUseCase = get(),
             payPeriodCalculator = get(),
             holidayRepository = get(),
+            calculateDailyAllowanceUseCase = get(),
             coroutineScope = get(),
             sharedRoomRepository = getOrNull()
         )
     }
-    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
+    factory { AddTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
     factory { DateDetailViewModel(get(), get(), get(), get(), get(), get(), get(), getOrNull()) }
     factory { PaydaySetupViewModel(get(), get(), get(), get(), get()) }
     factory { StatisticsViewModel(get(), get(), get(), get(), get(), get(), get()) }
@@ -46,10 +47,10 @@ val presentationModule = module {
     factory { CardManagementViewModel(get(), get(), get(), get(), get()) }
     factory { BudgetSettingsViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { TipDonationViewModel(get(), get()) }
-    factory { AdRemovalViewModel(get(), get()) }
+    factory { AdRemovalViewModel(get()) }
     factory { CouponViewModel(get()) }
-    factory { MonthlyComparisonViewModel(get(), get(), get(), get(), get()) }
+    factory { MonthlyComparisonViewModel(get(), get(), get(), get(), get(), getOrNull()) }
     factory { RecurringTransactionViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
-    factory { SearchViewModel(get(), get(), get()) }
+    factory { SearchViewModel(get(), get(), get(), getOrNull()) }
     factory { SharedRoomViewModel(get()) }
 }

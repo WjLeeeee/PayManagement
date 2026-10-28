@@ -219,7 +219,6 @@ object KoreanStrings : AppStrings {
     override val cash = "현금"
     override val card = "카드"
     override val bankTransfer = "계좌이체"
-    override val giftCard = "상품권"
     override val paymentMethod = "결제 수단"
     override val transactionSaved = "거래가 저장되었습니다"
     override val transactionDeleted = "거래가 삭제되었습니다"
@@ -321,11 +320,8 @@ object KoreanStrings : AppStrings {
     override val lastUsed = "마지막 사용"
     override val totalSpent = "총 사용 금액"
     override val balanceCardManagement = "잔액권 관리"
-    override val giftCardManagement = "상품권 관리"
     override val addBalanceCard = "잔액권 추가"
-    override val addGiftCard = "상품권 추가"
     override val editBalanceCard = "잔액권 수정"
-    override val editGiftCard = "상품권 수정"
     override val initialBalance = "초기 잔액"
     override val currentBalance = "현재 잔액"
     override val usedBalance = "사용 잔액"
@@ -675,20 +671,15 @@ object KoreanStrings : AppStrings {
     override val newBalanceCard = "새 잔액권 추가"
     override val chargeExistingBalanceCard = "기존 잔액권 충전"
     override val balanceCardNameHint = "잔액권 이름 (예: 편의점 상품권)"
-    override val giftCardNameHint = "상품권 이름 (예: 신세계 상품권)"
     override val selectBalanceCardToCharge = "충전할 잔액권 선택"
     override val selectBalanceCardLabel = "잔액권 선택"
     override val purchaseAmountLabel = "실제 구매금액 (선택)"
     override val purchaseAmountHint = "할인 구매 시 실제 지불한 금액"
-    override val selectGiftCardLabel = "상품권 선택"
     override val dutchPaySettlement = "더치페이/정산"
     override val settlementAmountLabel = "정산받을 금액"
     override val settlementDescription = "결제 금액에서 정산받을 금액을 뺀 나머지가 실제 내 부담액으로 표시됩니다"
     override fun balanceCardFullUsage(amount: Int, remaining: Int) = "잔액권 ${amount}원 사용, 잔액 ${remaining}원"
     override fun balanceCardPartialUsage(cardAmount: Int, cashAmount: Int) = "잔액권 ${cardAmount}원 + 현금 ${cashAmount}원 지출"
-    override fun giftCardFullUsage(amount: Int) = "상품권 ${amount}원 전액 사용"
-    override fun giftCardRefundUsage(amount: Int, refund: Int) = "상품권 ${amount}원 사용, ${refund}원 현금 환급"
-    override fun giftCardPartialUsage(cardAmount: Int, cashAmount: Int) = "상품권 ${cardAmount}원 + 현금 ${cashAmount}원 지출"
 
     // ===== Calculator (additional) =====
     override val periodCalculator = "기간별 계산기"
@@ -780,7 +771,6 @@ object KoreanStrings : AppStrings {
     override val deleteCategoryTransactionWarning = "해당 카테고리로 등록된 기존 거래 내역은 삭제되지 않습니다."
 
     // ===== Card Management (additional) =====
-    override val balanceGiftCardManagement = "잔액권/상품권 관리"
     override val activeTab = "사용중"
     override val completedTab = "사용완료"
     override val noActiveCards = "사용중인 카드가 없습니다"
@@ -854,4 +844,23 @@ object KoreanStrings : AppStrings {
     override val filterStartDate = "시작일"
     override val filterEndDate = "종료일"
     override val filterAll = "전체"
+
+    override val outflow = "나간 돈"
+    override val remainingMoney = "남은 돈"
+    override val dailyAllowanceTitle = "오늘 쓸 수 있는 돈"
+    override fun dailyAllowanceLimit(amount: String) = "하루 $amount"
+    override fun daysUntilPayday(days: Int) = "월급날까지 D-$days"
+    override val dailyAllowanceOverBudget = "예산 초과"
+    override val dailyAllowanceSetupHint = "예산 설정에서 급여를 입력하면 하루 쓸 수 있는 돈을 알려드려요"
+    override fun remainingTodayAfterSave(before: String, after: String) = "저장 후 오늘 남은 돈: $before → $after"
+    override fun laborTime(duration: String) = "≈ $duration 노동"
+    override fun laborDuration(hours: Int, minutes: Int) = when {
+        hours == 0 -> "${minutes}분"
+        minutes == 0 -> "${hours}시간"
+        else -> "${hours}시간 ${minutes}분"
+    }
+    override fun laborDays(days: String) = "${days}일"
+    override val hourlyWageInfoTitle = "노동시간 계산 기준"
+    override fun hourlyWageInfoMessage(hourlyWage: String) =
+        "시급 ${hourlyWage}원 = 월급 ÷ 209시간\n\n209시간은 법정 월 소정근로시간(하루 8시간, 주 40시간, 주휴 포함)이에요.\n8시간 이상이면 8시간을 1일로 환산해요."
 }

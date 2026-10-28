@@ -2,18 +2,16 @@ package com.woojin.paymanagement.presentation.cardmanagement
 
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.CustomPaymentMethod
-import com.woojin.paymanagement.data.GiftCard
 import com.woojin.paymanagement.data.Transaction
 
 enum class CardTab {
     CARD_MANAGEMENT,
-    BALANCE_GIFT
+    BALANCE
 }
 
 data class CardManagementUiState(
     val selectedTab: CardTab = CardTab.CARD_MANAGEMENT,
     val balanceCards: List<BalanceCard> = emptyList(),
-    val giftCards: List<GiftCard> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val expandedCardId: String? = null,
@@ -41,26 +39,13 @@ data class CardManagementUiState(
     val editBalanceCardName: String = "",
     val editBalanceCardCurrentBalance: String = "",
     val isDeleteBalanceCardDialogVisible: Boolean = false,
-    val deletingBalanceCard: BalanceCard? = null,
-    // 상품권 추가
-    val isAddGiftCardDialogVisible: Boolean = false,
-    val newGiftCardName: String = "",
-    val newGiftCardAmount: String = "",
-    // 상품권 수정/삭제
-    val isEditGiftCardDialogVisible: Boolean = false,
-    val editingGiftCard: GiftCard? = null,
-    val editGiftCardName: String = "",
-    val editGiftCardRemainingAmount: String = "",
-    val isDeleteGiftCardDialogVisible: Boolean = false,
-    val deletingGiftCard: GiftCard? = null
+    val deletingBalanceCard: BalanceCard? = null
 )
 
 sealed class CardItem {
     data class Balance(val card: BalanceCard) : CardItem()
-    data class Gift(val card: GiftCard) : CardItem()
 
     fun getId(): String = when (this) {
         is Balance -> card.id
-        is Gift -> card.id
     }
 }

@@ -21,11 +21,11 @@ enum class TipProductId(val productId: String) {
 /**
  * 광고 제거 상품 ID
  */
-enum class AdRemovalProductId(val productId: String) {
-    ONE_DAY("adremoval1day"),
-    THREE_DAYS("adremoval3days"),
-    SEVEN_DAYS("adremoval7days"),
-    THIRTY_DAYS("adremoval30days")
+enum class AdRemovalProductId(val productId: String, val days: Int) {
+    ONE_DAY("adremoval1day", 1),
+    THREE_DAYS("adremoval3days", 3),
+    SEVEN_DAYS("adremoval7days", 7),
+    THIRTY_DAYS("adremoval30days", 30)
 }
 
 /**

@@ -8,6 +8,8 @@ import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.database.DatabaseHelper
 import com.woojin.paymanagement.domain.repository.CategoryRepository
 import com.woojin.paymanagement.domain.repository.SharedModeManager
+import com.woojin.paymanagement.domain.repository.SharedRoomRepository
+import com.woojin.paymanagement.domain.repository.loadSharedTransactions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -15,12 +17,14 @@ import kotlinx.datetime.LocalDate
 class SearchViewModel(
     private val databaseHelper: DatabaseHelper,
     private val categoryRepository: CategoryRepository,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val sharedRoomRepository: SharedRoomRepository? = null
 ) {
     var uiState by mutableStateOf(SearchUiState())
         private set
 
     private var allTransactions: List<Transaction> = emptyList()
+    private var sharedTransactions: List<Transaction> = emptyList()
 
     init {
         coroutineScope.launch {
@@ -31,6 +35,13 @@ class SearchViewModel(
         coroutineScope.launch {
             databaseHelper.getAllTransactions().collect { transactions ->
                 allTransactions = transactions
+                applySearch()
+            }
+        }
+        // 공유 모드: 달력 캐시는 한 급여 기간뿐이라 공유방 전체 거래를 따로 불러옴
+        if (SharedModeManager.isSharedMode && sharedRoomRepository != null) {
+            coroutineScope.launch {
+                sharedTransactions = sharedRoomRepository.loadSharedTransactions()
                 applySearch()
             }
         }
@@ -91,10 +102,7 @@ class SearchViewModel(
             return
         }
 
-        val source = if (SharedModeManager.isSharedMode)
-            SharedModeManager.cachedSharedTransactions.map { it.transaction }
-        else
-            allTransactions
+        val source = if (SharedModeManager.isSharedMode) sharedTransactions else allTransactions
 
         val filtered = source.filter { tx ->
             val keywordMatch = keyword.isBlank() ||

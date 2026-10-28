@@ -8,6 +8,7 @@ import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.repository.PreferencesRepository
 import com.woojin.paymanagement.domain.repository.SharedModeManager
 import com.woojin.paymanagement.domain.repository.SharedRoomRepository
+import com.woojin.paymanagement.domain.usecase.CalculateDailyAllowanceUseCase
 import com.woojin.paymanagement.domain.usecase.GetDailyTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.GetPayPeriodSummaryUseCase
 import com.woojin.paymanagement.domain.usecase.GetMoneyVisibilityUseCase
@@ -41,6 +42,7 @@ class CalendarViewModel(
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val payPeriodCalculator: PayPeriodCalculator,
     private val holidayRepository: com.woojin.paymanagement.domain.repository.HolidayRepository,
+    private val calculateDailyAllowanceUseCase: CalculateDailyAllowanceUseCase,
     private val coroutineScope: CoroutineScope,
     private val sharedRoomRepository: SharedRoomRepository? = null
 ) {
@@ -256,10 +258,8 @@ class CalendarViewModel(
                     applyStateLocked(payPeriod = newPeriod, selectedDate = newToday)
                     newPeriod
                 } else {
-                    // 같은 기간이면 어제(=오늘이던 날)를 선택 중일 때만 오늘로 옮김
-                    if (selected == oldToday && newToday.isIn(period)) {
-                        applyStateLocked(selectedDate = newToday)
-                    }
+                    // 같은 기간이면 어제(=오늘이던 날)를 선택 중일 때만 오늘로 옮김. 하루 얼마는 날짜가 바뀌었으니 항상 다시 계산
+                    applyStateLocked(selectedDate = if (selected == oldToday && newToday.isIn(period)) newToday else null)
                     null
                 }
             }
@@ -424,6 +424,10 @@ class CalendarViewModel(
 
         val payPeriodSummary = getPayPeriodSummaryUseCase(transactions, actualPayPeriod)
         val dailyTransactions = getDailyTransactionsUseCase(transactions, actualSelectedDate)
+        val today = uiState.today
+        val dailyAllowance = if (today.isIn(actualPayPeriod)) {
+            runCatching { calculateDailyAllowanceUseCase(transactions, today) }.getOrNull()
+        } else null
 
         // 공휴일 정보 가져오기
         val holidayInfo = getHolidaysForPayPeriod(actualPayPeriod)
@@ -433,6 +437,7 @@ class CalendarViewModel(
             selectedDate = actualSelectedDate,
             transactions = transactions,
             payPeriodSummary = payPeriodSummary,
+            dailyAllowance = dailyAllowance,
             dailyTransactions = dailyTransactions,
             isMoneyVisible = isMoneyVisible,
             holidays = holidayInfo.dates,

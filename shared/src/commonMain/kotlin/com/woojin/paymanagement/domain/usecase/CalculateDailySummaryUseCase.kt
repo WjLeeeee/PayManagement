@@ -2,6 +2,7 @@ package com.woojin.paymanagement.domain.usecase
 
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.INVESTMENT_INCOME_CATEGORIES
 import com.woojin.paymanagement.domain.model.DailySummary
 
 class CalculateDailySummaryUseCase {
@@ -18,10 +19,9 @@ class CalculateDailySummaryUseCase {
             .filter { it.type == TransactionType.SAVING }
             .sumOf { it.displayAmount }
 
-        val investmentIncomeCategories = setOf("익절", "배당금")
         val totalInvestment = transactions
             .filter { it.type == TransactionType.INVESTMENT }
-            .sumOf { t -> if (t.category in investmentIncomeCategories) t.displayAmount else -t.displayAmount }
+            .sumOf { t -> if (t.category in INVESTMENT_INCOME_CATEGORIES) t.displayAmount else -t.displayAmount }
 
         val dailyBalance = totalIncome - totalExpense
 

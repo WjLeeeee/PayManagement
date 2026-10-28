@@ -15,8 +15,7 @@ data class Transaction(
     val incomeType: IncomeType? = null, // 수입일 때만 사용
     val paymentMethod: PaymentMethod? = null, // 지출일 때만 사용
     val balanceCardId: String? = null,   // 잔액권 ID (수입 시 생성, 지출 시 사용)
-    val giftCardId: String? = null,      // 상품권 ID (수입 시 생성, 지출 시 사용)
-    val cardName: String? = null,        // 잔액권/상품권 이름
+    val cardName: String? = null,        // 잔액권 이름 (CARD 결제면 카드 이름)
     val settlementAmount: Double? = null, // 정산받을 금액 (더치페이 시)
     val isSettlement: Boolean = false,   // 더치페이 여부
     val subCategory: String? = null      // 소분류
@@ -41,20 +40,28 @@ enum class TransactionType {
     INVESTMENT
 }
 
+// 투자 중 돌아온 돈으로 보는 카테고리 (나머지 투자는 나간 돈)
+val INVESTMENT_INCOME_CATEGORIES = setOf("익절", "배당금")
+
 @Serializable
 enum class IncomeType {
     CASH,        // 현금
-    BALANCE_CARD, // 잔액권 (편의점 상품권 등, 잔액 관리 필요)
-    GIFT_CARD    // 상품권 (신세계상품권 등, 80% 이상 사용 시 나머지는 현금 환급)
+    BALANCE_CARD // 잔액권 (편의점 상품권 등, 잔액 관리 필요)
 }
 
 @Serializable
 enum class PaymentMethod {
     CASH,        // 현금 지출 (체크카드 포함)
     CARD,        // 신용카드 지출
-    BALANCE_CARD, // 잔액권 사용
-    GIFT_CARD    // 상품권 사용
+    BALANCE_CARD // 잔액권 사용
 }
+
+// 상품권 기능 제거 전에 저장된 "GIFT_CARD"는 현금으로 읽음 (DB·백업·공유방 공통)
+private const val REMOVED_GIFT_CARD = "GIFT_CARD"
+fun paymentMethodOf(name: String): PaymentMethod =
+    if (name == REMOVED_GIFT_CARD) PaymentMethod.CASH else PaymentMethod.valueOf(name)
+fun incomeTypeOf(name: String): IncomeType =
+    if (name == REMOVED_GIFT_CARD) IncomeType.CASH else IncomeType.valueOf(name)
 
 @Serializable
 data class BalanceCard(
@@ -64,30 +71,6 @@ data class BalanceCard(
     val currentBalance: Double, // 현재 잔액
     val createdDate: LocalDate, // 생성일
     val isActive: Boolean = true // 활성 상태 (잔액이 0이 되면 false)
-)
-
-@Serializable
-data class GiftCard(
-    val id: String,
-    val name: String,        // 상품권 이름 (예: "신세계 상품권")
-    val totalAmount: Double, // 총 금액
-    val usedAmount: Double,  // 사용된 금액
-    val createdDate: LocalDate, // 생성일
-    val isActive: Boolean = true, // 활성 상태
-    val minimumUsageRate: Double = 0.8 // 최소 사용률 (기본 80%)
-) {
-    val remainingAmount: Double
-        get() = totalAmount - usedAmount
-
-    val canUse: Boolean
-        get() = isActive && remainingAmount > 0
-}
-
-@Serializable
-data class GiftCardTransactionResult(
-    val transactions: List<Transaction>, // 생성된 거래들 (지출 + 환급)
-    val updatedGiftCard: GiftCard? = null, // 업데이트된 상품권 (완전 사용 시 null)
-    val cashRefund: Double = 0.0 // 현금 환급 금액
 )
 
 @Serializable
@@ -105,7 +88,6 @@ data class PaymentMethodSummary(
     val cardActualExpense: Double = 0.0, // 더치페이 포함 실제 카드 사용액
     val settlementIncome: Double = 0.0, // 더치페이로 받은 금액
     val balanceCards: List<BalanceCardSummary> = emptyList(),
-    val giftCards: List<GiftCardSummary> = emptyList(),
     val cardBreakdowns: List<CardBreakdown> = emptyList()
 )
 
@@ -115,15 +97,6 @@ data class BalanceCardSummary(
     val name: String,
     val income: Double = 0.0, // 이 기간에 추가된 잔액권
     val expense: Double = 0.0, // 이 기간에 사용된 잔액권
-    val currentBalance: Double = 0.0 // 현재 잔액
-)
-
-@Serializable
-data class GiftCardSummary(
-    val id: String,
-    val name: String,
-    val income: Double = 0.0, // 이 기간에 추가된 상품권
-    val expense: Double = 0.0, // 이 기간에 사용된 상품권
     val currentBalance: Double = 0.0 // 현재 잔액
 )
 
@@ -141,118 +114,6 @@ data class CardBreakdown(
     val cardName: String?,  // null = 미지정
     val expense: Double
 )
-
-object GiftCardUtils {
-    /**
-     * 상품권을 사용하여 지출을 처리합니다.
-     * @param giftCard 사용할 상품권
-     * @param expenseAmount 지출 금액
-     * @param baseTransaction 기본 거래 정보 (카테고리, 메모, 날짜 등)
-     * @return 처리 결과 (거래 목록, 업데이트된 상품권, 환급 금액)
-     */
-    fun processGiftCardExpense(
-        giftCard: GiftCard,
-        expenseAmount: Double,
-        baseTransaction: Transaction
-    ): GiftCardTransactionResult {
-        val availableAmount = giftCard.remainingAmount
-
-        return when {
-            // 상품권 잔액이 지출보다 많은 경우: 지출 + 환급
-            availableAmount > expenseAmount -> {
-                val giftCardUsed = expenseAmount
-                val cashRefund = availableAmount - expenseAmount
-
-                val transactions = mutableListOf<Transaction>()
-
-                // 상품권 지출 거래
-                transactions.add(
-                    baseTransaction.copy(
-                        id = kotlin.random.Random.nextLong().toString(),
-                        amount = giftCardUsed,
-                        paymentMethod = PaymentMethod.GIFT_CARD,
-                        giftCardId = giftCard.id,
-                        cardName = giftCard.name
-                    )
-                )
-
-                // 현금 환급 거래 (수입)
-                if (cashRefund > 0) {
-                    transactions.add(
-                        Transaction(
-                            id = kotlin.random.Random.nextLong().toString(),
-                            amount = cashRefund,
-                            type = TransactionType.INCOME,
-                            category = "상품권 환급",
-                            memo = "${giftCard.name} 환급",
-                            date = baseTransaction.date,
-                            incomeType = IncomeType.CASH
-                        )
-                    )
-                }
-
-                GiftCardTransactionResult(
-                    transactions = transactions,
-                    updatedGiftCard = null, // 완전히 사용됨
-                    cashRefund = cashRefund
-                )
-            }
-
-            // 상품권 잔액이 지출보다 적은 경우: 상품권 전액 사용 + 현금 지출
-            availableAmount < expenseAmount -> {
-                val giftCardUsed = availableAmount
-                val cashNeeded = expenseAmount - availableAmount
-
-                val transactions = mutableListOf<Transaction>()
-
-                // 상품권 지출 거래
-                transactions.add(
-                    baseTransaction.copy(
-                        id = kotlin.random.Random.nextLong().toString(),
-                        amount = giftCardUsed,
-                        paymentMethod = PaymentMethod.GIFT_CARD,
-                        giftCardId = giftCard.id,
-                        cardName = giftCard.name
-                    )
-                )
-
-                // 현금 지출 거래
-                transactions.add(
-                    baseTransaction.copy(
-                        id = kotlin.random.Random.nextLong().toString(),
-                        amount = cashNeeded,
-                        paymentMethod = PaymentMethod.CASH
-                    )
-                )
-
-                GiftCardTransactionResult(
-                    transactions = transactions,
-                    updatedGiftCard = null, // 완전히 사용됨
-                    cashRefund = 0.0
-                )
-            }
-
-            // 상품권 잔액과 지출이 정확히 같은 경우: 상품권만 사용
-            else -> {
-                val transactions = listOf(
-                    baseTransaction.copy(
-                        id = kotlin.random.Random.nextLong().toString(),
-                        amount = expenseAmount,
-                        paymentMethod = PaymentMethod.GIFT_CARD,
-                        giftCardId = giftCard.id,
-                        cardName = giftCard.name
-                    )
-                )
-
-                GiftCardTransactionResult(
-                    transactions = transactions,
-                    updatedGiftCard = null, // 완전히 사용됨
-                    cashRefund = 0.0
-                )
-            }
-        }
-    }
-}
 
 object BalanceCardUtils {
     /**
@@ -342,14 +203,12 @@ object PaymentMethodAnalyzer {
      */
     fun analyzePaymentMethods(
         transactions: List<Transaction>,
-        availableBalanceCards: List<BalanceCard> = emptyList(),
-        availableGiftCards: List<GiftCard> = emptyList()
+        availableBalanceCards: List<BalanceCard> = emptyList()
     ): PaymentMethodSummary {
         val cashIncome = transactions
             .filter {
                 it.type == TransactionType.INCOME &&
-                (it.incomeType == IncomeType.CASH || it.incomeType == null) &&
-                it.category != "상품권 환급" // 상품권 환급으로 인한 현금 수입 제외
+                (it.incomeType == IncomeType.CASH || it.incomeType == null)
             }
             .sumOf { it.displayAmount }
 
@@ -409,42 +268,6 @@ object PaymentMethodAnalyzer {
             )
         }.filter { it.currentBalance > 0 } // 잔액이 0인 것은 제외
 
-        // 상품권 분석 (해당 기간 거래 + 잔액이 남아있는 모든 상품권)
-        val giftCardNamesFromTransactions = transactions
-            .filter { it.giftCardId != null && it.cardName != null }
-            .map { it.cardName!! }
-            .toSet()
-
-        val giftCardNamesFromAvailable = availableGiftCards
-            .filter { it.isActive && it.remainingAmount > 0 }
-            .map { it.name }
-            .toSet()
-
-        val allGiftCardNames = (giftCardNamesFromTransactions + giftCardNamesFromAvailable).distinct()
-
-        val giftCardSummaries = allGiftCardNames.map { cardName ->
-            val cardTransactions = transactions.filter { it.cardName == cardName && it.giftCardId != null }
-
-            val income = cardTransactions
-                .filter { it.type == TransactionType.INCOME }
-                .sumOf { it.displayAmount }
-
-            val expense = cardTransactions
-                .filter { it.type == TransactionType.EXPENSE }
-                .sumOf { it.displayAmount }
-
-            val currentCard = availableGiftCards.find { it.name == cardName }
-            val currentBalance = currentCard?.remainingAmount ?: 0.0
-
-            GiftCardSummary(
-                id = currentCard?.id ?: cardTransactions.firstOrNull()?.giftCardId ?: "",
-                name = cardName,
-                income = income,
-                expense = expense,
-                currentBalance = currentBalance
-            )
-        }.filter { it.currentBalance > 0 } // 잔액이 0인 것은 제외
-
         // 카드별 지출 분석
         val cardBreakdowns = if (cardExpense > 0) {
             cardTransactions
@@ -467,7 +290,6 @@ object PaymentMethodAnalyzer {
             cardActualExpense = cardActualExpense,
             settlementIncome = settlementIncome,
             balanceCards = balanceCardSummaries,
-            giftCards = giftCardSummaries,
             cardBreakdowns = cardBreakdowns
         )
     }

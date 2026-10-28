@@ -2,7 +2,6 @@ package com.woojin.paymanagement.domain.usecase
 
 import com.woojin.paymanagement.data.BackupData
 import com.woojin.paymanagement.data.BalanceCardBackup
-import com.woojin.paymanagement.data.GiftCardBackup
 import com.woojin.paymanagement.data.TransactionBackup
 import com.woojin.paymanagement.data.CategoryBackup
 import com.woojin.paymanagement.data.BudgetPlanBackup
@@ -46,10 +45,6 @@ class ExportDataUseCase(
                 databaseHelper.getAllBalanceCards().first()
             } else emptyList()
 
-            val giftCards = if (type == BackupType.ALL || type == BackupType.CARDS) {
-                databaseHelper.getAllGiftCards().first()
-            } else emptyList()
-
             val categories = if (type == BackupType.ALL || type == BackupType.CATEGORIES) {
                 databaseHelper.getAllCategories().first()
             } else emptyList()
@@ -88,7 +83,6 @@ class ExportDataUseCase(
                 paydayAdjustment = preferencesManager.getPaydayAdjustment().name,
                 transactions = transactions.map { it.toBackup() },
                 balanceCards = balanceCards.map { it.toBackup() },
-                giftCards = giftCards.map { it.toBackup() },
                 categories = categories.map { it.toBackup() },
                 budgetPlans = budgetPlans.map { it.toBackup() },
                 categoryBudgets = allCategoryBudgets.map { it.toBackup() },
@@ -117,7 +111,6 @@ class ExportDataUseCase(
         paymentMethod = paymentMethod?.name,
         incomeType = incomeType?.name,
         balanceCardId = balanceCardId,
-        giftCardId = giftCardId,
         cardName = cardName,
         merchant = merchant,
         actualAmount = null,
@@ -133,16 +126,6 @@ class ExportDataUseCase(
         currentBalance = currentBalance,
         createdDate = createdDate.toString(),
         isActive = isActive
-    )
-
-    private fun com.woojin.paymanagement.data.GiftCard.toBackup() = GiftCardBackup(
-        id = id,
-        name = name,
-        totalAmount = totalAmount,
-        usedAmount = usedAmount,
-        createdDate = createdDate.toString(),
-        isActive = isActive,
-        minimumUsageRate = minimumUsageRate
     )
 
     private fun com.woojin.paymanagement.data.Category.toBackup() = CategoryBackup(
@@ -184,7 +167,6 @@ class ExportDataUseCase(
         memo = memo,
         paymentMethod = paymentMethod.name,
         balanceCardId = balanceCardId,
-        giftCardId = giftCardId,
         cardName = cardName,
         pattern = pattern.name,
         dayOfMonth = dayOfMonth,

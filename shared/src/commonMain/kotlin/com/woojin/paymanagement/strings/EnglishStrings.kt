@@ -263,7 +263,6 @@ object EnglishStrings : AppStrings {
     override val cash = "Cash"
     override val card = "Card"
     override val bankTransfer = "Bank Transfer"
-    override val giftCard = "Gift Card"
     override val paymentMethod = "Payment Method"
     override val transactionSaved = "Transaction saved"
     override val transactionDeleted = "Transaction deleted"
@@ -365,11 +364,8 @@ object EnglishStrings : AppStrings {
     override val lastUsed = "Last Used"
     override val totalSpent = "Total Spent"
     override val balanceCardManagement = "Balance Card Management"
-    override val giftCardManagement = "Gift Card Management"
     override val addBalanceCard = "Add Balance Card"
-    override val addGiftCard = "Add Gift Card"
     override val editBalanceCard = "Edit Balance Card"
-    override val editGiftCard = "Edit Gift Card"
     override val initialBalance = "Initial Balance"
     override val currentBalance = "Current Balance"
     override val usedBalance = "Used Balance"
@@ -719,20 +715,15 @@ object EnglishStrings : AppStrings {
     override val newBalanceCard = "Add New Balance Card"
     override val chargeExistingBalanceCard = "Charge Existing Balance Card"
     override val balanceCardNameHint = "Balance card name (e.g., Store voucher)"
-    override val giftCardNameHint = "Gift card name (e.g., Department store)"
     override val selectBalanceCardToCharge = "Select balance card to charge"
     override val selectBalanceCardLabel = "Select Balance Card"
     override val purchaseAmountLabel = "Actual Purchase Amount (Optional)"
     override val purchaseAmountHint = "Amount paid for discounted card"
-    override val selectGiftCardLabel = "Select Gift Card"
     override val dutchPaySettlement = "Dutch Pay / Settlement"
     override val settlementAmountLabel = "Settlement Amount"
     override val settlementDescription = "Your actual amount is the payment minus the settlement amount"
     override fun balanceCardFullUsage(amount: Int, remaining: Int) = "Balance card ₩$amount used, ₩$remaining remaining"
     override fun balanceCardPartialUsage(cardAmount: Int, cashAmount: Int) = "Balance card ₩$cardAmount + Cash ₩$cashAmount"
-    override fun giftCardFullUsage(amount: Int) = "Gift card ₩$amount fully used"
-    override fun giftCardRefundUsage(amount: Int, refund: Int) = "Gift card ₩$amount used, ₩$refund cash refund"
-    override fun giftCardPartialUsage(cardAmount: Int, cashAmount: Int) = "Gift card ₩$cardAmount + Cash ₩$cashAmount"
 
     // ===== Calculator (additional) =====
     override val periodCalculator = "Period Calculator"
@@ -824,7 +815,6 @@ object EnglishStrings : AppStrings {
     override val deleteCategoryTransactionWarning = "Existing transactions in this category will not be deleted."
 
     // ===== Card Management (additional) =====
-    override val balanceGiftCardManagement = "Balance/Gift Card Management"
     override val activeTab = "Active"
     override val completedTab = "Used Up"
     override val noActiveCards = "No active cards"
@@ -898,4 +888,23 @@ object EnglishStrings : AppStrings {
     override val filterStartDate = "Start Date"
     override val filterEndDate = "End Date"
     override val filterAll = "All"
+
+    override val outflow = "Spent"
+    override val remainingMoney = "Left"
+    override val dailyAllowanceTitle = "Available today"
+    override fun dailyAllowanceLimit(amount: String) = "$amount/day"
+    override fun daysUntilPayday(days: Int) = "D-$days to payday"
+    override val dailyAllowanceOverBudget = "Over budget"
+    override val dailyAllowanceSetupHint = "Enter your salary in Budget Settings to see how much you can spend per day"
+    override fun remainingTodayAfterSave(before: String, after: String) = "Left today after saving: $before → $after"
+    override fun laborTime(duration: String) = "≈ $duration of work"
+    override fun laborDuration(hours: Int, minutes: Int) = when {
+        hours == 0 -> "${minutes}m"
+        minutes == 0 -> "${hours}h"
+        else -> "${hours}h ${minutes}m"
+    }
+    override fun laborDays(days: String) = "$days days"
+    override val hourlyWageInfoTitle = "How work time is calculated"
+    override fun hourlyWageInfoMessage(hourlyWage: String) =
+        "Hourly wage ₩$hourlyWage = monthly salary ÷ 209 hours\n\n209 hours is the Korean statutory monthly working hours (8h/day, 40h/week, including paid weekly holiday).\nFrom 8 hours on, 8 hours count as 1 day."
 }

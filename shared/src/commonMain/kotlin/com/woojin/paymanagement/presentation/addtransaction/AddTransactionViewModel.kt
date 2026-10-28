@@ -7,8 +7,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.woojin.paymanagement.data.BalanceCard
 import com.woojin.paymanagement.data.BalanceCardUtils
-import com.woojin.paymanagement.data.GiftCard
-import com.woojin.paymanagement.data.GiftCardUtils
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.ParsedTransaction
@@ -17,12 +15,13 @@ import com.woojin.paymanagement.data.TransactionType
 import com.woojin.paymanagement.domain.repository.SharedModeManager
 import com.woojin.paymanagement.domain.repository.SharedRoomRepository
 import com.woojin.paymanagement.domain.usecase.GetAvailableBalanceCardsUseCase
-import com.woojin.paymanagement.domain.usecase.GetAvailableGiftCardsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveMultipleTransactionsUseCase
 import com.woojin.paymanagement.domain.usecase.SaveTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.UpdateTransactionUseCase
 import com.woojin.paymanagement.domain.usecase.GetCategoriesUseCase
 import com.woojin.paymanagement.domain.usecase.GetCustomPaymentMethodsUseCase
+import com.woojin.paymanagement.domain.usecase.CalculateDailyAllowanceUseCase
+import com.woojin.paymanagement.domain.usecase.GetCurrentBudgetPlanUseCase
 import com.woojin.paymanagement.database.DatabaseHelper
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -44,10 +43,11 @@ class AddTransactionViewModel(
     private val saveMultipleTransactionsUseCase: SaveMultipleTransactionsUseCase,
     private val updateTransactionUseCase: UpdateTransactionUseCase,
     private val getAvailableBalanceCardsUseCase: GetAvailableBalanceCardsUseCase,
-    private val getAvailableGiftCardsUseCase: GetAvailableGiftCardsUseCase,
     private val getCategoriesUseCase: com.woojin.paymanagement.domain.usecase.GetCategoriesSortedByUsageUseCase,
     private val getCustomPaymentMethodsUseCase: GetCustomPaymentMethodsUseCase,
     private val databaseHelper: DatabaseHelper,
+    private val calculateDailyAllowanceUseCase: CalculateDailyAllowanceUseCase,
+    private val getCurrentBudgetPlanUseCase: GetCurrentBudgetPlanUseCase,
     private val sharedRoomRepository: SharedRoomRepository? = null
 ) : ViewModel() {
     var uiState by mutableStateOf(AddTransactionUiState())
@@ -115,6 +115,21 @@ class AddTransactionViewModel(
         )
     }
 
+    /**
+     * 금액 아래 표시용: 노동시간 환산 시급(고정 급여 ÷ 209시간), 오늘 남은 돈
+     */
+    fun loadSpendingInsights(transactions: List<Transaction>) {
+        viewModelScope.launch {
+            val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+            val monthlySalary = getCurrentBudgetPlanUseCase(today).first()?.monthlySalary ?: 0.0
+            val dailyAllowance = runCatching { calculateDailyAllowanceUseCase(transactions, today) }.getOrNull()
+            uiState = uiState.copy(
+                hourlyWage = if (monthlySalary > 0) monthlySalary / MONTHLY_WORKING_HOURS else null,
+                dailyAllowance = dailyAllowance
+            )
+        }
+    }
+
     fun initialize(
         transactions: List<Transaction>,
         selectedDate: LocalDate?,
@@ -128,12 +143,9 @@ class AddTransactionViewModel(
         viewModelScope.launch {
             // DB에서 현재 활성 카드를 직접 조회 (항상 최신 상태 반영)
             val activeBalanceCards = databaseHelper.getActiveBalanceCards().first()
-            val activeGiftCards = databaseHelper.getActiveGiftCards().first()
             val activeBalanceCardIds = activeBalanceCards.map { it.id }.toSet()
-            val activeGiftCardIds = activeGiftCards.map { it.id }.toSet()
 
             val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds, activeBalanceCards)
-            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds, activeGiftCards)
 
             val initialDate = editTransaction?.date
                 ?: selectedDate
@@ -143,15 +155,10 @@ class AddTransactionViewModel(
                 // 편집 모드 초기화
                 val initialAmount = editTransaction.amount.toLong().toString()
 
-                // 이전에 선택된 잔액권/상품권 복원
+                // 이전에 선택된 잔액권 복원
                 val preselectedBalanceCard = if (editTransaction.paymentMethod == PaymentMethod.BALANCE_CARD &&
                     editTransaction.balanceCardId != null) {
                     availableBalanceCards.find { it.id == editTransaction.balanceCardId }
-                } else null
-
-                val preselectedGiftCard = if (editTransaction.paymentMethod == PaymentMethod.GIFT_CARD &&
-                    editTransaction.giftCardId != null) {
-                    availableGiftCards.find { it.id == editTransaction.giftCardId }
                 } else null
 
                 // 기존 저장 대상 확인 (로컬/공유 캐시 존재 여부로 개인만/공유만/둘다 판별)
@@ -184,20 +191,17 @@ class AddTransactionViewModel(
                         TextFieldValue(text, selection = TextRange(text.length))
                     } ?: TextFieldValue(""),
                     availableBalanceCards = availableBalanceCards,
-                    availableGiftCards = availableGiftCards,
                     isEditMode = true,
                     editTransaction = editTransaction,
                     saveTarget = existingSaveTarget,
                     selectedCustomCardName = if (editTransaction.paymentMethod == PaymentMethod.CARD) editTransaction.cardName else null,
-                    selectedBalanceCard = preselectedBalanceCard,
-                    selectedGiftCard = preselectedGiftCard
+                    selectedBalanceCard = preselectedBalanceCard
                 )
             } else {
                 // 새 거래 추가 모드
                 uiState = uiState.copy(
                     date = initialDate,
                     availableBalanceCards = availableBalanceCards,
-                    availableGiftCards = availableGiftCards,
                     isEditMode = false,
                     editTransaction = null
                 )
@@ -219,12 +223,9 @@ class AddTransactionViewModel(
         viewModelScope.launch {
             // DB에서 현재 활성 카드를 직접 조회 (항상 최신 상태 반영)
             val activeBalanceCards = databaseHelper.getActiveBalanceCards().first()
-            val activeGiftCards = databaseHelper.getActiveGiftCards().first()
             val activeBalanceCardIds = activeBalanceCards.map { it.id }.toSet()
-            val activeGiftCardIds = activeGiftCards.map { it.id }.toSet()
 
             val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds, activeBalanceCards)
-            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds, activeGiftCards)
 
             val amountText = formatWithCommas(parsedTransaction.amount.toLong())
 
@@ -238,7 +239,6 @@ class AddTransactionViewModel(
                 merchant = parsedTransaction.merchantName, // 가맹점명을 사용처에
                 date = parsedTransaction.date, // 파싱된 날짜
                 availableBalanceCards = availableBalanceCards,
-                availableGiftCards = availableGiftCards,
                 isEditMode = false,
                 editTransaction = null
             )
@@ -265,12 +265,9 @@ class AddTransactionViewModel(
         viewModelScope.launch {
             // DB에서 현재 활성 카드를 직접 조회 (항상 최신 상태 반영)
             val activeBalanceCards = databaseHelper.getActiveBalanceCards().first()
-            val activeGiftCards = databaseHelper.getActiveGiftCards().first()
             val activeBalanceCardIds = activeBalanceCards.map { it.id }.toSet()
-            val activeGiftCardIds = activeGiftCards.map { it.id }.toSet()
 
             val availableBalanceCards = getAvailableBalanceCardsUseCase(transactions, activeBalanceCardIds, activeBalanceCards)
-            val availableGiftCards = getAvailableGiftCardsUseCase(transactions, activeGiftCardIds, activeGiftCards)
 
             val amountText = formatWithCommas(recurringTransaction.amount.toLong())
             val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -287,19 +284,14 @@ class AddTransactionViewModel(
                 memo = recurringTransaction.memo,
                 date = today, // 오늘 날짜로 설정
                 availableBalanceCards = availableBalanceCards,
-                availableGiftCards = availableGiftCards,
                 isEditMode = false,
                 editTransaction = null
             )
 
-            // 잔액권/상품권 결제 시 카드 선택
+            // 잔액권 결제 시 카드 선택
             if (recurringTransaction.paymentMethod == PaymentMethod.BALANCE_CARD && recurringTransaction.balanceCardId != null) {
                 val selectedCard = availableBalanceCards.find { it.id == recurringTransaction.balanceCardId }
                 uiState = uiState.copy(selectedBalanceCard = selectedCard)
-            }
-            if (recurringTransaction.paymentMethod == PaymentMethod.GIFT_CARD && recurringTransaction.giftCardId != null) {
-                val selectedCard = availableGiftCards.find { it.id == recurringTransaction.giftCardId }
-                uiState = uiState.copy(selectedGiftCard = selectedCard)
             }
             // 카드 결제 시 커스텀 카드명 설정
             if (recurringTransaction.paymentMethod == PaymentMethod.CARD && recurringTransaction.cardName != null) {
@@ -389,11 +381,6 @@ class AddTransactionViewModel(
 
     fun updateSelectedBalanceCard(card: BalanceCard?) {
         uiState = uiState.copy(selectedBalanceCard = card)
-        validateInput()
-    }
-
-    fun updateSelectedGiftCard(card: GiftCard?) {
-        uiState = uiState.copy(selectedGiftCard = card)
         validateInput()
     }
 
@@ -512,14 +499,12 @@ class AddTransactionViewModel(
                           (uiState.selectedType != TransactionType.INCOME ||
                            uiState.selectedIncomeType == IncomeType.CASH ||
                            (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && !uiState.isChargingExistingBalanceCard && uiState.cardName.isNotBlank()) ||
-                           (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && uiState.isChargingExistingBalanceCard && uiState.selectedBalanceCardForCharge != null) ||
-                           (uiState.selectedIncomeType == IncomeType.GIFT_CARD && uiState.cardName.isNotBlank())) &&
+                           (uiState.selectedIncomeType == IncomeType.BALANCE_CARD && uiState.isChargingExistingBalanceCard && uiState.selectedBalanceCardForCharge != null)) &&
                           // 지출일 때: 현금이거나 카드가 선택됨 (저축은 이 검증 불필요)
                           (uiState.selectedType != TransactionType.EXPENSE ||
                            uiState.selectedPaymentMethod == PaymentMethod.CASH ||
                            uiState.selectedPaymentMethod == PaymentMethod.CARD ||
-                           (uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD && uiState.selectedBalanceCard != null) ||
-                           (uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD && uiState.selectedGiftCard != null))
+                           (uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD && uiState.selectedBalanceCard != null))
 
         uiState = uiState.copy(
             isValidInput = isValidInput,
@@ -563,34 +548,6 @@ class AddTransactionViewModel(
 
                     val result = BalanceCardUtils.processBalanceCardExpense(
                         balanceCard = uiState.selectedBalanceCard!!,
-                        expenseAmount = expenseAmount,
-                        baseTransaction = baseTransaction
-                    )
-
-                    result.transactions
-                }
-
-                // 편집 모드가 아닐 때만 상품권 지출 특별 처리 (복수 거래 가능)
-                !uiState.isEditMode &&
-                uiState.selectedType == TransactionType.EXPENSE &&
-                uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD &&
-                uiState.selectedGiftCard != null -> {
-
-                    val baseTransaction = Transaction(
-                        id = generateUniqueId(),
-                        amount = expenseAmount,
-                        type = uiState.selectedType,
-                        category = uiState.category,
-                        merchant = uiState.merchant.ifBlank { null },
-                        memo = uiState.memo,
-                        date = currentDate,
-                        paymentMethod = uiState.selectedPaymentMethod,
-                        giftCardId = uiState.selectedGiftCard!!.id,
-                        cardName = uiState.selectedGiftCard!!.name
-                    )
-
-                    val result = GiftCardUtils.processGiftCardExpense(
-                        giftCard = uiState.selectedGiftCard!!,
                         expenseAmount = expenseAmount,
                         baseTransaction = baseTransaction
                     )
@@ -655,6 +612,11 @@ class AddTransactionViewModel(
                         incomeType = if (uiState.selectedType == TransactionType.INCOME) uiState.selectedIncomeType else null,
                         paymentMethod = if (uiState.selectedType == TransactionType.EXPENSE) uiState.selectedPaymentMethod else null,
                         balanceCardId = when {
+                            // 수입 - 잔액권 수정: 원래 카드 그대로 (새 ID를 만들면 카드와 연결이 끊김)
+                            uiState.isEditMode &&
+                            uiState.selectedType == TransactionType.INCOME &&
+                            uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
+                            uiState.editTransaction?.balanceCardId != null -> uiState.editTransaction?.balanceCardId
                             // 수입 - 잔액권 새로 추가
                             uiState.selectedType == TransactionType.INCOME &&
                             uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
@@ -668,15 +630,6 @@ class AddTransactionViewModel(
                             uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.id
                             else -> null
                         },
-                        giftCardId = when {
-                            // 수입 - 상품권 새로 추가
-                            uiState.selectedType == TransactionType.INCOME &&
-                            uiState.selectedIncomeType == IncomeType.GIFT_CARD -> generateUniqueId()
-                            // 지출 - 상품권 사용
-                            uiState.selectedType == TransactionType.EXPENSE &&
-                            uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.id
-                            else -> null
-                        },
                         cardName = when {
                             // 수입 - 잔액권 새로 추가
                             uiState.selectedType == TransactionType.INCOME &&
@@ -686,18 +639,12 @@ class AddTransactionViewModel(
                             uiState.selectedType == TransactionType.INCOME &&
                             uiState.selectedIncomeType == IncomeType.BALANCE_CARD &&
                             uiState.isChargingExistingBalanceCard -> uiState.selectedBalanceCardForCharge?.name
-                            // 수입 - 상품권
-                            uiState.selectedType == TransactionType.INCOME &&
-                            uiState.selectedIncomeType == IncomeType.GIFT_CARD -> uiState.cardName
                             // 지출 - 카드 (커스텀 카드명)
                             uiState.selectedType == TransactionType.EXPENSE &&
                             uiState.selectedPaymentMethod == PaymentMethod.CARD -> uiState.selectedCustomCardName
                             // 지출 - 잔액권 사용
                             uiState.selectedType == TransactionType.EXPENSE &&
                             uiState.selectedPaymentMethod == PaymentMethod.BALANCE_CARD -> uiState.selectedBalanceCard?.name
-                            // 지출 - 상품권 사용
-                            uiState.selectedType == TransactionType.EXPENSE &&
-                            uiState.selectedPaymentMethod == PaymentMethod.GIFT_CARD -> uiState.selectedGiftCard?.name
                             else -> null
                         },
                         settlementAmount = if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount.text) else null,
@@ -777,5 +724,10 @@ class AddTransactionViewModel(
      */
     fun clearBudgetExceededMessage() {
         uiState = uiState.copy(budgetExceededMessage = null)
+    }
+
+    companion object {
+        // 법정 월 소정근로시간 (주 40시간 + 주휴 8시간 기준)
+        private const val MONTHLY_WORKING_HOURS = 209.0
     }
 }
