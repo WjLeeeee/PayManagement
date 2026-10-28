@@ -2047,6 +2047,8 @@ fun PayManagementApp(
                 viewModel = parsedTransactionViewModel,
                 onTransactionClick = { parsedTransaction ->
                     selectedParsedTransaction = parsedTransaction
+                    selectedRecurringTransaction = null
+                    editTransaction = null
                     navigateTo(Screen.AddTransaction)
                 },
                 onBack = { navigateBack() },
