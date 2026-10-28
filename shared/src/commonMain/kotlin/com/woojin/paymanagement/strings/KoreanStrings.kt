@@ -855,6 +855,8 @@ object KoreanStrings : AppStrings {
     override val filterEndDate = "종료일"
     override val filterAll = "전체"
 
+    override val outflow = "나간 돈"
+    override val remainingMoney = "남은 돈"
     override val dailyAllowanceTitle = "오늘 쓸 수 있는 돈"
     override fun dailyAllowanceLimit(amount: String) = "하루 $amount"
     override fun daysUntilPayday(days: Int) = "월급날까지 D-$days"

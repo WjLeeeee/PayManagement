@@ -597,7 +597,9 @@ private fun PayPeriodSummaryCard(
     val investment = periodTransactions
         .filter { it.type == TransactionType.INVESTMENT }
         .sumOf { t -> if (t.category in INVESTMENT_INCOME_CATEGORIES) t.displayAmount else -t.displayAmount }
-    val balance = income - expense
+    // 나간 돈 = 지출 + 저축 + 투자(익절·배당금은 돌아온 돈). 상세는 카드를 눌러 통계 화면에서
+    val outflow = expense + saving - investment
+    val remaining = income - outflow
 
     val strings = LocalStrings.current
     val onCard = Color.White
@@ -669,7 +671,7 @@ private fun PayPeriodSummaryCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 1줄: 수입 / 지출 / 잔액
+            // 1줄: 수입 / 나간 돈 / 남은 돈
             Row(modifier = Modifier.fillMaxWidth()) {
                 SummaryValue(
                     label = strings.income, emoji = null,
@@ -677,61 +679,25 @@ private fun PayPeriodSummaryCard(
                     align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
                 )
                 SummaryValue(
-                    label = strings.expense, emoji = null,
-                    value = "-${strings.amountWithUnit(Utils.formatAmount(expense))}",
+                    label = strings.outflow, emoji = null,
+                    // 익절·배당금이 더 많으면 나간 돈이 음수 → +로 표시
+                    value = "${if (outflow < 0) "+" else "-"}${strings.amountWithUnit(Utils.formatAmount(outflow))}",
                     align = Alignment.CenterHorizontally, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
                 )
                 SummaryValue(
-                    label = strings.balance, emoji = null,
+                    label = strings.remainingMoney, emoji = null,
                     value = "${
                         when {
-                            balance > 0 -> "+"
-                            balance < 0 -> "-"
+                            remaining > 0 -> "+"
+                            remaining < 0 -> "-"
                             else -> ""
                         }
-                    }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}",
+                    }${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(remaining)))}",
                     align = Alignment.End, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
                 )
             }
 
-            // 2줄: 저축 / 투자 (해당 거래가 있을 때만 표시 - 기존 조건 유지)
-            val hasSaving = saving > 0
-            val hasInvestment = investment != 0.0
-            if (hasSaving || hasInvestment) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(onCard.copy(alpha = 0.25f))
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    if (hasSaving) {
-                        SummaryValue(
-                            label = strings.saving, emoji = "🐷",
-                            value = "-${strings.amountWithUnit(Utils.formatAmount(saving))}",
-                            align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (hasInvestment) {
-                        SummaryValue(
-                            label = strings.investment, emoji = "💹",
-                            value = "${if (investment > 0) "+" else "-"}${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(investment)))}",
-                            // 저축이 있으면 위 '지출' 칸과 같은 가운데 열, 없으면 첫 칸
-                            align = if (hasSaving) Alignment.CenterHorizontally else Alignment.Start,
-                            isMoneyVisible = isMoneyVisible,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    // 남는 칸을 비워서 위 3칸과 열을 맞춤
-                    repeat(3 - (if (hasSaving) 1 else 0) - (if (hasInvestment) 1 else 0)) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-
-            // 3줄: 월급날까지 하루 얼마 (오늘이 속한 기간일 때만)
+            // 2줄: 월급날까지 하루 얼마 (오늘이 속한 기간일 때만)
             if (dailyAllowance != null || showDailyAllowanceHint) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Box(

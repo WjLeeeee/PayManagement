@@ -10,7 +10,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -19,6 +18,9 @@ import androidx.compose.ui.unit.Dp
 import com.woojin.paymanagement.presentation.addtransaction.SelectablePillChip
 import com.woojin.paymanagement.theme.BrandColor
 import com.woojin.paymanagement.theme.InvestmentColor
+import com.woojin.paymanagement.theme.SavingColor
+import com.woojin.paymanagement.data.INVESTMENT_INCOME_CATEGORIES
+import kotlin.math.roundToInt
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -161,12 +163,9 @@ fun StatisticsScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Summary Card
-        statisticsData.chartData?.let { chartData ->
-            SummaryCard(
-                totalIncome = chartData.totalIncome,
-                totalExpense = chartData.totalExpense
-            )
+        // 돈의 흐름 (데이터 로드 후 표시)
+        if (statisticsData.chartData != null) {
+            MoneyFlowCard(transactions = statisticsData.transactions)
         }
 
         // Investment Summary Card
@@ -445,84 +444,130 @@ private fun PayPeriodNavigationCard(
 }
 
 /**
- * 급여 기간 요약: 수입 | 지출 | 잔액 한 줄
+ * 돈의 흐름: 수입을 지출·저축·투자·남은 돈으로 나눈 막대 + 항목별 금액·비율
+ * 나간 돈·남은 돈은 메인 급여 기간 요약 카드와 같은 기준 (익절·배당금은 돌아온 돈)
  */
 @Composable
-private fun SummaryCard(
-    totalIncome: Double,
-    totalExpense: Double
+private fun MoneyFlowCard(transactions: List<Transaction>) {
+    val strings = LocalStrings.current
+    fun total(type: TransactionType) = transactions.filter { it.type == type }.sumOf { it.displayAmount }
+    val income = total(TransactionType.INCOME)
+    val expense = total(TransactionType.EXPENSE)
+    val saving = total(TransactionType.SAVING)
+    val investment = transactions
+        .filter { it.type == TransactionType.INVESTMENT }
+        .sumOf { if (it.category in INVESTMENT_INCOME_CATEGORIES) -it.displayAmount else it.displayAmount }
+    val outflow = expense + saving + investment
+    val remaining = income - outflow
+
+    val expenseColor = MaterialTheme.colorScheme.error
+    // 막대는 양수 항목만. 수입보다 많이 쓰면 남은 돈이 빠지고 나간 돈 전체가 100%
+    val segments = listOf(
+        expense to expenseColor,
+        saving to SavingColor.color,
+        investment to InvestmentColor.color,
+        remaining to BrandColor.mint
+    ).filter { it.first > 0 }
+    val barTotal = segments.sumOf { it.first }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = strings.income,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "+${strings.amountWithUnit(Utils.formatAmount(income))}",
+                fontSize = 17.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        if (barTotal > 0) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(50))
+            ) {
+                segments.forEach { (amount, color) ->
+                    Box(
+                        modifier = Modifier
+                            .weight((amount / barTotal).toFloat())
+                            .fillMaxHeight()
+                            .background(color)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+        MoneyFlowRow(strings.expense, -expense, income, expenseColor)
+        if (saving != 0.0) MoneyFlowRow(strings.saving, -saving, income, SavingColor.color)
+        if (investment != 0.0) MoneyFlowRow(strings.investment, -investment, income, InvestmentColor.color)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+        )
+        MoneyFlowRow(strings.outflow, -outflow, income, dotColor = null, emphasize = true)
+        MoneyFlowRow(strings.remainingMoney, remaining, income, BrandColor.mint, emphasize = true)
+    }
+}
+
+/** 돈의 흐름 한 줄: ● 라벨 ... ±금액  수입 대비 % (수입이 없으면 % 생략) */
+@Composable
+private fun MoneyFlowRow(
+    label: String,
+    signedAmount: Double,
+    income: Double,
+    dotColor: Color?,
+    emphasize: Boolean = false
 ) {
     val strings = LocalStrings.current
-    val balance = totalIncome - totalExpense
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .padding(horizontal = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SummaryValue(
-            label = strings.income,
-            value = "+${strings.amountWithUnit(Utils.formatAmount(totalIncome))}",
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f)
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(dotColor ?: Color.Transparent)
         )
-        SummaryDivider()
-        SummaryValue(
-            label = strings.expense,
-            value = "-${strings.amountWithUnit(Utils.formatAmount(totalExpense))}",
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.weight(1f).padding(start = 12.dp)
-        )
-        SummaryDivider()
-        SummaryValue(
-            label = strings.balance,
-            value = when {
-                balance > 0 -> "+${strings.amountWithUnit(Utils.formatAmount(balance))}"
-                balance < 0 -> "-${strings.amountWithUnit(Utils.formatAmount(kotlin.math.abs(balance)))}"
-                else -> strings.amountWithUnit(Utils.formatAmount(balance))
-            },
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f).padding(start = 12.dp)
-        )
-    }
-}
-
-@Composable
-private fun SummaryValue(
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontSize = 13.sp,
+            fontWeight = if (emphasize) FontWeight.Bold else FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
         )
-        Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = value,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            text = "${when {
+                signedAmount > 0 -> "+"
+                signedAmount < 0 -> "-"
+                else -> ""
+            }}${strings.amountWithUnit(Utils.formatAmount(signedAmount))}",
+            fontSize = if (emphasize) 15.sp else 13.sp,
+            fontWeight = if (emphasize) FontWeight.ExtraBold else FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = if (income > 0) "${(kotlin.math.abs(signedAmount) / income * 100).roundToInt()}%" else "",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(44.dp)
         )
     }
-}
-
-@Composable
-private fun SummaryDivider() {
-    Box(
-        modifier = Modifier
-            .width(1.dp)
-            .fillMaxHeight()
-            .padding(vertical = 4.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-    )
 }
 
 /**

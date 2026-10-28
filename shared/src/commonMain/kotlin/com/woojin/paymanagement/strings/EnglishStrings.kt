@@ -899,6 +899,8 @@ object EnglishStrings : AppStrings {
     override val filterEndDate = "End Date"
     override val filterAll = "All"
 
+    override val outflow = "Spent"
+    override val remainingMoney = "Left"
     override val dailyAllowanceTitle = "Available today"
     override fun dailyAllowanceLimit(amount: String) = "$amount/day"
     override fun daysUntilPayday(days: Int) = "D-$days to payday"

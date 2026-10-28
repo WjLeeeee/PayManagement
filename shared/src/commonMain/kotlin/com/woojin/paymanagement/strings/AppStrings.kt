@@ -845,6 +845,8 @@ interface AppStrings {
     val filterAll: String
 
     // ===== Daily Allowance / Labor Time =====
+    val outflow: String
+    val remainingMoney: String
     val dailyAllowanceTitle: String
     fun dailyAllowanceLimit(amount: String): String
     fun daysUntilPayday(days: Int): String
