@@ -243,17 +243,19 @@ fun AddTransactionScreen(
         // 노동시간 환산 + 저장 후 오늘 남은 돈 (지출 금액 입력 시)
         val netAmount = parseAmountToDouble(uiState.amount.text) -
             (if (uiState.isSettlement) parseAmountToDouble(uiState.settlementAmount.text) else 0.0)
+        // 오늘 남은 돈은 오늘 날짜로 새로 추가할 때만 (수정·다른 날짜는 계산이 달라짐, 공유방에만 저장하면 개인 가계부에 안 들어감)
+        val dailyAllowance = uiState.dailyAllowance?.takeIf {
+            !uiState.isEditMode && uiState.date == Clock.System.todayIn(TimeZone.currentSystemDefault()) &&
+                uiState.saveTarget != SaveTarget.SHARED_ONLY
+        }
         if (uiState.selectedType == TransactionType.EXPENSE && netAmount > 0 &&
-            (uiState.hourlyWage != null || uiState.dailyAllowance != null)
+            (uiState.hourlyWage != null || dailyAllowance != null)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
             SpendingInsight(
                 amount = netAmount,
                 hourlyWage = uiState.hourlyWage,
-                // 오늘 남은 돈은 오늘 날짜로 새로 추가할 때만 (수정·다른 날짜는 계산이 달라짐)
-                dailyAllowance = uiState.dailyAllowance?.takeIf {
-                    !uiState.isEditMode && uiState.date == Clock.System.todayIn(TimeZone.currentSystemDefault())
-                }
+                dailyAllowance = dailyAllowance
             )
         }
 

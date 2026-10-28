@@ -31,6 +31,7 @@ import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.INVESTMENT_INCOME_CATEGORIES
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
 import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
 import com.woojin.paymanagement.strings.AppStrings
@@ -620,13 +621,12 @@ private fun SearchResultItem(
                 }
             }
 
-            val investmentIncomeCategories = setOf("익절", "배당금")
             Text(
                 text = "${when (transaction.type) {
                     TransactionType.INCOME -> "+"
                     TransactionType.EXPENSE -> "-"
                     TransactionType.SAVING -> "-"
-                    TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
+                    TransactionType.INVESTMENT -> if (transaction.category in INVESTMENT_INCOME_CATEGORIES) "+" else "-"
                 }}${strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))}",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,

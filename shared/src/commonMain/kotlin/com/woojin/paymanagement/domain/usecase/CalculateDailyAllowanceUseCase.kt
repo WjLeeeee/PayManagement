@@ -2,6 +2,7 @@ package com.woojin.paymanagement.domain.usecase
 
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.INVESTMENT_INCOME_CATEGORIES
 import com.woojin.paymanagement.domain.model.DailyAllowance
 import com.woojin.paymanagement.domain.repository.BudgetRepository
 import com.woojin.paymanagement.domain.repository.HolidayRepository
@@ -94,9 +95,5 @@ class CalculateDailyAllowanceUseCase(
             date = date.plus(1, DateTimeUnit.DAY)
         }
         return total
-    }
-
-    private companion object {
-        val INVESTMENT_INCOME_CATEGORIES = setOf("익절", "배당금")
     }
 }

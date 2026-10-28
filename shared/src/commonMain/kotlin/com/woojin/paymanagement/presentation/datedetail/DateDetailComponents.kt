@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.INVESTMENT_INCOME_CATEGORIES
 import com.woojin.paymanagement.data.PaymentMethod
 import com.woojin.paymanagement.data.IncomeType
 import com.woojin.paymanagement.domain.model.DailySummary
@@ -406,13 +407,12 @@ fun TransactionDetailItem(
             Spacer(modifier = Modifier.width(8.dp))
 
             // 금액
-            val investmentIncomeCategories = setOf("익절", "배당금")
             Text(
                 text = "${when (transaction.type) {
                     TransactionType.INCOME -> "+"
                     TransactionType.EXPENSE -> "-"
                     TransactionType.SAVING -> "-"
-                    TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
+                    TransactionType.INVESTMENT -> if (transaction.category in INVESTMENT_INCOME_CATEGORIES) "+" else "-"
                 }}${
                     strings.amountWithUnit(Utils.formatAmount(transaction.displayAmount))
                 }",

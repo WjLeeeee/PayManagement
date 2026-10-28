@@ -937,7 +937,7 @@ private fun formatLaborTime(amount: Double, hourlyWage: Double): String {
 }
 
 @Composable
-private fun formatSignedAmount(amount: Double): String {
+internal fun formatSignedAmount(amount: Double): String {
     val strings = LocalStrings.current
     return "${if (amount < 0) "-" else ""}${strings.amountWithUnit(Utils.formatAmount(amount))}"
 }

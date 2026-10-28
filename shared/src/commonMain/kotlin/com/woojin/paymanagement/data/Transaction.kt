@@ -41,6 +41,9 @@ enum class TransactionType {
     INVESTMENT
 }
 
+// 투자 중 돌아온 돈으로 보는 카테고리 (나머지 투자는 나간 돈)
+val INVESTMENT_INCOME_CATEGORIES = setOf("익절", "배당금")
+
 @Serializable
 enum class IncomeType {
     CASH,        // 현금

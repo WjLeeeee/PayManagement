@@ -72,8 +72,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.woojin.paymanagement.data.Transaction
 import com.woojin.paymanagement.data.TransactionType
+import com.woojin.paymanagement.data.INVESTMENT_INCOME_CATEGORIES
 import com.woojin.paymanagement.presentation.addtransaction.formatCategoryDisplay
 import com.woojin.paymanagement.presentation.addtransaction.getCategoryEmoji
+import com.woojin.paymanagement.presentation.addtransaction.formatSignedAmount
 import com.woojin.paymanagement.presentation.tutorial.CalendarTutorialOverlay
 import com.woojin.paymanagement.strings.LocalStrings
 import com.woojin.paymanagement.theme.BrandColor
@@ -592,10 +594,9 @@ private fun PayPeriodSummaryCard(
     val saving = periodTransactions
         .filter { it.type == TransactionType.SAVING }
         .sumOf { it.displayAmount }
-    val investmentIncomeCategories = setOf("익절", "배당금")
     val investment = periodTransactions
         .filter { it.type == TransactionType.INVESTMENT }
-        .sumOf { t -> if (t.category in investmentIncomeCategories) t.displayAmount else -t.displayAmount }
+        .sumOf { t -> if (t.category in INVESTMENT_INCOME_CATEGORIES) t.displayAmount else -t.displayAmount }
     val balance = income - expense
 
     val strings = LocalStrings.current
@@ -773,7 +774,7 @@ private fun DailyAllowanceRow(
             value = if (isOverBudget) {
                 strings.dailyAllowanceOverBudget
             } else {
-                "${if (remaining < 0) "-" else ""}${strings.amountWithUnit(Utils.formatAmount(remaining))}"
+                formatSignedAmount(remaining)
             },
             align = Alignment.Start, isMoneyVisible = isMoneyVisible, modifier = Modifier.weight(1f)
         )
@@ -1349,13 +1350,12 @@ private fun TransactionItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        val investmentIncomeCategories = setOf("익절", "배당금")
         Text(
             text = "${when (transaction.type) {
                 TransactionType.INCOME -> "+"
                 TransactionType.EXPENSE -> "-"
                 TransactionType.SAVING -> "-"
-                TransactionType.INVESTMENT -> if (transaction.category in investmentIncomeCategories) "+" else "-"
+                TransactionType.INVESTMENT -> if (transaction.category in INVESTMENT_INCOME_CATEGORIES) "+" else "-"
             }}${
                 strings.amountWithUnit(Utils.formatAmount(
                     transaction.displayAmount
